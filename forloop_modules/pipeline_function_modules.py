@@ -222,3 +222,39 @@ class WriteHandler:
         imports=["import doclick.doclick_core as dc"]
         return(imports)
 
+
+
+
+class SlackNotificationHandler:
+    def __init__(self):
+        self.icon_type = "SlackNotification"
+        self.fn_name = "Slack Notification"
+
+    def make_form_dict_list(self, *args):
+        form_dict_list = [
+            {"Label": "Slack Notification"},
+            {"Label": "Text:", "Entry": {"name": "text", "text": ""}}
+        ]
+        return form_dict_list
+
+    def execute(self, args):
+        print("EXECUTE")
+        #dc.execute_order("Write(" + args[0] + ")")
+     
+        
+     
+    def direct_execute(self, text, *args):
+        print("DIRECT EXECUTE")
+        
+    def export_code(self,*args):
+        code="""
+        """
+        return(code)
+
+        
+    def export_imports(self,*args):
+        #imports=["import doclick.doclick_core as dc"]
+        imports=[]
+        return(imports)
+
+
