@@ -225,7 +225,7 @@ class WriteHandler:
 
 
 
-class SlackNotificationHandler:
+class SlackNotificationHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "SlackNotification"
         self.fn_name = "Slack Notification"
