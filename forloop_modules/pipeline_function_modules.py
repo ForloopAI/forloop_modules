@@ -3,6 +3,7 @@ import random
 import doclick.doclick_core as dc
 import doclick.doclick_image as di
 
+import os
 
 
 class AbstractFunctionHandler(abc.ABC):
@@ -222,9 +223,60 @@ class WriteHandler:
         imports=["import doclick.doclick_core as dc"]
         return(imports)
 
+########### PIPELINE HANDLERS #########################
 
 
 
+
+
+class PythonScriptHandler(AbstractFunctionHandler):
+    def __init__(self):
+        self.icon_type = "PythonScript"
+        self.fn_name = "Python Script"
+
+    def make_form_dict_list(self, *args):
+        form_dict_list = [
+            {"Label": "Python Script"},
+            {"Label": "Script filename", "Entry": {"name": "script", "text": "script.py"}}
+        ]
+        return form_dict_list
+
+    def direct_execute(self,script,*args):
+        
+        command="python"
+        location="C:\\Users\\EUROCOM\\Documents\\Git\\ForloopAI\\forloop_platform_dominik\\"
+        
+        os.chdir(location)
+        os.system("start cmd cd "+location+script+" /k "+command+" "+location+script)
+
+
+
+class JupyterScriptHandler(AbstractFunctionHandler):
+    def __init__(self):
+        self.icon_type = "JupyterScript"
+        self.fn_name = "Jupyter Script"
+
+    def make_form_dict_list(self, *args):
+        form_dict_list = [
+            {"Label": "Jupyter Notebook Script"},
+            {"Label": "Script filename", "Entry": {"name": "script", "text": "script.py"}}
+        ]
+        return form_dict_list
+
+    def direct_execute(self,script,*args):
+        
+        command="runipy"
+        location="C:\\Users\\EUROCOM\\Documents\\Git\\ForloopAI\\forloop_platform_dominik\\"
+        
+        os.chdir(location)
+        os.system("start cmd cd "+location+script+" /k "+command+" "+location+script)
+
+
+
+
+
+
+############ INTEGRATION HANDLERS ######################
 class SlackNotificationHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "SlackNotification"
