@@ -145,7 +145,7 @@ class WaitHandler(AbstractFunctionHandler):
 
 
 
-class ClickImageHandler:
+class ClickImageHandler: #TODO: AbstractFunctionHandler
     def __init__(self):
         self.icon_type = "ClickImage"
         self.fn_name = "Click Image"
@@ -196,7 +196,7 @@ class ClickImageHandler:
         return(imports)
 
 
-class WriteHandler:
+class WriteHandler: #TODO AbstractFunctionHandler
     def __init__(self):
         self.icon_type = "Write"
         self.fn_name = "Write"
@@ -237,17 +237,21 @@ class PythonScriptHandler(AbstractFunctionHandler):
     def make_form_dict_list(self, *args):
         form_dict_list = [
             {"Label": "Python Script"},
-            {"Label": "Script filename", "Entry": {"name": "script", "text": "script.py"}}
+            {"Label": "Script filename", "Entry": {"name": "script", "text": "script.py"}},
+            {"Label": "Directory path", "Entry": {"name": "dir_path", "text": ""}}
         ]
         return form_dict_list
 
-    def direct_execute(self,script,*args):
+    def direct_execute(self,script,dir_path,*args):
+        """
+        script - e.g. "test1.py"
+        dir_path - e.g. "C:\\Users\\EUROCOM\\Documents\\Git\\ForloopAI\\forloop_platform_dominik\\" 
+        """
         
         command="python"
-        location="C:\\Users\\EUROCOM\\Documents\\Git\\ForloopAI\\forloop_platform_dominik\\"
         
-        os.chdir(location)
-        os.system("start cmd cd "+location+script+" /k "+command+" "+location+script)
+        os.chdir(dir_path)
+        os.system("start cmd cd "+dir_path+script+" /k "+command+" "+dir_path+script)
 
 
 
