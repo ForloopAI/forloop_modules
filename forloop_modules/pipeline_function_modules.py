@@ -242,7 +242,7 @@ class PythonScriptHandler(AbstractFunctionHandler):
         ]
         return form_dict_list
 
-    def direct_execute(self,script,dir_path,*args):
+    def direct_execute(self,script,dir_path=None,*args):
         """
         script - e.g. "test1.py"
         dir_path - e.g. "C:\\Users\\EUROCOM\\Documents\\Git\\ForloopAI\\forloop_platform_dominik\\" 
@@ -250,7 +250,10 @@ class PythonScriptHandler(AbstractFunctionHandler):
         
         command="python"
         
-        os.chdir(dir_path)
+        if dir_path!="" and dir_path is not None:
+            os.chdir(dir_path)
+        else:
+            dir_path=""
         os.system("start cmd cd "+dir_path+script+" /k "+command+" "+dir_path+script)
 
 
