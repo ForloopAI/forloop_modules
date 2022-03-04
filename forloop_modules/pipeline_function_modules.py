@@ -29,7 +29,6 @@ class AbstractFunctionHandler(abc.ABC):
     
 
 
-
 class StartHandler(AbstractFunctionHandler):
     icon_type = "Start"
     fn_name = "Start"
@@ -81,42 +80,16 @@ class FinishHandler(AbstractFunctionHandler):
         return(imports)
 
 
-class DataFrameHandler(AbstractFunctionHandler):
-    icon_type = "DataFrame"
-    fn_name = "DataFrame"
-
-    def make_form_dict_list(self, *args):
-        form_dict_list = [{"Label": self.fn_name}]
-        return form_dict_list
-
-
-    def direct_execute(self, *args):
-        # def __new__(cls, *args, **kwargs):
-        """Do nothing"""
-        pass
-    
-    
-    def export_code(self,*args):
-        code="""
-        """
-        return(code)
-        
-    def export_imports(self,*args):
-        imports=[]
-        return(imports)
-
 
 
 class WaitHandler(AbstractFunctionHandler):
     icon_type = "Wait"
     fn_name = "Wait"
-
+    
     def make_form_dict_list(self, *args):
-        form_dict_list = [
-            {"Label": self.fn_name},
+        form_dict_list = [{"Label": self.fn_name},
             {"Label": "Milliseconds:", "Entry": {"name": "milliseconds", "text": "1000"}},
-            {"Label": "Add random ms:", "Entry": {"name": "rand_ms", "text": "0"}}
-        ]
+            {"Label": "Add random ms:", "Entry": {"name": "rand_ms", "text": "0"}}]
         return form_dict_list
 
     def direct_execute(self, milliseconds, rand_ms, *args):
