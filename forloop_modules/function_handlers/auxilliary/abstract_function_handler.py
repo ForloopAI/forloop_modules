@@ -1,18 +1,17 @@
 import abc
 import inspect
 import ast
-
+import re
 from typing import Union
 
-#import src.core.variable_handler as vh # DISABLED IN FORLOOP MODULES
-#import src.node_context_requests_backend as ncrb # DISABLED IN FORLOOP MODULES
+import forloop_modules.globals.variable_handler as vh # DISABLED IN FORLOOP MODULES
+import forloop_modules.queries.node_context_requests_backend as ncrb # DISABLED IN FORLOOP MODULES
+
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
-#from src.core.variable_handler import defined_functions_dict # DISABLED IN FORLOOP MODULES
+from forloop_modules.globals.variable_handler import defined_functions_dict # DISABLED IN FORLOOP MODULES
 from forloop_modules.node_detail_form import NodeField, NodeParams
-
-#from src.utils.definitions import DIRECT_EXECUTE_CORE_HANDLERS #DISABLED IN FORLOOP MODULES - replaced by following line
-DIRECT_EXECUTE_CORE_HANDLERS = ["ConvertVariableType"] #! Temporary information holder for testing of an experimental approach in codeview
+from src.utils.definitions import DIRECT_EXECUTE_CORE_HANDLERS
 
 class Input(dict):
     """Serves as a variable input placeholder for code export and direct execute"""
@@ -129,8 +128,20 @@ class AbstractFunctionHandler(abc.ABC):
     http://devwiki.forloop.ai/en/overview/experimental-features-and-approaches
     """
     
+
+    def replace_strings(self, text, replacements):
+        for target_string, replacement in replacements.items():
+            # Construct the regular expression pattern with word boundaries
+            pattern = r'\b' + re.escape(target_string) + r'\b'
+            
+            # Replace the target string with its replacement using re.sub
+            text = re.sub(pattern, replacement, text)
+        
+        return text
+    
     def _replace_key_with_variable_name_in_code(self, code: str, key: str, variable_name: str):
         code = code.replace(key, variable_name)
+        # code = self.replace_strings(code, {key: variable_name})
         
         return code
         
@@ -144,7 +155,7 @@ class AbstractFunctionHandler(abc.ABC):
         
         return code
     
-    def _update_node_code_with_node_params_values(self, code: str, node_params: NodeParams) -> str:
+    def _update_node_code_with_node_params_values(self, code: str, node_params: NodeParams, return_value_name: str = None) -> str:
         """Takes a code generated from direct_execute_core method and updates it with node_params values (input from the user).
 
         Args:
@@ -158,7 +169,9 @@ class AbstractFunctionHandler(abc.ABC):
         for element_name, element_value in node_params.code_repr().items():
             is_element_variable = element_value["is_variable"]
             value = element_value["code"]
-            if is_element_variable:
+            # if not value:
+            #     value = node_params[element_name].get("export_code_default", "")
+            if is_element_variable or element_name == return_value_name:
                 code = self._replace_key_with_variable_name_in_code(code=code, key=element_name, variable_name=value)
             else:
                 try:
@@ -173,6 +186,7 @@ class AbstractFunctionHandler(abc.ABC):
     #! EXPERIMENTAL - potentially replaces export_code_with_node_params
     def new_export_code_with_node_params(self, node_params: NodeParams) -> str:
         """Exports code of a handler from it's direct_execute_core method and fills it with values from NodeParams.
+
 
         Args:
             node_params (NodeParams): NodeParams retrieved from the node (user input in entries, comboboxes etc.)
@@ -196,13 +210,15 @@ class AbstractFunctionHandler(abc.ABC):
         
         code_lines.pop(0) # Omit function definition
         
+        return_value_name = None
         if code_lines[-1].strip().startswith("return"):
             # Remove "return" line if present
+            return_value_name = code_lines[-1].split()[1].strip() #? What about more values returned in a tuple?
             code_lines.pop(-1)
             
         code = "".join(code_lines)
         
-        code = self._update_node_code_with_node_params_values(code=code, node_params=node_params)
+        code = self._update_node_code_with_node_params_values(code=code, node_params=node_params, return_value_name=return_value_name)
                     
         return code
     #!#!#!#!#! Experimental END #!#!#!#!##
@@ -345,17 +361,31 @@ class AbstractFunctionHandler(abc.ABC):
         code = "".join(lines_of_code)
 
         return code
+    
+    def generate_shown_dataframe_option_field(self, df_variable_name, fields=None):
+        if fields is None:
+            fields = []
 
-    def update_node_fields_with_shown_dataframe(self, node_detail_form, df_variable_name):
-        """TODO: Refactor, To be moved elsewhere"""
         # Hotfix for "untitled{i}" cases --> name wasn't synced properly
         df_variable_name = vh.variable_handler._set_up_unique_varname(df_variable_name)
-        
-        fields = [NodeField.field_init("shown_dataframe", df_variable_name, "df_variable_name")]
+        fields += [NodeField.field_init("shown_dataframe", df_variable_name, "df_variable_name")]
+
+        return fields
+    
+    def refresh_shown_dataframe_option_field(self, fields, df_variable_name):
+        fields = list(filter(lambda x: x["name"] not in ["shown_dataframe", "options"], fields))
+
+        if df_variable_name is not None:
+            fields = self.generate_shown_dataframe_option_field(df_variable_name, fields)
+
+        return fields
+
+    def update_node_fields_with_shown_dataframe(self, node_detail_form, df_variable_name):
+        fields = self.refresh_shown_dataframe_option_field(node_detail_form.fields, df_variable_name)
         
         # TODO: can be probably removed once node reflection is divided to field update and params update
         # TODO2: removing this breaks the wizard cleaning
-        node_detail_form.fields = fields
+        # node_detail_form.fields = fields
 
         ncrb.update_node_by_uid(node_detail_form.node_uid, fields=fields)
         
