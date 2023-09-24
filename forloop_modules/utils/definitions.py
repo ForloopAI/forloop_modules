@@ -2,7 +2,6 @@ from pathlib import Path
 import pandas as pd
 import datetime
 
-import src.gui.gui_settings as gs
 
 ROOT_PATH = Path(__file__).parents[1]
 
@@ -120,7 +119,7 @@ self.variable_type_color_mapping={
 
 
 
-ALLOWED_ENTRY_INPUT_TYPES = list(gs.VARIABLE_TYPE_COLOR_MAPPING.keys())
+ALLOWED_ENTRY_INPUT_TYPES = list(VARIABLE_TYPE_COLOR_MAPPING.keys())
 
 CUSTOM_NODES_FAVOURITE_ARGS_MAPPING = {
     "numpy.zeros": ["dtype"]
