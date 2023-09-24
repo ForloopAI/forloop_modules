@@ -5,7 +5,7 @@ import redis
 from redis.commands.search.field import NumericField, TagField, TextField
 from redis.commands.search.indexDefinition import IndexDefinition, IndexType
 
-from forloop_modules.config.config import RedisConfig, redis_config
+from forloop_modules.redis.config.config import RedisConfig, redis_config
 from src import flog
 from src.errors.errors import InitializationError
 
