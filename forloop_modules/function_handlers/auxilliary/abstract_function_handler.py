@@ -11,7 +11,7 @@ import forloop_modules.queries.node_context_requests_backend as ncrb # DISABLED 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.globals.variable_handler import defined_functions_dict # DISABLED IN FORLOOP MODULES
 from forloop_modules.node_detail_form import NodeField, NodeParams
-from src.utils.definitions import DIRECT_EXECUTE_CORE_HANDLERS
+from forloop_modules.utils.definitions import DIRECT_EXECUTE_CORE_HANDLERS
 
 class Input(dict):
     """Serves as a variable input placeholder for code export and direct execute"""

@@ -21,7 +21,7 @@ from forloop_modules.utils.pickle_serializer import save_data_dict_to_pickle_fol
 from forloop_modules.utils.pickle_serializer import load_data_dict_from_pickle_folder
 from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.redis.redis_connection import kv_redis
-from src.utils.definitions import JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES_AS_STRINGS, REDIS_STORED_TYPES, REDIS_STORED_TYPES_AS_STRINGS
+from forloop_modules.utils.definitions import JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES_AS_STRINGS, REDIS_STORED_TYPES, REDIS_STORED_TYPES_AS_STRINGS
 #import src.forloop_code_eval as fce
 import forloop_modules.queries.node_context_requests_backend as ncrb
 
