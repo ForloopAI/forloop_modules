@@ -1,12 +1,6 @@
-from pathlib import Path
 import pandas as pd
 import datetime
 
-
-ROOT_PATH = Path(__file__).parents[1]
-
-PIPELINES_PATH = Path(ROOT_PATH, 'pipelines')
-PIPELINES_PATH.mkdir(parents=True, exist_ok=True)
 
 
 # Standard icons - on_click creates an icon

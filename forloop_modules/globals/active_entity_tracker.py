@@ -61,7 +61,20 @@ class ActiveEntityTracker:
         self.project_uid: str = None #Todo: rename to active
         self.active_pipeline_uid: str = None
         self.active_script_uid: str = None
-        
+        self.home_folder = None     # To be refactored to another location (should be stores as user metadata) - refactored to AET for now
+ 
+    
+    def set_home_folder(self):
+        """
+        Sets the default folder for platform outputs.
+        """
+
+        # TODO: for now the value is hardcoded, and home_folder is added to all paths manually.
+        # The plan is to introduce custom Forloop-Path object, that should (among other things) help to simplify this.
+
+        flog.warning('Setting the home folder')
+        self.home_folder = 'output/'
+        Path(self.home_folder).mkdir(exist_ok=True)
  
     
     def _initialize_project_and_pipeline_after_login(self, email: str):
