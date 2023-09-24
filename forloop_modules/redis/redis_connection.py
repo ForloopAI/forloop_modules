@@ -6,8 +6,8 @@ from redis.commands.search.field import NumericField, TagField, TextField
 from redis.commands.search.indexDefinition import IndexDefinition, IndexType
 
 from forloop_modules.redis.config.config import RedisConfig, redis_config
-from src import flog
-from src.errors.errors import InitializationError
+import forloop_modules.flog as flog
+from forloop_modules.errors.errors import InitializationError
 
 
 def check_modules(kv_redis: kv.KeepVariableRedisServer) -> None:
