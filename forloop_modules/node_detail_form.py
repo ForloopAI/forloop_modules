@@ -1,7 +1,7 @@
 import ast
 
 import forloop_modules.flog as flog
-#from src.core.local_variable_handler import File 
+from forloop_modules.globals.local_variable_handler import File
 
 class NodeParams(dict):
     """An object containing all necessary information about the item detail form backend - used for storage of the information
@@ -149,12 +149,8 @@ class NodeDetailForm:
                 try:
                     # TODO: refactor to use get_variable_by_name() from local_variable_handler
                     result = variable_handler.variables[self.node_params[name]["variable"]].value
-                    
-                    # DISABLED IN FORLOOP MODULES
-                    #if isinstance(result, File):
-                    #    result = result.file_name + "." + result.suffix
-                    # DISABLED IN FORLOOP MODULES
-                    
+                    if isinstance(result, File):
+                        result = result.file_name + "." + result.suffix
                 # Load from node params
                 except KeyError:
                     result = self.node_params[name]["value"]
@@ -185,8 +181,13 @@ class NodeDetailForm:
         def _handle_non_variable_input(name, is_input_variable_name:bool):
             value = self.node_params[name]["value"]
             
-            # Variable name --> return the entered string unchanged (without additional quotes or anything)
-            if is_input_variable_name:
+            if is_input_variable_name or type(value) != str:
+                """
+                is_input_variable_name == True ==> Variable name --> return the entered string unchanged (without 
+                additional quotes or anything)
+                
+                type(value) != str ==> Comboboxes and Comboentries return lists --> return the list without evaluating it
+                """
                 return value
             
             try:
@@ -252,8 +253,9 @@ class NodeDetailForm:
             "LoadWebsite": lambda name_value_dict:list(name_value_dict.values())[0].replace("https://","").replace("http://","").replace("www.",""),
             "ConvertVariableType": lambda name_value_dict:name_value_dict["variable_name"]+" --> "+name_value_dict["variable_type"],
             "NewVariable": lambda name_value_dict:name_value_dict["variable_name"]+"="+name_value_dict["variable_value"],
-            "Wait": lambda name_value_dict:name_value_dict["milliseconds"]+" milliseconds"
-            
+            "Wait": lambda name_value_dict:name_value_dict["milliseconds"]+" milliseconds",
+            "DataFrame": lambda _: self.get_first_field_value_by_category("df_variable_name"),
+            "DictToDf": lambda _: self.get_first_field_value_by_category("df_variable_name")
             } #TODO Dominik: to be moved to pipeline function handlers - but from GLC it shouldnt be imported (cyclical imports)
         
     
@@ -267,7 +269,8 @@ class NodeDetailForm:
             
         if typ in node_typ_show_info_lambda_dict:
             try:
-                info_text=node_typ_show_info_lambda_dict[typ](show_info_name_value_dict)
+                lambda_result = node_typ_show_info_lambda_dict[typ](show_info_name_value_dict)
+                info_text = lambda_result if lambda_result is not None else ""
             except Exception as e:
                 info_text=""
                 flog.warning(e,self)
