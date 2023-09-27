@@ -95,7 +95,11 @@ class LocalVariableHandler:
         #serialization for objects
         if variable.typ in REDIS_STORED_TYPES_AS_STRINGS:
             value = kv_redis.get(variable.name)
-            variable = LocalVariable(variable.name, value)
+            response = ncrb.get_variable_by_name(variable.name)
+            result = json.loads(response.content)
+            uid = result["uid"]
+            is_result = result["is_result"]
+            variable = LocalVariable(uid, variable.name, value, is_result)
             return(variable)
         else:
             return(variable)
@@ -125,7 +129,14 @@ class LocalVariableHandler:
     
     def create_file(self, file: File, project_uid=None):
         # TODO is temporary until workflow for files is introduced
-        variable = LocalVariable(file.file_name, file)
+
+        # TODO: NEVER USED, NOT TESTED (NCRB + LOCAL VARIABLE CALL WITH 4 PARAMETERS INSTEAD OF 2)
+        response = ncrb.get_variable_by_name(file.file_name)
+        result = json.loads(response.content)
+        uid = result["uid"]
+        is_result = result["is_result"]
+        
+        variable = LocalVariable(uid, file.file_name, file, is_result)
 
         ncrb.new_file(file.file_name)
         ncrb.upload_urls_from_file(file.path)
