@@ -6,6 +6,7 @@ import json
 import ast
 import pandas as pd
 import dbhydra.dbhydra_core as dh
+from fastapi import HTTPException
 
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
@@ -125,7 +126,7 @@ class DBQueryHandler(AbstractFunctionHandler):
                         fields = self.generate_shown_dataframe_option_field(new_var_name)   
                         
                         response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
-                        if response.status_code == 200:
+                        if response.status_code in [200, 201]:
                             result = json.loads(response.content.decode('utf-8'))
                             node_uid = result["uid"]
 
@@ -141,6 +142,8 @@ class DBQueryHandler(AbstractFunctionHandler):
                             variable_handler.new_variable(new_var_name, df_new)
 
                             ncrb.update_last_active_dataframe_node_uid(node_uid)
+                        else:
+                            raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
                     else:
                         try:
                             dbtable.db1.execute(query)
@@ -354,13 +357,15 @@ class DBSelectHandler(AbstractFunctionHandler):
         fields = self.generate_shown_dataframe_option_field(new_var_name)
 
         response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
-        if response.status_code == 200:
+        if response.status_code in [200, 201]:
             result = json.loads(response.content.decode('utf-8'))
             node_uid = result["uid"]
 
             self.direct_execute(db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name)
 
             ncrb.update_last_active_dataframe_node_uid(node_uid)
+        else:
+            raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
 
     def export_code(self, node_detail_form):
         db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name")
