@@ -145,7 +145,7 @@ class LocalVariableHandler:
         ncrb.upload_urls_from_file(file.path)
 
         return(variable)
-    def process_dataframe_variabla_on_initialization(self, name, value):
+    def process_dataframe_variable_on_initialization(self, name, value):
         self.dataframe_scan_analyses_records[name] = DataFrameWizardScanAnalysis()
         value = value.rename(columns=self.get_int_to_str_col_name_mapping(value))
         # self.dataframe_column_category_predictions[name] = classify_df_column_categories(value)
