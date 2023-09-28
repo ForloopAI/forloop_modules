@@ -6,7 +6,7 @@ class CriticalPipelineError(Exception):
     pipeline flow, and it's execution must be terminated.
 
     Must always be raised with 'raise ... from error' clause to retain the information about
-    original errror.
+    original error.
     """
 
 
@@ -19,7 +19,7 @@ class SoftPipelineError(Exception):
     the current node execution without any pipeline flow disruption.
 
     Must always be raised with 'raise ... from error' clause to retain the information about
-    original errror.
+    original error.
     """
 
 
@@ -31,7 +31,7 @@ class MalformedPipelineError(Exception):
     - graph initialization fails due to incompatible pipeline elements
     - not passing a pipeline validation rule (no logic implemented yet)
 
-    Must always be raised with 'raise ... from error' clause to retain the information about original errror.
+    Must always be raised with 'raise ... from error' clause to retain the information about original error.
     """
 
 
