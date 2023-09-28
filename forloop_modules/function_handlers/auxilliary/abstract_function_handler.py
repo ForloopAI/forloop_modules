@@ -98,10 +98,10 @@ class AbstractFunctionHandler(abc.ABC):
 
 
                     # DISABLED IN FORLOOP MODULES
-                    # if value in defined_functions_dict.keys() or value in vh.new_var_names_from_parsing:
-                    #     node_dict["params"][entry_name] = {"variable": value, "value": None}
-                    # else:    
-                    #     node_dict["params"][entry_name] = {"variable": None, "value": value}
+                    if value in defined_functions_dict.keys() or value in vh.new_var_names_from_parsing:
+                        node_dict["params"][entry_name] = {"variable": value, "value": None}
+                    else:    
+                        node_dict["params"][entry_name] = {"variable": None, "value": value}
                     # DISABLED IN FORLOOP MODULES
                     
             elif "Combobox" in form_dict.keys():
