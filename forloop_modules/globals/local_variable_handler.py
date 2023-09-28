@@ -218,7 +218,7 @@ class LocalVariableHandler:
             value = kv_redis.get(name)
 
             if isinstance(value, pd.DataFrame):
-                value = self.process_dataframe_variabla_on_initialization(name, value)
+                value = self.process_dataframe_variable_on_initialization(name, value)
 
         variable=LocalVariable(uid, name, value, is_result) #Create new 
         self.variables[name]=variable
