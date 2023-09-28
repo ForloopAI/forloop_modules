@@ -163,7 +163,7 @@ class LocalVariableHandler:
         name = self._set_up_unique_varname(name)
 
         if isinstance(value, pd.DataFrame):
-            value = self.process_dataframe_variabla_on_initialization(name, value)
+            value = self.process_dataframe_variable_on_initialization(name, value)
         
         if name in self.variables.keys():
             variable = self.update_variable(name, value, additional_params)
