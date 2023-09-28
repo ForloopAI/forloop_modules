@@ -17,7 +17,7 @@ from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.queries.db_model_templates import APIProject, APITrigger, APIDataset, APIDbTable, APIScript, APIFile, APIDatabase, APIPipeline, APIEdge, APIVariable, APIPopup
 
 if sys.platform == "darwin":  # MAC OS
-    config_path = 'config/server_config.ini'
+    config_path = 'config/server_config_remote.ini'
 else:
     config_path = 'config/server_config.ini'
 
