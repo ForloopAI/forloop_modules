@@ -1,0 +1,12 @@
+deepdiff
+tkinter
+pandas
+ast
+dbhydra
+fastapi2
+pathlib
+dateutil
+filehydra
+numpy
+pydantic
+redis
