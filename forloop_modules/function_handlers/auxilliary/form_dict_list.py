@@ -74,7 +74,7 @@ class FormDictList(UserList):
             row (int): row number of the element - specified only if it's not first element on the same row
         """
         key = "Entry"
-        value = {"name": name, "text": text, "category": category, "input_types": input_types, "required": required, "text": text, "show_info": show_info}
+        value = {"name": name, "text": text, "category": category, "input_types": input_types, "required": required, "type": type, "show_info": show_info}
 
         if required:
             if "Label" in self[-1].keys():
