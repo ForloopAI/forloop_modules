@@ -38,8 +38,7 @@ class NewVariableHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         fdl.label("Add New Variable")
         fdl.label("Variable name")
-        fdl.entry(name="variable_name", text="", category="new_var", input_types=["str"], show_info=True, 
-                  example_input="test_new_var", row=1)
+        fdl.entry(name="variable_name", text="", category="new_var", input_types=["str"], show_info=True, row=1)
         fdl.label("Value")
         fdl.entry(name="variable_value", text="", category="arguments", required=True, show_info=True, row=2)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -68,7 +67,7 @@ class NewVariableHandler(AbstractFunctionHandler):
                 variable_value=ast.literal_eval(variable_value) #works for integers, floats, ...
             except Exception: #Handling of this error ValueError: malformed node or string: <ast.Name object at 0x0000018DF791CC70> 22:12:53 NewVariableHandler: Error executing NewVariableHandler: malformed node or string: <ast.Name object at 0x0000018DF791CC70> 
                 variable_value=ast.literal_eval("'"+variable_value+"'")
-        
+        print("VARIABLE_VALUE",variable_value,type(variable_value))
         inp.assign("variable_value", variable_value)
         
         try:

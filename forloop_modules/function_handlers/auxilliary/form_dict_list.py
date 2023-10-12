@@ -1,4 +1,3 @@
-from typing import Optional
 from collections import UserList
 
 import forloop_modules.flog as flog
@@ -61,8 +60,7 @@ class FormDictList(UserList):
         value = text
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def entry(self, name, text, category=None, input_types=None, required=None, is_password=False, show_info=None, 
-              example_input: Optional[str] = None, row=None):
+    def entry(self, name, text, category=None, input_types=None, required=None, is_password=False, show_info=None, row=None):
 
         """
         Entry is a text element with a name and a text
@@ -75,8 +73,7 @@ class FormDictList(UserList):
             row (int): row number of the element - specified only if it's not first element on the same row
         """
         key = "Entry"
-        value = {"name": name, "text": text, "category": category, "input_types": input_types, "required": required, 
-                 "is_password": is_password, "show_info": show_info, "example_input": example_input}
+        value = {"name": name, "text": text, "category": category, "input_types": input_types, "required": required, "is_password": is_password, "show_info": show_info}
 
         if required:
             if "Label" in self[-1].keys():
