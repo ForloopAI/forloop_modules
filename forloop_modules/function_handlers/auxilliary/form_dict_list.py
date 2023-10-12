@@ -73,7 +73,7 @@ class FormDictList(UserList):
             row (int): row number of the element - specified only if it's not first element on the same row
         """
         if file_types is None:
-            file_types = []
+            file_types = [("all files", "*")]
 
         key = "Entry"
         value = {"name": name, "text": text, "category": category, "input_types": input_types, "required": required, "type": type, "file_types": file_types, "show_info": show_info}
