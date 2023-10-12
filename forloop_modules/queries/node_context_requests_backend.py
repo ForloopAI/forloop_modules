@@ -535,11 +535,12 @@ def get_last_active_dataframe_node_uid():
 #     return response
 
 
-
 def get_variable_by_name(variable_name: str):
-    url = f'{BASE_API}/variables?name={variable_name}'
+    pipeline_uid = aet.active_pipeline_uid
+    url = f'{BASE_API}/variables?name={variable_name}&pipeline_uid={pipeline_uid}'
 
     response = requests.get(url)
+    response.raise_for_status()
     flog.info(f'GET Variable by name response: {response.text}')
 
     return response
