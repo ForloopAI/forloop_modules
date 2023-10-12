@@ -1,5 +1,6 @@
 
 import requests
+from typing import Optional
 
 from pathlib import Path
 import sys
@@ -82,7 +83,12 @@ class ActiveEntityTracker:
         self.project_uid = json.loads(project_response.content.decode('utf-8'))["uid"]
         pipeline_response = initialize_last_or_new_pipeline(self.project_uid)
         self.active_pipeline_uid= json.loads(pipeline_response.content.decode('utf-8'))["uid"]
-    
-    
-  
+
+    def set_project_and_pipeline_uid(
+        self, project_uid: Optional[str] = None, pipeline_uid: Optional[str] = None
+    ) -> None:
+        self.project_uid = project_uid if project_uid is not None else self.project_uid
+        self.active_pipeline_uid = pipeline_uid if pipeline_uid is not None else self.active_pipeline_uid
+
+
 aet=ActiveEntityTracker()
