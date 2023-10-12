@@ -95,7 +95,14 @@ class LocalVariableHandler:
         #serialization for objects
         if variable.typ in REDIS_STORED_TYPES_AS_STRINGS:
             value = kv_redis.get(variable.name)
-            variable = LocalVariable(variable.name, value)
+            value.attrs["name"] = variable.name
+
+            response = ncrb.get_variable_by_name(variable.name)
+            result = json.loads(response.content)
+            uid = result["uid"]
+            is_result = result["is_result"]
+            
+            variable = LocalVariable(uid, variable.name, value, is_result)
             return(variable)
         else:
             return(variable)
@@ -125,13 +132,27 @@ class LocalVariableHandler:
     
     def create_file(self, file: File, project_uid=None):
         # TODO is temporary until workflow for files is introduced
-        variable = LocalVariable(file.file_name, file)
+
+        # TODO: NEVER USED, NOT TESTED (NCRB + LOCAL VARIABLE CALL WITH 4 PARAMETERS INSTEAD OF 2)
+        response = ncrb.get_variable_by_name(file.file_name)
+        result = json.loads(response.content)
+        uid = result["uid"]
+        is_result = result["is_result"]
+
+        variable = LocalVariable(uid, file.file_name, file, is_result)
 
         ncrb.new_file(file.file_name)
         ncrb.upload_urls_from_file(file.path)
 
         return(variable)
-     
+    def process_dataframe_variable_on_initialization(self, name, value):
+        self.dataframe_scan_analyses_records[name] = DataFrameWizardScanAnalysis()
+        value = value.rename(columns=self.get_int_to_str_col_name_mapping(value))
+        # self.dataframe_column_category_predictions[name] = classify_df_column_categories(value)
+        value.attrs["name"] = name
+
+        return value
+
         
     def new_variable(self, name, value, additional_params: dict = None, project_uid=None):
         if additional_params is None:
@@ -140,12 +161,9 @@ class LocalVariableHandler:
         if project_uid is None:
             project_uid=aet.project_uid
         name = self._set_up_unique_varname(name)
-        
+
         if isinstance(value, pd.DataFrame):
-            self.dataframe_scan_analyses_records[name] = DataFrameWizardScanAnalysis()
-            value = value.rename(columns=self.get_int_to_str_col_name_mapping(value))
-            # self.dataframe_column_category_predictions[name] = classify_df_column_categories(value)
-            value.attrs["name"] = name
+            value = self.process_dataframe_variable_on_initialization(name, value)
         
         if name in self.variables.keys():
             variable = self.update_variable(name, value, additional_params)
@@ -198,6 +216,10 @@ class LocalVariableHandler:
             value=ast.literal_eval(str(value))
         elif type in REDIS_STORED_TYPES_AS_STRINGS:
             value = kv_redis.get(name)
+
+            if isinstance(value, pd.DataFrame):
+                value = self.process_dataframe_variable_on_initialization(name, value)
+
         variable=LocalVariable(uid, name, value, is_result) #Create new 
         self.variables[name]=variable
         return(variable)
