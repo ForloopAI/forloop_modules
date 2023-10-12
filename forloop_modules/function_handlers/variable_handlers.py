@@ -10,6 +10,7 @@ import forloop_modules.queries.node_context_requests_backend as ncrb
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
+from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.globals.variable_handler import variable_handler, LocalVariable
 
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
@@ -26,11 +27,22 @@ from forloop_modules.errors.errors import CriticalPipelineError
 
 
 class NewVariableHandler(AbstractFunctionHandler):
+    """
+    Add New Variable Node creates a new variable which gets stored in the variable explorer.
+    """
     def __init__(self):
         self.icon_type = 'NewVariable'
         self.fn_name = 'New Variable'
 
         self.type_category = ntcm.categories.variable
+        
+        parameter_description = "Add New Variable Node requires 2 parameters for a succesful creation of a new variable."
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add(title="Variable name", name="variable_name", 
+                      description="A name of the just defined variable under which will it be stored in the variable explorer.", 
+                      typ="string", example="new_test_var")
+        self.docs.add(title="Value", name="variable_value", description="Value of the new variable", 
+                      example="123.4 | [1,2,3,4] | {'name': 'John'} | 'Hello world'")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["int", "float", "str", "bool", "list", "dict"]
