@@ -1,16 +1,14 @@
 from typing import Optional
-from collections import UserList
+from collections import UserDict
 
-import forloop_modules.flog as flog
-
-class Docs(UserList):
+class Docs(UserDict):
     
     def __init__(self, description: Optional[str] = None, parameters_description: Optional[str] = None):
         super().__init__()
         self.description = description
         self.parameters_description = parameters_description
         
-    def add(self, title: str, name: str, description: str, typ: Optional[str] = None, example: Optional[str] = None):
+    def add(self, name: str, title: str, description: str, typ: Optional[str] = None, example: Optional[str] = None):
         if typ is None:
             typ = "Any"
             
@@ -19,11 +17,10 @@ class Docs(UserList):
             
         parameter_table_row = {
             "title": title,
-            "name": name,
             "description": description,
             "type": typ,
             "example": example
         }
         
-        self.append(parameter_table_row)
+        self[name] = parameter_table_row
     
