@@ -60,8 +60,7 @@ class FormDictList(UserList):
         value = text
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def entry(self, name, text, category=None, input_types=None, required=None, is_password=False, show_info=None, row=None):
-
+    def entry(self, name, text, category=None, input_types=None, required=None, type='text', file_types=None, show_info=None, row=None):
         """
         Entry is a text element with a name and a text
         args:
@@ -70,10 +69,14 @@ class FormDictList(UserList):
             category (str): category of the element
             input_types (str): input types of the element
             required (bool): required to fill in on frontend
+            type (str): One of 'text', 'file', 'password' - changes entry behaviour
             row (int): row number of the element - specified only if it's not first element on the same row
         """
+        if file_types is None:
+            file_types = [("all files", "*")]
+
         key = "Entry"
-        value = {"name": name, "text": text, "category": category, "input_types": input_types, "required": required, "is_password": is_password, "show_info": show_info}
+        value = {"name": name, "text": text, "category": category, "input_types": input_types, "required": required, "type": type, "file_types": file_types, "show_info": show_info}
 
         if required:
             if "Label" in self[-1].keys():
