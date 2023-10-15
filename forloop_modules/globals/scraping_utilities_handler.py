@@ -339,7 +339,7 @@ class ScrapingUtilitiesHandler:
         text_options = ('Accept all', 'Accept All', 'Accept', 'Accept cookies', 'Accept Cookies', 'Accept all cookies',
                         'Allow all', 'Allow All', 'Allow', 'Allow cookies', 'Allow Cookies',
                         'Agree', 'I agree', 'I Agree',
-                        'Consent', 'consent', 'Přijmout vše', 'Souhlasím')
+                        'Consent', 'consent', 'Přijmout vše', 'Souhlasím', 'Prijať všetko')
     
         attributes_value_combinations = list(product(attributes, values))
     

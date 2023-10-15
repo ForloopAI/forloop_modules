@@ -66,8 +66,10 @@ class NewVariableHandler(AbstractFunctionHandler):
             try:
                 variable_value=ast.literal_eval(variable_value) #works for integers, floats, ...
             except Exception: #Handling of this error ValueError: malformed node or string: <ast.Name object at 0x0000018DF791CC70> 22:12:53 NewVariableHandler: Error executing NewVariableHandler: malformed node or string: <ast.Name object at 0x0000018DF791CC70> 
+                if "'" in variable_value:
+                    variable_value=variable_value.replace("'",'"') #scraped text can contain apostrophe ' symbol - for example on news websites
                 variable_value=ast.literal_eval("'"+variable_value+"'")
-        print("VARIABLE_VALUE",variable_value,type(variable_value))
+        #print("VARIABLE_VALUE",variable_value,type(variable_value))
         inp.assign("variable_value", variable_value)
         
         try:
@@ -155,8 +157,8 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
             inp.assign("variable_type", variable_type)
 
             try:
-                # new_value = self.input_execute(inp)
-                new_value = self.direct_execute_core(variable_name, variable_type)
+                new_value = self.input_execute(inp)
+                #new_value = self.direct_execute_core(variable_name, variable_type) #bug - how can you assign name of variable to value?!
             except TypeError as e:
                 flog.error("TypeError Exception Raised, undefined conversion called.")
                 new_value = ""
@@ -178,12 +180,15 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
     def input_execute(self, inp):
         if type(inp("variable_value")) == dict and inp("variable_type") == list:
             converted_value = list(list(pair) for pair in inp("variable_value").items())
+        elif type(inp("variable_value")) == str and inp("variable_type") == dict:
+            converted_value = ast.literal_eval(inp("variable_value"))
+        
         else:
             converted_value = inp("variable_type")(inp("variable_value"))
 
         return converted_value
     
-    #! Introduced for an experimental codeview approach -- functionality is the same
+    #! Introduced for an experimental codeview approach -- functionality is the same, # No it is not the same functionality
     def direct_execute_core(self, variable_name, variable_type):
         new_variable_name = variable_type(variable_name)
         
@@ -601,7 +606,7 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
         try:
             list_operation_result, updated_list = self.input_execute(inp)
         except Exception as e:
-            raise CriticalPipelineError("ListModifyVariable handler failed to execute") from e
+            raise CriticalPipelineError("ListModifyVariable handler failed to execute: "+str(e)) from e
 
         # 'updated_list' is always to be saved under 'variable_name' 
         if updated_list != variable.value:

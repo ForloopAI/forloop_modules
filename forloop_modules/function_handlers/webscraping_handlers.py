@@ -23,6 +23,8 @@ from forloop_modules.globals.scraping_utilities_handler import suh
 
 from forloop_modules.redis.redis_connection import kv_redis
 
+import pandas as pd
+from src.gui.gui_layout_context import glc
 ####################### SCRAPING HANDLERS ################################
 
 
@@ -69,9 +71,100 @@ class OpenBrowserHandler:
         in_browser = node_detail_form.get_chosen_value_by_name("in_browser", variable_handler)
         driver = node_detail_form.get_chosen_value_by_name("driver", variable_handler)
         
-        code = f"""
+        code = """
         # Initialize the {driver} WebDriver
-        driver = webdriver.{driver}()
+                
+        class Spider(scrapy.spiders.CrawlSpider):
+            name = "forloop"
+        
+            custom_settings = {
+                'LOG_LEVEL': 'ERROR',
+                'USER_AGENT': "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.93 Safari/537.36",
+                'DEFAULT_REQUEST_HEADERS': {
+                    'Referer': 'https://forloop.ai'
+                }
+                #   'CONCURRENT_REQUESTS' : '20',
+            }
+        
+            def __init__(self, *a, **kw):
+                self.docrawl_client = kw['docrawl_client']
+        
+                self.kv_redis_key_screenshot = self.docrawl_client.kv_redis_keys.get('screenshot', 'screenshot')
+                self.kv_redis_key_elements = self.docrawl_client.kv_redis_keys.get('elements', 'elements')
+        
+                self.browser = self._initialise_browser()
+                browser_meta_data = self.docrawl_client.get_browser_meta_data()
+                browser_meta_data['browser']['pid'] = self._determine_browser_pid()
+        
+                self.docrawl_client.set_browser_meta_data(browser_meta_data)
+        
+                self.start_requests()
+        
+            def _initialise_browser(self):
+                browser_meta_data = self.docrawl_client.get_browser_meta_data()
+        
+                docrawl_logger.info(f'Browser settings: {browser_meta_data}')
+        
+                try:
+                    self.driver_type = browser_meta_data['browser']['driver']
+                except Exception as e:
+                    docrawl_logger.error(f'Error while loading driver type information: {e}')
+                    self.driver_type = 'Firefox'
+        
+                try:
+                    self.headless = browser_meta_data['browser']['headless']
+                except Exception as e:
+                    docrawl_logger.error(f'Error while loading headless mode information: {e}')
+                    self.headless = False
+        
+                try:
+                    proxy_info = browser_meta_data['browser']['proxy']
+                except Exception as e:
+                    docrawl_logger.warning(f'Error while loading proxy information: {e}')
+                    proxy_info = None
+        
+                if self.driver_type == 'Firefox':
+                    self.options = FirefoxOptions()
+                    self.options.set_preference("marionette", True)
+        
+                    sw_options = self._set_proxy(proxy_info)
+        
+                    if self.headless:
+                        self.options.add_argument("--headless")
+        
+                        # For headless mode different width of window is needed
+                        window_size_x = 1450
+        
+                    try:
+                        self.browser = webdriver.Firefox(options=self.options, service=Service(GeckoDriverManager().install()), seleniumwire_options=sw_options)
+                    except Exception as e:
+                        docrawl_logger.error(f'Error while creating Firefox instance {e}')
+                        self.browser = webdriver.Firefox(options=self.options)
+        
+                elif self.driver_type == 'Chrome':
+                    self.options = ChromeOptions()
+        
+                    sw_options = self._set_proxy(proxy_info)
+        
+                    if self.headless:
+                        self.options.add_argument("--headless")
+        
+                        # For headless mode different width of window is needed
+                        window_size_x = 1450
+        
+                    try:
+                        self.browser = webdriver.Chrome(options=self.options, service=Service(ChromeDriverManager().install()), seleniumwire_options=sw_options)
+                    except Exception as e:
+                        docrawl_logger.error(f'Error while creating Chrome instance {e}')
+                        self.browser = webdriver.Chrome(options=self.options)
+        
+                window_size_x = 1820
+        
+                self.browser.set_window_size(window_size_x, 980)
+        
+                return self.browser
+
+        
         """
         
         return code
@@ -170,6 +263,53 @@ class LoadWebsiteHandler:
         code = f"""
         # Navigate to a website in the current window
         driver.get("{url}") # a "driver" is a selenium.webdriver object initialized by OpenBrowser node --> rename according to your taste
+        """
+
+        return code
+
+    def export_imports(self, *args):
+        imports = ["from selenium import webdriver"]
+
+        return imports
+
+
+
+class DismissCookiesHandler:
+    def __init__(self):
+        self.icon_type = "DismissCookies"
+        self.fn_name = "Dismiss Cookies"
+
+        self.type_category = ntcm.categories.webscraping
+
+    def make_form_dict_list(self, *args, node_detail_form=None):
+        fdl = FormDictList()
+        fdl.label(self.fn_name)
+        fdl.label("This node automatically detects cookies")
+        fdl.label("It might not work on all websites")
+        fdl.label("See our documentation for more information")
+        
+        return fdl
+
+    def execute(self, node_detail_form):
+        
+        self.direct_execute()
+
+    def execute_with_params(self, params):
+        
+        self.direct_execute()
+
+    def direct_execute(self):
+        
+        
+        suh.detect_cookies_popup()
+
+    
+
+    def export_code(self, node_detail_form):
+        url = node_detail_form.get_chosen_value_by_name("url", variable_handler)
+        
+        code = f"""
+        # Export code is not yet available for DismissCookies node.
         """
 
         return code
@@ -936,64 +1076,64 @@ class ExtractXPathHandler:
             ##variable_handler.update_data_in_variable_explorer(glc)
 
 
-            # TODO Ilya: Better separation of frontend and backend - teporarily disabled
-            # if save_to == 'DataFrame':
-            #     if isinstance(data, list):
-            #         if list_as_str:
-            #             new_data = ', '.join(data)
-            #         else:
-            #             new_data = data
-            #     else:
-            #         new_data = str(data)
+            #TODO Ilya: Better separation of frontend and backend - teporarily disabled
+            if save_to == 'DataFrame':
+                if isinstance(data, list):
+                    if list_as_str:
+                        new_data = ', '.join(data)
+                    else:
+                        new_data = data
+                else:
+                    new_data = str(data)
 
-            #     old_df = glc.tables.elements[0].df
+                old_df = glc.tables.elements[0].df
+                #old_df = None
+                if old_df is None:
+                    if isinstance(new_data, list):
+                        new_df = pd.DataFrame({column: new_data})
+                    else:
+                        new_df = pd.DataFrame([{column: new_data}])
+                else:
+                    if column in old_df.columns:
+                        # Get position of column
+                        pos = list(old_df.columns).index(column)
 
-            #     if old_df is None:
-            #         if isinstance(new_data, list):
-            #             new_df = pd.DataFrame({column: new_data})
-            #         else:
-            #             new_df = pd.DataFrame([{column: new_data}])
-            #     else:
-            #         if column in old_df.columns:
-            #             # Get position of column
-            #             pos = list(old_df.columns).index(column)
+                        if pos == 0:
+                            if isinstance(new_data, list):
+                                new_df = pd.concat([old_df, pd.DataFrame({column: new_data})])
+                                """
+                                                                for i, elem in enumerate(new_data):
+                                    flog.error('INSERTING ELEMENT')
+                                    old_df = glc.tables.elements[0].df
+                                    part_df = pd.DataFrame([{column: elem}])
+                                    flog.error(str(part_df.shape))
+                                    new_df = pd.concat([old_df, part_df])
 
-            #             if pos == 0:
-            #                 if isinstance(new_data, list):
-            #                     new_df = pd.concat([old_df, pd.DataFrame({column: new_data})])
-            #                     """
-            #                                                     for i, elem in enumerate(new_data):
-            #                         flog.error('INSERTING ELEMENT')
-            #                         old_df = glc.tables.elements[0].df
-            #                         part_df = pd.DataFrame([{column: elem}])
-            #                         flog.error(str(part_df.shape))
-            #                         new_df = pd.concat([old_df, part_df])
+                                    glc.populate_table_with_df(new_df, 0)
+                                    time.sleep(0.2)
+                                """
 
-            #                         glc.populate_table_with_df(new_df, 0)
-            #                         time.sleep(0.2)
-            #                     """
+                            else:
+                                new_df = pd.concat([old_df, pd.DataFrame({column: [new_data]})])
 
-            #                 else:
-            #                     new_df = pd.concat([old_df, pd.DataFrame({column: [new_data]})])
+                        # Value first be nan, when replaced with actual data
+                        else:
+                            new_df = old_df.copy()
 
-            #             # Value first be nan, when replaced with actual data
-            #             else:
-            #                 new_df = old_df.copy()
+                            if isinstance(new_data, list):
+                                pass
+                            else:
+                                new_df.iloc[-1, pos] = new_data
 
-            #                 if isinstance(new_data, list):
-            #                     pass
-            #                 else:
-            #                     new_df.iloc[-1, pos] = new_data
+                    else:
+                        if isinstance(new_data, list):
+                            new_df = pd.concat([old_df, pd.DataFrame({column: new_data})], axis=1)
+                        else:
+                            new_df = pd.concat([old_df, pd.DataFrame({column: [new_data]})], axis=1)
 
-            #         else:
-            #             if isinstance(new_data, list):
-            #                 new_df = pd.concat([old_df, pd.DataFrame({column: new_data})], axis=1)
-            #             else:
-            #                 new_df = pd.concat([old_df, pd.DataFrame({column: [new_data]})], axis=1)
-
-            #     glc.populate_table_with_df(new_df, 0)
-            #     variable_handler.new_variable("scraped_df", new_df)
-            #     #variable_handler.update_data_in_variable_explorer(glc)
+                glc.populate_table_with_df(new_df, 0)
+                variable_handler.new_variable("scraped_df", new_df)
+                #variable_handler.update_data_in_variable_explorer(glc)
 
 
     def export_code(self, node_detail_form):
@@ -1679,6 +1819,7 @@ webscraping_handlers_dict = {
     "RefreshPageSource": RefreshPageSourceHandler(),
     "ScrapeSendKeys": ScrapeSendKeysHandler(),
     "LoadWebsite": LoadWebsiteHandler(),
+    "DismissCookies": DismissCookiesHandler(),
     "ClickXPath": ClickXPathHandler(),
     "ClickName": ClickNameHandler(),
     "ClickId": ClickIdHandler(),
