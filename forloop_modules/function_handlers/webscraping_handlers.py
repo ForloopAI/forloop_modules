@@ -377,7 +377,7 @@ class NextPageHandler:
             )
             page_count = int(page_count_string)
             new_url = f"{url_prefix}{page_count + 1}{url_suffix}"
-        except Exception as e: #(AttributeError, ValueError, TypeError, IndexError) as e:
+        except Exception as e:
             raise CriticalPipelineError("NextPage handler failed to execute") from e
 
         variable_handler.new_variable(page_varname, new_url)
