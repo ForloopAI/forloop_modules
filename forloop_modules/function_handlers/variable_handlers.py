@@ -47,7 +47,7 @@ class NewVariableHandler(AbstractFunctionHandler):
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["int", "float", "str", "bool", "list", "dict"]
 
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
         fdl.label("Add New Variable")
         fdl.label("Variable name")
         fdl.entry(name="variable_name", text="", category="new_var", input_types=["str"], show_info=True, row=1)
