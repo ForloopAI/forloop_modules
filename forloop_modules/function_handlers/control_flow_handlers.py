@@ -6,24 +6,29 @@ import forloop_modules.flog as flog
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
+from forloop_modules.function_handlers.auxilliary.docs import Docs
 
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 
 
 class StartHandler(AbstractFunctionHandler):
-    icon_type = "Start"
-    fn_name = "Start"
-
-    type_category = ntcm.categories.control_flow
+    """
+    Marks the starting point of a pipeline, i.e. it should be the first node in the pipeline.
+    """
+    
+    def __init__(self):
+        self.icon_type = "Start"
+        self.fn_name = "Start"
+        self.type_category = ntcm.categories.control_flow
+        self.docs = Docs(description=self.__doc__)
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         
-        fdl=FormDictList()
+        fdl=FormDictList(docs=self.docs)
         fdl.label(self.fn_name)
         return fdl
 
     def direct_execute(self):
-        # def __new__(cls, *args, **kwargs):
         """Do nothing"""
         pass
 
@@ -39,14 +44,19 @@ class StartHandler(AbstractFunctionHandler):
 
 
 class FinishHandler(AbstractFunctionHandler):
-    icon_type = "Finish"
-    fn_name = "Finish"
+    """
+    Marks the ending of a pipeline, i.e. it should be the last node in the pipeline.
+    """
+    def __init__(self):
+        self.icon_type = "Finish"
+        self.fn_name = "Finish"
+        self.type_category = ntcm.categories.control_flow
 
-    type_category = ntcm.categories.control_flow
+        self.docs = Docs(description=self.__doc__)
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         
-        fdl=FormDictList()
+        fdl=FormDictList(docs=self.docs)
         fdl.label(self.fn_name)
         return fdl
         
@@ -67,13 +77,29 @@ class FinishHandler(AbstractFunctionHandler):
 
 
 class WaitHandler(AbstractFunctionHandler):
-    icon_type = "Wait"
-    fn_name = "Wait"
+    """
+    Wait Node creates a pauses between pipeline steps. It waits (and does nothing, obviously) for 
+    a specified amount of ms and then lets the next step in a pipeline to proceed.
+    """
+    
+    def __init__(self):
+        self.icon_type = "Wait"
+        self.fn_name = "Wait"
 
-    type_category = ntcm.categories.control_flow
+        self.type_category = ntcm.categories.control_flow
+
+        parameter_description = "Two parameters are required:"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add(title="Miliseconds", name="milliseconds", 
+                      description="Waiting time interval in miliseconds.", 
+                      typ="int | float", example="1000 → 1000 ms (1 s) waiting time before another step")
+        self.docs.add(title="Add random ms", name="rand_ms", 
+                      description="Adds a random real picked from a uniform distribution defined on the interval (- entered value, + entered value).",
+                      typ="int | float"
+                      )
 
     def make_form_dict_list(self, *args, node_detail_form=None):
-        fdl=FormDictList()
+        fdl=FormDictList(docs=self.docs)
         fdl.label(self.fn_name)
         fdl.label("Milliseconds:")
         fdl.entry(name="milliseconds",text="1000",row=1, input_types=["int", "float"], show_info=True, required=True)
@@ -139,26 +165,47 @@ class RunPipelineHandler(AbstractFunctionHandler):
 
 
 class IfConditionHandler(AbstractFunctionHandler):
-    icon_type = 'IfCondition'
-    fn_name = 'If Condition'
-    type_category = ntcm.categories.control_flow
+    """
+    Toggles one of the two channels depending on whether a condition defined by the user holds true or not.
+    """
+    
+    def __init__(self):
+        self.icon_type = 'IfCondition'
+        self.fn_name = 'If Condition'
+        self.type_category = ntcm.categories.control_flow
 
-    operators = {
-        '==': operator.eq,
-        '!=': operator.ne,
-        '>=': operator.ge,
-        '<=': operator.le,
-        '>': operator.gt,
-        '<': operator.lt,
-        'and': operator.and_,
-        'or': operator.or_,
-        'contains': operator.contains,
-        'isempty': None,
-    }
+        self.operators = {
+            '==': operator.eq,
+            '!=': operator.ne,
+            '>=': operator.ge,
+            '<=': operator.le,
+            '>': operator.gt,
+            '<': operator.lt,
+            'and': operator.and_,
+            'or': operator.or_,
+            'contains': operator.contains,
+            'isempty': None,
+        }
+        
+        parameter_description = """
+        If Condition Node requires 3 parameters. Together they form a condition, e.g. column_name == ‘city’ which can 
+        be True or False. The Toggle button then switches the active channel, i.e. the user can choose if the “True 
+        branch” will run or the “False branch”.
+        """
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add(title="Value 1", name="value_p", 
+                      description="The first value used in the condition."
+                      , example="100 | True")
+        self.docs.add(title="Operator", name="operator", 
+                      description="The operator used used in the condition."
+                      )
+        self.docs.add(title="Value 2", name="value_q", 
+                      description="The second value used in the condition.", example="27 | ['a', 'b', 'c'] | {'name':'Sarah'}"
+                      )
 
     def make_form_dict_list(self, *args, node_detail_form=None):
     
-        fdl=FormDictList()
+        fdl=FormDictList(docs=self.docs)
         fdl.label(self.fn_name)
         
         fdl.label("Value 1")
