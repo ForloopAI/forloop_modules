@@ -1,7 +1,9 @@
 from collections import UserList
+from typing import Optional
 
 import forloop_modules.flog as flog
 
+from forloop_modules.function_handlers.auxilliary.docs import Docs
 
 class FormDictList(UserList):
     """
@@ -27,9 +29,9 @@ class FormDictList(UserList):
     fdl.label(str(glc.motion_mouse_pos))
     """
     
-    def __init__(self, initlist=None):
+    def __init__(self, initlist=None, docs: Optional[Docs] = None):
         super().__init__(initlist)
-        #self._form_dict_list=self
+        self.docs = docs
     
     @property
     def form_dict_list(self):

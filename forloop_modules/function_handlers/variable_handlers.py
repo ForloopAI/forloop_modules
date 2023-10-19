@@ -10,6 +10,7 @@ import forloop_modules.queries.node_context_requests_backend as ncrb
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
+from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.globals.variable_handler import variable_handler, LocalVariable
 
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
@@ -26,16 +27,27 @@ from forloop_modules.errors.errors import CriticalPipelineError
 
 
 class NewVariableHandler(AbstractFunctionHandler):
+    """
+    Add New Variable Node creates a new variable which gets stored in the variable explorer.
+    """
     def __init__(self):
         self.icon_type = 'NewVariable'
         self.fn_name = 'New Variable'
 
         self.type_category = ntcm.categories.variable
+        
+        parameter_description = "Add New Variable Node requires 2 parameters for a succesful creation of a new variable."
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add(title="Variable name", name="variable_name", 
+                      description="A name of the just defined variable under which will it be stored in the variable explorer.", 
+                      typ="string", example="new_test_var")
+        self.docs.add(title="Value", name="variable_value", description="Value of the new variable", 
+                      example="123.4 | [1,2,3,4] | {'name': 'John'} | 'Hello world'")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["int", "float", "str", "bool", "list", "dict"]
 
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
         fdl.label("Add New Variable")
         fdl.label("Variable name")
         fdl.entry(name="variable_name", text="", category="new_var", input_types=["str"], show_info=True, row=1)
@@ -116,17 +128,32 @@ class NewVariableHandler(AbstractFunctionHandler):
 
 
 class ConvertVariableTypeHandler(AbstractFunctionHandler):
+    """
+    Convert Variable Type Node converts the type of the selected variable to a different type if such conversion makes sense.
+    """
     def __init__(self):
         self.icon_type = 'ConvertVariableType'
         self.fn_name = 'Convert Variable Type'
 
         self.type_category = ntcm.categories.variable
+        
+        parameter_description = "Convert Variable Type Node requires 2 parameters for a succesful conversion of the variable type."
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add(title="Variable name", name="variable_name", 
+                      description="A name of the variable present in the variable explorer whose type is to be changed.", 
+                      typ="string", example="test_float")
+        self.docs.add(title="Convert to type", name="variable_type", 
+                      description="A new type of the selected variable after the conversion. It can be selected as one of the options of the combobox."
+                      )
+        self.docs.add(title="New variable name", name="new_variable_name", 
+                      description="Name of the new variable containing the converted value. If left blank the initial variable will get overwritten.", 
+                      typ="string", example="float_to_str")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
         options = ["int", "float", "str", "bool", "list", "dict"]
 
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
         fdl.label(self.fn_name)
         fdl.label("Variable name")
         fdl.entry(name="variable_name", text="", input_types=["str", "var_name"], required=True, show_info=True, row=1)
@@ -225,6 +252,9 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
 
 
 class MathModifyVariableHandler(AbstractFunctionHandler):
+    """
+    Math Modify Variable Node serves to perform a mathematical operations on variables in the variable explorer.
+    """
     def __init__(self):
         self.icon_type = 'MathModifyVariable'
         self.fn_name = 'Math Modify Variable'
@@ -241,12 +271,33 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
             "round": lambda x, y: round(x, ndigits=y),
             "floor": lambda x, y: math.floor(x)
         }
+        
+        parameter_description = """
+        Math Modify Variable Node requires 3-4 parameters to succesfully perform a mathematical operation on a variable. 
+        The last parameter, New variable name, is optional in a sense that if left blank the value of the chosen 
+        variable will be rewritten adequately to the performed operation. However if a new name is inserted a new 
+        variable bearing the new name with the value of the old one corrected by the mathematical operation will be 
+        created while preserving the old variable.
+        """
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add(title="Variable name", name="variable_name", 
+                      description="A name of the variable present in the variable explorer which would be used for the operation.", 
+                      typ="string", example="math_var")
+        self.docs.add(title="Math operation", name="math_operation", 
+                      description="A math operation to be perfomed on the selected variable. It can be selected as one of the options of the combobox.", 
+                      )
+        self.docs.add(title="Argument", name="argument", 
+                      description="An argument of the selected mathematical operation, i.e. in case of e.g. division the argument is divisor.", 
+                      typ="string", example="123 | 19.98")
+        self.docs.add(title="New variable name", name="new_variable_name", 
+                      description="Name of the new variable whose value will be equal to the old value modifed by the selected operation. If left blank the initial variable will get overwritten.", 
+                      typ="string", example="sum_a_and_b")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
         options = ["+", "-", "*", "/", "^ (power)", "% (mod)", "round", "floor"]
 
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
         fdl.label(self.fn_name)
         fdl.label("Variable name")
         fdl.entry(name="variable_name", text="", input_types=["str", "var_name"], required=True, show_info=True, row=1)
@@ -364,15 +415,43 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
         return (imports)
 
 class StringModifyVariableHandler(AbstractFunctionHandler):
+    """
+    String Modify Variable Node serves to perform a various operations on variables of the string type.
+    """
     def __init__(self):
         self.icon_type = 'StringModifyVariable'
         self.fn_name = 'String Modify Variable'
 
         self.type_category = ntcm.categories.variable
         self.operation_options = ["Concatenate", "Split", "Replace", "Strip", "Lower", "Upper"]
+        
+        parameter_description = """
+        String Modify Variable Node requires 3-5 parameters to succesfully perform a string operation on a variable. 
+        Argument 2 is in some cases optional, e.g. split(argument1) does not need a second argument. The last parameter, 
+        New variable name, is optional in a sense that if left blank the value of the chosen variable will be rewritten 
+        adequately to the performed operation. However if a new name is inserted a new variable bearing the new name 
+        with the value of the old one modified by the selected operation will be created while preserving the old 
+        variable.
+        """
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add(title="Variable name", name="variable_name", 
+                      description="A name of the variable present in the variable explorer which would be used for the operation.", 
+                      typ="string", example="str_var")
+        self.docs.add(title="String operation", name="string_operation", 
+                      description="A string operation to be perfomed on the selected variable. It can be selected as one of the options of the combobox.", 
+                      )
+        self.docs.add(title="Argument", name="argument", 
+                      description="The first argument of the selected string operation.", 
+                      typ="string", example="'Hello world!'")
+        self.docs.add(title="Argument 2", name="argument2", 
+                      description="The second argument of the selected mathematical operation.", 
+                      typ="string", example="'Some other string here'")
+        self.docs.add(title="New variable name", name="new_variable_name", 
+                      description="Name of the new variable whose value will be equal to the old value modifed by the selected operation. If left blank the initial variable will get overwritten.", 
+                      typ="string", example="str_operation_result")
 
     def make_form_dict_list(self, *args, node_detail_form=None):        
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
         fdl.label(self.fn_name)
         fdl.label("Variable name")
         fdl.entry(name="variable_name", text="", input_types=["str", "var_name"], required=True, show_info=True, row=1)
@@ -526,6 +605,9 @@ class StringModifyVariableHandler(AbstractFunctionHandler):
 
 
 class ListModifyVariableHandler(AbstractFunctionHandler):
+    """
+    List Modify Variable Node serves to perform a various operations on lists.
+    """
     def __init__(self):
         self.icon_type = 'ListModifyVariable'
         self.fn_name = 'List Modify Variable'
@@ -545,11 +627,32 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
             "Filter Substrings": self._filter_substring_occurences,
             "Join Elements": self._join_elements_in_string,
         }
+        
+        parameter_description = """
+        List Modify Variable Node requires 3-4 parameters to succesfully perform an operation on a stored list. 
+        The last parameter, New variable name, is optional in a sense that if left blank the value of the chosen 
+        variable will be rewritten adequately to the performed operation. However if a new name is inserted a new 
+        variable bearing the new name with the value of the old one modified by the selected operation will be created 
+        while preserving the old variable.
+        """
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add(title="Variable name", name="variable_name", 
+                      description="A name of the variable (list) present in the variable explorer which would be used for the operation.", 
+                      typ="string", example="str_var")
+        self.docs.add(title="List operation", name="list_operation", 
+                      description="A list operation to be perfomed on the selected variable. It can be selected as one of the options of the combobox.", 
+                      )
+        self.docs.add(title="Argument", name="argument", 
+                      description="The first argument of the selected list operation.", 
+                      typ="string", example="'Hello world!'")
+        self.docs.add(title="New variable name", name="new_variable_name", 
+                      description="Name of the new variable whose value will be equal to the old value modifed by the selected operation. If left blank the initial variable will get overwritten.", 
+                      typ="string", example="str_operation_result")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = list(self.list_operations.keys())
 
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
         fdl.label(self.fn_name)
         fdl.label("Variable name")
         fdl.entry(
@@ -735,16 +838,43 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
 
 
 class DictionaryModifyVariableHandler(AbstractFunctionHandler):
+    """
+    Dictionary Modify Variable Node serves to perform a various operations on dictionaries.
+    """
     def __init__(self):
         self.icon_type = 'DictionaryModifyVariable'
         self.fn_name = 'Dictionary Modify Variable'
 
         self.type_category = ntcm.categories.variable
+        
+        parameter_description = """
+        Dictionary Modify Variable Node requires 2-4 parameters to succesfully perform an operation on a stored 
+        dictionary. Argument is required only for the Get value by key function. The last parameter, New variable name, 
+        is optional in a sense that if left blank the value of the chosen variable will be rewritten adequately to the 
+        performed operation. However if a new name is inserted a new variable bearing the new name with the value of 
+        the old one modified by the selected operation will be created while preserving the old variable.
+        """
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add(title="Variable name", name="variable_name", 
+                      description="A name of the variable (dictionary) present in the variable explorer which would be used for the operation.", 
+                      typ="string", example="dict_var")
+        self.docs.add(title="List operation", name="dictionary_operation", 
+                      description="A string operation to be perfomed on the selected variable. It can be selected as one of the options of the combobox.", 
+                      )
+        self.docs.add(title="Argument", name="argument", 
+                      description="A first argument of a given operation (can be left blank - get keys, get values).", 
+                      typ="Any", example="'name' | 'key_1'")
+        self.docs.add(title="Argument 2", name="argument2", 
+                      description="A second argument of agiven operation (can be left blank).", 
+                      typ="Any", example="'new value' | [1,2,3] | {'name': 'John'}")
+        self.docs.add(title="New variable name", name="new_variable_name", 
+                      description="Name of the new variable whose value will be equal to the old value modifed by the selected operation. If left blank the initial variable will get overwritten.", 
+                      typ="string", example="dict_operation_result")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["Get Value By Key", "Keys", "Values", "Join Dictionaries", "Delete Value by Key", "Invert Dictionary", "Add key"]
 
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
         fdl.label(self.fn_name)
         fdl.label("Variable name")
         fdl.entry(name="variable_name", text="", input_types=["str", "var_name"], required=True, row=1)
@@ -979,10 +1109,7 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
 
 class PrintVariableHandler:
     """
-    Handler for PrintVariable icon. This icon prints in console value of provided variable.
-        Input:
-            - entry variable: variable, value of which should be printed
-        Output: variable value in console
+    Takes a variable as an input and prints it into a console.
     """
 
     def __init__(self):
@@ -990,10 +1117,15 @@ class PrintVariableHandler:
         self.fn_name = "Print Variable"
 
         self.type_category = ntcm.categories.variable
+        
+        self.docs = Docs(description=self.__doc__)
+        self.docs.add(title="Variable name", name="variable_name", 
+                      description="A name of the variable to be printed.", 
+                      typ="string", example="my_awesome_var")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
         fdl.label(self.fn_name)
         fdl.label("Variable name")
         fdl.entry(name="variable_name", text="", input_types=["str", "var_name"], required=True, row=1)
