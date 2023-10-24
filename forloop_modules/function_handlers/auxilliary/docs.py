@@ -12,9 +12,6 @@ class Docs(UserDict):
         if typ is None:
             typ = "Any"
             
-        if example is None:
-            example = "Will be added soon..."
-            
         parameter_table_row = {
             "title": title,
             "description": description,
