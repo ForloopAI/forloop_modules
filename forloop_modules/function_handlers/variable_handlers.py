@@ -35,7 +35,9 @@ class NewVariableHandler(AbstractFunctionHandler):
         self.fn_name = 'New Variable'
 
         self.type_category = ntcm.categories.variable
+        self._init_docs()
         
+    def _init_docs(self):
         parameter_description = "Add New Variable Node requires 2 parameters for a succesful creation of a new variable."
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
         self.docs.add(title="Variable name", name="variable_name", 
@@ -136,7 +138,9 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
         self.fn_name = 'Convert Variable Type'
 
         self.type_category = ntcm.categories.variable
+        self._init_docs()
         
+    def _init_docs(self):
         parameter_description = "Convert Variable Type Node requires 2 parameters for a succesful conversion of the variable type."
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
         self.docs.add(title="Variable name", name="variable_name", 
@@ -272,6 +276,9 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
             "floor": lambda x, y: math.floor(x)
         }
         
+        self._init_docs()
+        
+    def _init_docs(self):
         parameter_description = """
         Math Modify Variable Node requires 3-4 parameters to succesfully perform a mathematical operation on a variable. 
         The last parameter, New variable name, is optional in a sense that if left blank the value of the chosen 
@@ -425,6 +432,9 @@ class StringModifyVariableHandler(AbstractFunctionHandler):
         self.type_category = ntcm.categories.variable
         self.operation_options = ["Concatenate", "Split", "Replace", "Strip", "Lower", "Upper"]
         
+        self._init_docs()
+        
+    def _init_docs(self):
         parameter_description = """
         String Modify Variable Node requires 3-5 parameters to succesfully perform a string operation on a variable. 
         Argument 2 is in some cases optional, e.g. split(argument1) does not need a second argument. The last parameter, 
@@ -628,6 +638,9 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
             "Join Elements": self._join_elements_in_string,
         }
         
+        self._init_docs()
+        
+    def _init_docs(self):
         parameter_description = """
         List Modify Variable Node requires 3-4 parameters to succesfully perform an operation on a stored list. 
         The last parameter, New variable name, is optional in a sense that if left blank the value of the chosen 
@@ -846,7 +859,9 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         self.fn_name = 'Dictionary Modify Variable'
 
         self.type_category = ntcm.categories.variable
+        self._init_docs()
         
+    def _init_docs(self):
         parameter_description = """
         Dictionary Modify Variable Node requires 2-4 parameters to succesfully perform an operation on a stored 
         dictionary. Argument is required only for the Get value by key function. The last parameter, New variable name, 
@@ -1117,7 +1132,9 @@ class PrintVariableHandler:
         self.fn_name = "Print Variable"
 
         self.type_category = ntcm.categories.variable
+        self._init_docs()
         
+    def _init_docs(self):
         self.docs = Docs(description=self.__doc__)
         self.docs.add(title="Variable name", name="variable_name", 
                       description="A name of the variable to be printed.", 

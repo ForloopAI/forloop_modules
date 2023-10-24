@@ -20,6 +20,9 @@ class StartHandler(AbstractFunctionHandler):
         self.icon_type = "Start"
         self.fn_name = "Start"
         self.type_category = ntcm.categories.control_flow
+        self._init_docs()
+        
+    def _init_docs(self):
         self.docs = Docs(description=self.__doc__)
 
     def make_form_dict_list(self, *args, node_detail_form=None):
@@ -52,6 +55,9 @@ class FinishHandler(AbstractFunctionHandler):
         self.fn_name = "Finish"
         self.type_category = ntcm.categories.control_flow
 
+        self._init_docs()
+
+    def _init_docs(self):
         self.docs = Docs(description=self.__doc__)
 
     def make_form_dict_list(self, *args, node_detail_form=None):
@@ -87,7 +93,9 @@ class WaitHandler(AbstractFunctionHandler):
         self.fn_name = "Wait"
 
         self.type_category = ntcm.categories.control_flow
+        self._init_docs()
 
+    def _init_docs(self):
         parameter_description = "Two parameters are required:"
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
         self.docs.add(title="Miliseconds", name="milliseconds", 
@@ -187,6 +195,9 @@ class IfConditionHandler(AbstractFunctionHandler):
             'isempty': None,
         }
         
+        self._init_docs()
+        
+    def _init_docs(self):
         parameter_description = """
         If Condition Node requires 3 parameters. Together they form a condition, e.g. column_name == ‘city’ which can 
         be True or False. The Toggle button then switches the active channel, i.e. the user can choose if the “True 
