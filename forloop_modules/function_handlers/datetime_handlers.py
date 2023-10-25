@@ -9,6 +9,7 @@ import forloop_modules.flog as flog
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
+from forloop_modules.globals.docs_categories import DocsCategories
 
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
 
@@ -33,6 +34,7 @@ class DatetimeNowHandler(AbstractFunctionHandler):
         self.fn_name = 'Datetime Now'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["datetime", "timestamp"]
@@ -121,6 +123,7 @@ class NewDatetimeHandler(AbstractFunctionHandler):
         self.fn_name = 'New Datetime'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         current_year = datetime.datetime.now().year
@@ -279,6 +282,7 @@ class DatetimeDifferenceHandler(AbstractFunctionHandler):
         self.fn_name = 'Datetime Difference'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["years", "months", "days", "hours", "minutes", "seconds", "microseconds"]
@@ -385,6 +389,7 @@ class DatetimeValueHandler(AbstractFunctionHandler):
         self.fn_name = 'Datetime Value'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["date", "time", "year", "month", "day", "hour", "minute", "second", "microsecond"]
@@ -502,6 +507,7 @@ class DatetimeToStringHandler(AbstractFunctionHandler):
         self.fn_name = 'Datetime To String'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["yyyy/mm/dd h:m:s", "dd.mm.yyyy h:m", "mm/dd/yy"]
@@ -605,6 +611,7 @@ class DatetimeFromStringHandler(AbstractFunctionHandler):
         self.fn_name = 'Datetime From String'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         
@@ -677,6 +684,7 @@ class DatetimeAddDeltaHandler(AbstractFunctionHandler):
         self.fn_name = 'Datetime Add Delta'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["years", "months", "weeks", "days", "hours", "minutes", "seconds", "microseconds"]
