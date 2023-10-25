@@ -9,6 +9,7 @@ import forloop_modules.queries.node_context_requests_backend as ncrb
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
+from forloop_modules.globals.docs_categories import DocsCategories
 
 from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
@@ -20,6 +21,7 @@ class DeleteFileHandler(AbstractFunctionHandler):
         self.fn_name = "Delete File"
 
         self.type_category = ntcm.categories.file_management
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -78,6 +80,7 @@ class CreateFolderHandler(AbstractFunctionHandler):
         self.fn_name = 'Create Folder'
 
         self.type_category = ntcm.categories.file_management
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -147,6 +150,7 @@ class MoveFileHandler(AbstractFunctionHandler):
         self.fn_name = 'Move File'
 
         self.type_category = ntcm.categories.file_management
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -223,6 +227,7 @@ class CreateFileQueueHandler(AbstractFunctionHandler):
         self.fn_name = 'Create File Queue'
 
         self.type_category = ntcm.categories.file_management
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -304,6 +309,7 @@ class ProcessItemInQueueHandler(AbstractFunctionHandler):
         self.fn_name = 'Process Item In Queue'
 
         self.type_category = ntcm.categories.file_management
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
