@@ -20,6 +20,7 @@ from forloop_modules.errors.errors import CriticalPipelineError
 from forloop_modules.function_handlers.variable_handlers import variable_handlers_dict
 from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.globals.scraping_utilities_handler import suh
+from forloop_modules.globals.docs_categories import DocsCategories
 
 from forloop_modules.redis.redis_connection import kv_redis
 
@@ -37,6 +38,7 @@ class OpenBrowserHandler:
         self.fn_name = "Open Browser"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
@@ -181,6 +183,7 @@ class LoadWebsiteHandler:
         self.fn_name = "Load Website"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
@@ -280,6 +283,7 @@ class DismissCookiesHandler:
         self.fn_name = "Dismiss Cookies"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
@@ -336,6 +340,7 @@ class NextPageHandler:
         self.fn_name = "Next Page"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -407,6 +412,7 @@ class ClickXPathHandler:
         self.fn_name = "Click XPath"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
@@ -461,6 +467,7 @@ class ClickNameHandler:
         self.fn_name = "Click Name"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
@@ -518,6 +525,7 @@ class ClickIdHandler:
         self.fn_name = "Click Id"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
@@ -582,6 +590,7 @@ class CloseBrowserHandler:
         self.fn_name = "Close browser after scraping"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
@@ -628,6 +637,7 @@ class GetCurrentURLHandler:
         self.fn_name = "Get current URL"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -767,6 +777,7 @@ class ScrollWebPageHandler:
         self.fn_name = "Scroll web page"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["Up", "Down"]
@@ -854,6 +865,7 @@ class ScanWebPageHandler:
         self.icon_type = "ScanWebPage"
         self.fn_name = "Scan web page"
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -1015,6 +1027,7 @@ class ExtractXPathHandler:
         self.fn_name = "Extract XPath"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["w+", "a+"]
@@ -1180,6 +1193,7 @@ class ExtractMultipleXPathHandler:
         self.fn_name = "Extract Multiple XPath"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -1262,6 +1276,7 @@ class ExtractTableXPathHandler:
         self.fn_name = "Extract Table XPath"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -1347,6 +1362,7 @@ class ExtractPageSourceHandler:
         self.fn_name = "Extract Page Source"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -1408,6 +1424,7 @@ class RefreshPageSourceHandler:
         self.fn_name = "Refresh Page Source"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
@@ -1453,6 +1470,7 @@ class DownloadImageHandler:
         self.fn_name = 'Download Image'
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
@@ -1543,6 +1561,7 @@ class DownloadImagesXPathHandler:
         self.fn_name = 'Download Images XPath'
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
@@ -1611,6 +1630,7 @@ class SetProxyHandler:
         self.fn_name = 'Set Proxy'
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
@@ -1732,6 +1752,7 @@ class ScrapeSendKeysHandler:
         self.fn_name = "Scrape Send Keys"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -1777,6 +1798,7 @@ class ClickHTMLTagHandler:
         self.fn_name = "Click HTML Tag Send Keys"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
