@@ -211,7 +211,7 @@ class UseKeyHandler(AbstractFunctionHandler):
         fdl.label("Use Key (or Combination of Keys)")
         fdl.label("Key 1")
         fdl.comboentry(name="key1", text="Enter (Return)", options=options1, row=1)
-        fdl.button(function=self.add_key, function_args=node_detail_form, text="Add key", enforce_required=False)
+        fdl.button(function=self.add_key, function_args=node_detail_form, text="Add key", enforce_required=False, name="add_key")
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
         
         # for template init (without node_detail_form
