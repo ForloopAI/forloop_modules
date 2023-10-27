@@ -31,12 +31,15 @@ from src.gui.gui_layout_context import glc
 # # # # # # # # # HANDLERS # # # # # # # # #
 
 
-class OpenBrowserHandler:
+
+class OpenBrowserHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "OpenBrowser"
         self.fn_name = "Open Browser"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -176,12 +179,14 @@ class OpenBrowserHandler:
         return imports
 
 
-class LoadWebsiteHandler:
+class LoadWebsiteHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "LoadWebsite"
         self.fn_name = "Load Website"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -275,13 +280,14 @@ class LoadWebsiteHandler:
         return imports
 
 
-
-class DismissCookiesHandler:
+class DismissCookiesHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "DismissCookies"
         self.fn_name = "Dismiss Cookies"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -319,7 +325,7 @@ class DismissCookiesHandler:
         return imports
 
 
-class NextPageHandler:
+class NextPageHandler(AbstractFunctionHandler):
     """
     Handler for NextPage icon. This icon is used to iterate through pages (performs pagination), using URL.
         Input:
@@ -335,6 +341,8 @@ class NextPageHandler:
         self.fn_name = "Next Page"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -382,7 +390,6 @@ class NextPageHandler:
         variable_handler.new_variable(page_varname, new_url)
         suh.webscraping_client.load_website(new_url)
 
-
     def export_code(self, node_detail_form):
         """TODO"""
 
@@ -400,12 +407,14 @@ class NextPageHandler:
         return imports
 
 
-class ClickXPathHandler:
+class ClickXPathHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "ClickXPath"
         self.fn_name = "Click XPath"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -455,12 +464,14 @@ class ClickXPathHandler:
         return imports
 
 
-class ClickNameHandler:
+class ClickNameHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "ClickName"
         self.fn_name = "Click Name"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -513,12 +524,14 @@ class ClickNameHandler:
         return imports
 
 
-class ClickIdHandler:
+class ClickIdHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "ClickId"
         self.fn_name = "Click Id"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -572,7 +585,7 @@ class ClickIdHandler:
         return imports
 
 
-class CloseBrowserHandler:
+class CloseBrowserHandler(AbstractFunctionHandler):
     """
     Handler for CloseBrowser icon. This icon closes browser (deletes driver instance).
         Input: None
@@ -584,6 +597,8 @@ class CloseBrowserHandler:
         self.fn_name = "Close browser after scraping"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -615,7 +630,7 @@ class CloseBrowserHandler:
         return imports
 
 
-class GetCurrentURLHandler:
+class GetCurrentURLHandler(AbstractFunctionHandler):
     """
     Handler for GetCurrentURL icon. This icon exports the URL of the current opened website.
         Input: name for variable, that would be created within platform
@@ -631,6 +646,8 @@ class GetCurrentURLHandler:
         self.fn_name = "Get current URL"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -686,7 +703,7 @@ class GetCurrentURLHandler:
         return imports
 
 
-class WaitUntilElementIsLocatedHandler:
+class WaitUntilElementIsLocatedHandler(AbstractFunctionHandler):
     """
     Handler for WaitUntilElementIsLocated. This icon waits until certain element appears and page and then clicks on it.
         Input: XPath of element to be located
@@ -696,6 +713,8 @@ class WaitUntilElementIsLocatedHandler:
     def __init__(self):
         self.icon_type = "WaitUntilElementIsLocated"
         self.fn_name = "Wait until element is located"
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -755,7 +774,7 @@ class WaitUntilElementIsLocatedHandler:
         return imports
 
 
-class ScrollWebPageHandler:
+class ScrollWebPageHandler(AbstractFunctionHandler):
     """
     Handler for ScrollWebPageHandler icon. This icon scrolls page up/down by n-pixels.
     Special option is "max" - scrolls page to the top or end of page
@@ -771,6 +790,8 @@ class ScrollWebPageHandler:
         self.fn_name = "Scroll web page"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         options = ["Up", "Down"]
@@ -838,7 +859,7 @@ class ScrollWebPageHandler:
         return imports
 
 
-class ScanWebPageHandler:
+class ScanWebPageHandler(AbstractFunctionHandler):
     """
     Handler for ScanWebPage icon. This icon finds tables and bullet lists on page, passes them
     to Browser View with coordinates on screenshot.
@@ -855,10 +876,11 @@ class ScanWebPageHandler:
     """
 
     def __init__(self):
-
         self.icon_type = "ScanWebPage"
         self.fn_name = "Scan web page"
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -907,10 +929,8 @@ class ScanWebPageHandler:
 
         self.direct_execute(incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images, incl_buttons, by_xpath)
 
-
     def direct_execute(self, incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images, incl_buttons, by_xpath, context_xpath=''):
         suh.scan_web_page(incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images, incl_buttons, by_xpath, context_xpath)
-
 
     def export_code(self, node_detail_form):
         incl_tables = node_detail_form.get_chosen_value_by_name("incl_tables", variable_handler)
@@ -1014,12 +1034,14 @@ class ScanWebPageHandler:
         return imports
 
 
-class ExtractXPathHandler:
+class ExtractXPathHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "ExtractXPath"
         self.fn_name = "Extract XPath"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         options = ["w+", "a+"]
@@ -1180,12 +1202,14 @@ class ExtractXPathHandler:
         return imports
 
 
-class ExtractMultipleXPathHandler:
+class ExtractMultipleXPathHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "ExtractMultipleXPath"
         self.fn_name = "Extract Multiple XPath"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -1262,12 +1286,14 @@ class ExtractMultipleXPathHandler:
         return imports
 
 
-class ExtractTableXPathHandler:
+class ExtractTableXPathHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "ExtractTableXPath"
         self.fn_name = "Extract Table XPath"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -1341,7 +1367,7 @@ class ExtractTableXPathHandler:
         return imports
 
 
-class ExtractPageSourceHandler:
+class ExtractPageSourceHandler(AbstractFunctionHandler):
     """
     Handler for ExtractPageSource icon. This icon exports the source of currently scraped page.
        Input: Name of variable to be created inside platform
@@ -1353,6 +1379,8 @@ class ExtractPageSourceHandler:
         self.fn_name = "Extract Page Source"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -1408,12 +1436,14 @@ class ExtractPageSourceHandler:
         return imports
 
 
-class RefreshPageSourceHandler:
+class RefreshPageSourceHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "RefreshPageSource"
         self.fn_name = "Refresh Page Source"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -1450,7 +1480,7 @@ class RefreshPageSourceHandler:
         return imports
 
 
-class DownloadImageHandler:
+class DownloadImageHandler(AbstractFunctionHandler):
     """
     Handler for DownloadImageIcon. This icon downloads image from url.
     """
@@ -1460,6 +1490,8 @@ class DownloadImageHandler:
         self.fn_name = 'Download Image'
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -1540,7 +1572,7 @@ class DownloadImageHandler:
         return imports
 
 
-class DownloadImagesXPathHandler:
+class DownloadImagesXPathHandler(AbstractFunctionHandler):
     """
     Handler for DownloadImagesXPath icon. This icon downloads image using XPath.
     """
@@ -1550,6 +1582,8 @@ class DownloadImagesXPathHandler:
         self.fn_name = 'Download Images XPath'
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -1608,7 +1642,7 @@ class DownloadImagesXPathHandler:
         return imports
 
 
-class SetProxyHandler:
+class SetProxyHandler(AbstractFunctionHandler):
     """
     Handler for SetProxy icon. This icon changes the IP via proxy.
     """
@@ -1618,6 +1652,8 @@ class SetProxyHandler:
         self.fn_name = 'Set Proxy'
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -1733,12 +1769,14 @@ class SetProxyHandler:
 """TODO - OLD IMPLEMENTATION - REFACTOR"""
 
 
-class ScrapeSendKeysHandler:
+class ScrapeSendKeysHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "ScrapeSendKeys"
         self.fn_name = "Scrape Send Keys"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
@@ -1778,12 +1816,14 @@ class ScrapeSendKeysHandler:
         return pid
 
 
-class ClickHTMLTagHandler:
+class ClickHTMLTagHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "ClickHTMLTag"
         self.fn_name = "Click HTML Tag Send Keys"
 
         self.type_category = ntcm.categories.webscraping
+
+        super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
