@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from collections import UserDict
 
 
@@ -14,11 +14,14 @@ class Docs(UserDict):
             name: str,
             title: str,
             description: str,
-            typ: Optional[str] = None,
-            example: Optional[str | list[str]] = None
+            typ: Optional[Union[str, list[str]]] = None,
+            example: Optional[Union[str, list[str]]] = None
     ):
         if typ is None:
             typ = "Any"
+
+        if isinstance(typ, list):
+            typ = ' | '.join(typ)
 
         if isinstance(example, list):
             example = ' | '.join(example)
