@@ -1,9 +1,10 @@
 import os
 import time
 import requests
-import io
 import sys
-if not "linux" in sys.platform:
+import pandas as pd
+
+if "linux" not in sys.platform:
     import pywinauto
 
 from pathlib import Path
@@ -11,19 +12,19 @@ from keepvariable.keepvariable_core import Var, save_variables, kept_variables
 
 import forloop_modules.flog as flog
 
-from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
-from forloop_common_structures.core.variable import Variable
-
-from forloop_modules.errors.errors import CriticalPipelineError
+from forloop_modules.function_handlers.auxilliary.docs import Docs
+from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 from forloop_modules.function_handlers.variable_handlers import variable_handlers_dict
+
 from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.globals.scraping_utilities_handler import suh
+from forloop_modules.globals.variable_handler import variable_handler
 
+from forloop_modules.errors.errors import CriticalPipelineError
 from forloop_modules.redis.redis_connection import kv_redis
 
-import pandas as pd
 from src.gui.gui_layout_context import glc
 ####################### SCRAPING HANDLERS ################################
 
