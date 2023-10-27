@@ -35,7 +35,7 @@ class AbstractFunctionHandler(abc.ABC):
         self.code_import_patterns = []
 
     @abc.abstractmethod
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         pass
 
     @abc.abstractmethod
