@@ -38,8 +38,9 @@ class OpenBrowserHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("Show browser:")
         fdl.checkbox(name="in_browser", bool_value=True, row=1)
@@ -182,8 +183,9 @@ class LoadWebsiteHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("Url")
         fdl.entry(name="url", text="", input_types=["str"], required=True, show_info=True, row=1)
@@ -281,8 +283,9 @@ class DismissCookiesHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("This node automatically detects cookies")
         fdl.label("It might not work on all websites")
@@ -299,11 +302,7 @@ class DismissCookiesHandler:
         self.direct_execute()
 
     def direct_execute(self):
-        
-        
         suh.detect_cookies_popup()
-
-    
 
     def export_code(self, node_detail_form):
         url = node_detail_form.get_chosen_value_by_name("url", variable_handler)
@@ -337,9 +336,9 @@ class NextPageHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
-
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("URL prefix")
         fdl.entry(name="url_prefix", text="", required=True, row=1)
@@ -408,8 +407,9 @@ class ClickXPathHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Click XPath element")
         fdl.label("XPath:")
         fdl.entry(name="xpath", text="", input_types=["str"], required=True, show_info=True, row=1)
@@ -462,8 +462,9 @@ class ClickNameHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Click on element with given text")
         fdl.label("Text")
         fdl.entry(name="text", text="", input_types=["str"], required=True, row=1)
@@ -519,8 +520,9 @@ class ClickIdHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Click element by id")
         fdl.label("Id:")
         fdl.entry(name="id", text="", input_types=["str"], required=True, row=1)
@@ -583,8 +585,9 @@ class CloseBrowserHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Close browser after scraping")
 
         return fdl
@@ -629,9 +632,9 @@ class GetCurrentURLHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
-
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("Output variable")
         fdl.entry(name="output", text="", input_types=["str"], required=True, row=1)
@@ -694,8 +697,9 @@ class WaitUntilElementIsLocatedHandler:
         self.icon_type = "WaitUntilElementIsLocated"
         self.fn_name = "Wait until element is located"
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("XPath")
         fdl.entry(name="xpath", text="", input_types=["str"], required=True, row=1)
@@ -768,10 +772,11 @@ class ScrollWebPageHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         options = ["Up", "Down"]
 
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("Scroll")
         fdl.combobox(name="scroll_to", options=options, default="Down", row=1)
@@ -855,9 +860,9 @@ class ScanWebPageHandler:
         self.fn_name = "Scan web page"
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
-
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("Tables")
         fdl.checkbox(name="incl_tables", bool_value=False, row=1)
@@ -1016,11 +1021,12 @@ class ExtractXPathHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         options = ["w+", "a+"]
         options_2 = ['DataFrame']
 
         fdl = FormDictList()
+
         fdl.label("Extract HTML element by XPath")
         fdl.label("XPath")
         fdl.entry(name="xpath", text="", input_types=["str"], required=True, row=1)
@@ -1181,9 +1187,9 @@ class ExtractMultipleXPathHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
-
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Extract multiple HTML elements by XPath")
         fdl.label("Extraction setup file")
         fdl.entry(name="filename", text="", input_types=["str"], required=True, row=1)
@@ -1263,9 +1269,9 @@ class ExtractTableXPathHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
-
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Extract HTML table element by XPath")
         fdl.label("XPath Rows")
         fdl.entry(name="xpath_row", text="", required=True, row=1)
@@ -1348,9 +1354,9 @@ class ExtractPageSourceHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
-
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("Output variable")
         fdl.entry(name="output", text="", input_types=["str"], required=True, row=1)
@@ -1409,8 +1415,9 @@ class RefreshPageSourceHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
 
         return fdl
@@ -1454,7 +1461,7 @@ class DownloadImageHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
 
         fdl.label(self.fn_name)
@@ -1544,7 +1551,7 @@ class DownloadImagesXPathHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
 
         fdl.label(self.fn_name)
@@ -1612,7 +1619,7 @@ class SetProxyHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
 
         fdl.label(self.fn_name)
@@ -1733,9 +1740,9 @@ class ScrapeSendKeysHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
-
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Send Keys During Scraping (blocking)")
 
         return fdl
@@ -1778,7 +1785,7 @@ class ClickHTMLTagHandler:
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
 
         fdl.label(self.fn_name)
