@@ -14,7 +14,7 @@ from forloop_modules.function_handlers.auxilliary.abstract_function_handler impo
 
 class StartHandler(AbstractFunctionHandler):
     """
-    Marks the starting point of a pipeline, i.e. it should be the first node in the pipeline.
+    Marks the starting point of a pipeline, i.e. it should be **the first** node in the pipeline.
     """
     
     def __init__(self):
@@ -50,7 +50,7 @@ class StartHandler(AbstractFunctionHandler):
 
 class FinishHandler(AbstractFunctionHandler):
     """
-    Marks the ending of a pipeline, i.e. it should be the last node in the pipeline.
+    Marks the ending of a pipeline, i.e. it should be **the last** node in the pipeline.
     """
     def __init__(self):
         self.icon_type = "Finish"

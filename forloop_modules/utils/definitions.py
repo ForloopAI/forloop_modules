@@ -1,8 +1,6 @@
 import pandas as pd
 import datetime
 
-
-
 # Standard icons - on_click creates an icon
 STANDARD_ICONS = ["Wait", "Write", "SaveExcel", "SaveList",
                   "IfCondition", "OpenBrowser", "ClickId", "ClickXPath", "LoadWebsite", "PageSource",

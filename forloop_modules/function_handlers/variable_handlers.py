@@ -870,9 +870,9 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         
     def _init_docs(self):
         parameter_description = """
-        Dictionary Modify Variable Node requires 2-4 parameters to succesfully perform an operation on a stored 
-        dictionary. Argument is required only for the Get value by key function. The last parameter, New variable name, 
-        is optional in a sense that if left blank the value of the chosen variable will be rewritten adequately to the 
+        Dictionary Modify Variable Node requires 2-4 parameters to succesfully perform an operation on a stored dictionary. 
+        *Argument* is required only for the *Get value by key* function. The last parameter, *New variable name*, is 
+        optional in a sense that if left blank the value of the chosen variable will be rewritten adequately to the 
         performed operation. However if a new name is inserted a new variable bearing the new name with the value of 
         the old one modified by the selected operation will be created while preserving the old variable.
         """
