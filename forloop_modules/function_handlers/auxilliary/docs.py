@@ -8,7 +8,7 @@ class Docs(UserDict):
         self.description = description
         self.parameters_description = parameters_description
         
-    def add(self, name: str, title: str, description: str, typ: Optional[str] = None, example: Optional[str] = None):
+    def add_parameter_table_row(self, name: str, title: str, description: str, typ: Optional[str] = None, example: Optional[str] = None):
         if typ is None:
             typ = "Any"
             
