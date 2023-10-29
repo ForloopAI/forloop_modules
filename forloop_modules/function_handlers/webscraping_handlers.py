@@ -1,9 +1,10 @@
 import os
 import time
 import requests
-import io
 import sys
-if not "linux" in sys.platform:
+import pandas as pd
+
+if "linux" not in sys.platform:
     import pywinauto
 
 from pathlib import Path
@@ -11,19 +12,19 @@ from keepvariable.keepvariable_core import Var, save_variables, kept_variables
 
 import forloop_modules.flog as flog
 
-from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
-from forloop_common_structures.core.variable import Variable
-
-from forloop_modules.errors.errors import CriticalPipelineError
+from forloop_modules.function_handlers.auxilliary.docs import Docs
+from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 from forloop_modules.function_handlers.variable_handlers import variable_handlers_dict
+
 from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.globals.scraping_utilities_handler import suh
+from forloop_modules.globals.variable_handler import variable_handler
 
+from forloop_modules.errors.errors import CriticalPipelineError
 from forloop_modules.redis.redis_connection import kv_redis
 
-import pandas as pd
 from src.gui.gui_layout_context import glc
 ####################### SCRAPING HANDLERS ################################
 
@@ -31,15 +32,44 @@ from src.gui.gui_layout_context import glc
 # # # # # # # # # HANDLERS # # # # # # # # #
 
 
-class OpenBrowserHandler:
+
+class OpenBrowserHandler(AbstractFunctionHandler):
+    """
+    Opens the system default web browser (for further usage such as Load Website etc.). Allows to choose driver to use.
+    For now available: Firefox (Geckodriver), Chrome.
+
+    Note: To use a driver an appropriate web browser should be installed. Driver itself will be installed automatically.
+    """
+
     def __init__(self):
         self.icon_type = "OpenBrowser"
         self.fn_name = "Open Browser"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "OpenBrowser Node takes 2 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="Show browser",
+            name="in_browser",
+            description="Whether to show browser instance GUI",
+            typ="boolean",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Driver",
+            name="driver",
+            description="Browser to use: Firefox (Geckodriver), Chrome"
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("Show browser:")
         fdl.checkbox(name="in_browser", bool_value=True, row=1)
@@ -175,17 +205,43 @@ class OpenBrowserHandler:
         return imports
 
 
-class LoadWebsiteHandler:
+class LoadWebsiteHandler(AbstractFunctionHandler):
+    """
+    Loads website with a given URL.
+    """
+
     def __init__(self):
         self.icon_type = "LoadWebsite"
         self.fn_name = "Load Website"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "LoadWebsite Node takes 2 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="URL",
+            name="url",
+            description="URL of website to load",
+            typ="string",
+            example=['https://forloop.ai', 'forloop.ai/blog', 'www.forloop.ai/pricing']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Take screenshot",
+            name="take_screenshot",
+            description="Whether to take screenshot of loaded page (will be displayed in BrowserView)"
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
-        fdl.label("Url")
+        fdl.label("URL")
         fdl.entry(name="url", text="", input_types=["str"], required=True, show_info=True, row=1)
         fdl.label("Take screenshot")
         fdl.checkbox(name="take_screenshot", bool_value=True, row=2)
@@ -273,16 +329,28 @@ class LoadWebsiteHandler:
         return imports
 
 
+class DismissCookiesHandler(AbstractFunctionHandler):
+    """
+    DismissCookies automatically detects cookies panel on page.
+    Note: this node might not work on all webpages
+    """
 
-class DismissCookiesHandler:
     def __init__(self):
         self.icon_type = "DismissCookies"
         self.fn_name = "Dismiss Cookies"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "DismissCookies Node takes no parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("This node automatically detects cookies")
         fdl.label("It might not work on all websites")
@@ -299,11 +367,7 @@ class DismissCookiesHandler:
         self.direct_execute()
 
     def direct_execute(self):
-        
-        
         suh.detect_cookies_popup()
-
-    
 
     def export_code(self, node_detail_form):
         url = node_detail_form.get_chosen_value_by_name("url", variable_handler)
@@ -320,26 +384,50 @@ class DismissCookiesHandler:
         return imports
 
 
-class NextPageHandler:
+class NextPageHandler(AbstractFunctionHandler):
     """
-    Handler for NextPage icon. This icon is used to iterate through pages (performs pagination), using URL.
-        Input:
-            - string url_prefix - URL prefix, e.g https://mywebsite.com/listings?page=
-            - string url_suffix - URL prefix, e.g. &filter=myFilter
-            - string page_varname - variable name to be created in variable explorer
-        Output:
-            None
-     """
+    NextPage Node allows to iterate over pages (performs pagination) by constructing page URL
+    """
 
     def __init__(self):
         self.icon_type = "NextPage"
         self.fn_name = "Next Page"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
 
+    def _init_docs(self):
+        parameters_description = "NextPage Node takes 3 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="URL prefix",
+            name="url_prefix",
+            description="Part of URL before page number",
+            typ="string",
+            example=['https://mywebsite.com/listings?page=']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="URL suffix",
+            name="url_suffix",
+            description="Part of URL after page number",
+            typ="string",
+            example=['&priceMin=10000']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Page variable name",
+            name="page_varname",
+            description="Forloop variable which stores page number",
+            typ="string"
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("URL prefix")
         fdl.entry(name="url_prefix", text="", required=True, row=1)
@@ -383,7 +471,6 @@ class NextPageHandler:
         variable_handler.new_variable(page_varname, new_url)
         suh.webscraping_client.load_website(new_url)
 
-
     def export_code(self, node_detail_form):
         """TODO"""
 
@@ -401,17 +488,37 @@ class NextPageHandler:
         return imports
 
 
-class ClickXPathHandler:
+class ClickXPathHandler(AbstractFunctionHandler):
+    """
+    ClickXPath Node clicks on web page element with given XPath
+    """
+
     def __init__(self):
         self.icon_type = "ClickXPath"
         self.fn_name = "Click XPath"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "ClickXPath Node takes 1 parameter"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="XPath",
+            name="xpath",
+            description="XPath of web page element to click on",
+            typ="string",
+            example=['/html/body/header/div[3]/div[1]/div[2]/section/nav/a', '//button[@class="page-link"]']
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Click XPath element")
-        fdl.label("XPath:")
+        fdl.label("XPath")
         fdl.entry(name="xpath", text="", input_types=["str"], required=True, show_info=True, row=1)
 
         return fdl
@@ -455,15 +562,35 @@ class ClickXPathHandler:
         return imports
 
 
-class ClickNameHandler:
+class ClickNameHandler(AbstractFunctionHandler):
+    """
+    ClickName Node clicks on web page element with given text
+    """
+    
     def __init__(self):
         self.icon_type = "ClickName"
         self.fn_name = "Click Name"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "ClickName Node takes 1 parameter"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="Text",
+            name="text",
+            description="Text of web page element to click on",
+            typ="string",
+            example=['Show details', 'Open article']
+        )
+    
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Click on element with given text")
         fdl.label("Text")
         fdl.entry(name="text", text="", input_types=["str"], required=True, row=1)
@@ -512,17 +639,37 @@ class ClickNameHandler:
         return imports
 
 
-class ClickIdHandler:
+class ClickIdHandler(AbstractFunctionHandler):
+    """
+    ClickName Node clicks on web page element with given ID
+    """
+
     def __init__(self):
         self.icon_type = "ClickId"
         self.fn_name = "Click Id"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "ClickId Node takes 1 parameter"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="ID",
+            name="id",
+            description="ID of web page element to click on",
+            typ="string",
+            example=['listing-details', 'pagination-elem']
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Click element by id")
-        fdl.label("Id:")
+        fdl.label("Id")
         fdl.entry(name="id", text="", input_types=["str"], required=True, row=1)
 
         return fdl
@@ -570,11 +717,9 @@ class ClickIdHandler:
         return imports
 
 
-class CloseBrowserHandler:
+class CloseBrowserHandler(AbstractFunctionHandler):
     """
-    Handler for CloseBrowser icon. This icon closes browser (deletes driver instance).
-        Input: None
-        Output: None
+    CloseBrowser Node closes browser instance.
     """
 
     def __init__(self):
@@ -582,9 +727,17 @@ class CloseBrowserHandler:
         self.fn_name = "Close browser after scraping"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "CloseBrowser Node takes no parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Close browser after scraping")
 
         return fdl
@@ -612,15 +765,9 @@ class CloseBrowserHandler:
         return imports
 
 
-class GetCurrentURLHandler:
+class GetCurrentURLHandler(AbstractFunctionHandler):
     """
-    Handler for GetCurrentURL icon. This icon exports the URL of the current opened website.
-        Input: name for variable, that would be created within platform
-        Output: new variable inside platform and .txt file
-
-    Note: output file current_url.txt is used only for "internal" purposes, meaning for loading data from it,
-    transferring to other icons etc.
-    Therefore, this file may be deleted after icon's function was proceeded <- (NOT IMPLEMENTED YET)
+    GetCurrentURL Node saves the URL of currently opened web pag to a new variable inside platform.
     """
 
     def __init__(self):
@@ -628,10 +775,25 @@ class GetCurrentURLHandler:
         self.fn_name = "Get current URL"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
 
+    def _init_docs(self):
+        parameters_description = "GetCurrentURL Node takes 1 parameter"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="Output variable",
+            name="output",
+            description="Name of variable to save current URL to",
+            typ="string",
+            example=['current_url', 'scraped_page']
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("Output variable")
         fdl.entry(name="output", text="", input_types=["str"], required=True, row=1)
@@ -649,6 +811,12 @@ class GetCurrentURLHandler:
         self.direct_execute(output)
 
     def direct_execute(self, output):
+        """
+        Note: output file current_url.txt is used only for "internal" purposes, meaning for loading data from it,
+        transferring to other icons etc.
+        TODO: Therefore, this file may be deleted after icon's function was proceeded <- (NOT IMPLEMENTED YET)
+        """
+
         filename = 'current_url.txt'
 
         time.sleep(10)  # !!! IMPORTANT !!! <- Necessary delay due to problems with crawler thread
@@ -683,19 +851,35 @@ class GetCurrentURLHandler:
         return imports
 
 
-class WaitUntilElementIsLocatedHandler:
+class WaitUntilElementIsLocatedHandler(AbstractFunctionHandler):
     """
-    Handler for WaitUntilElementIsLocated. This icon waits until certain element appears and page and then clicks on it.
-        Input: XPath of element to be located
-        Output: None
+    WaitUntilElementIsLocated Node waits until certain element appears and page and then clicks on it.
     """
 
     def __init__(self):
         self.icon_type = "WaitUntilElementIsLocated"
         self.fn_name = "Wait until element is located"
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        self.type_category = ntcm.categories.webscraping
+        self._init_docs()
+
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "WaitUntilElementIsLocated Node takes 1 parameter"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="XPath",
+            name="xpath",
+            description="XPath of web page element to wait and click on",
+            typ="string",
+            example=['//button[@class="load-more"]', '//*[@id="map-search-results"]/div[1]/div/div[25]/div[2]/a']
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("XPath")
         fdl.entry(name="xpath", text="", input_types=["str"], required=True, row=1)
@@ -751,15 +935,10 @@ class WaitUntilElementIsLocatedHandler:
         return imports
 
 
-class ScrollWebPageHandler:
+class ScrollWebPageHandler(AbstractFunctionHandler):
     """
-    Handler for ScrollWebPageHandler icon. This icon scrolls page up/down by n-pixels.
+    ScrollWebPage Node scrolls page up/down by n-pixels.
     Special option is "max" - scrolls page to the top or end of page
-        Input:
-            - combobox Scroll with directions (Up / Down)
-            - entry By (px): scroll distance in pixels or "max"
-            - checkbox scroll max: boolean, scroll to max
-        Output: None
     """
 
     def __init__(self):
@@ -767,17 +946,46 @@ class ScrollWebPageHandler:
         self.fn_name = "Scroll web page"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "ScrollWebPage Node takes 3 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="Scroll direction",
+            name="scroll_to",
+            description="The direction of scrolling (Up or Down)",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Scroll by",
+            name="scroll_by",
+            description="How big should the scroll be (in pixels)",
+            typ=["float", "integer"],
+            example=['300', '250.5']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Scroll max",
+            name="scroll_max",
+            description="Whether to scroll by maximum possible pixels (to the header / bottom)",
+            typ="boolean"
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         options = ["Up", "Down"]
 
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
-        fdl.label("Scroll")
+        fdl.label("Scroll direction")
         fdl.combobox(name="scroll_to", options=options, default="Down", row=1)
-        fdl.label("By (px):")
-        fdl.entry(name="scroll_by", text="", input_types=["int", "float"], row=2)
-        fdl.label("Scroll max:")
+        fdl.label("By (px)")
+        fdl.entry(name="scroll_by", text="", required=True, input_types=["int", "float"], row=2)
+        fdl.label("Scroll max")
         fdl.checkbox(name="scroll_max", bool_value=False, row=3)
 
         return fdl
@@ -833,31 +1041,77 @@ class ScrollWebPageHandler:
         return imports
 
 
-class ScanWebPageHandler:
+class ScanWebPageHandler(AbstractFunctionHandler):
     """
-    Handler for ScanWebPage icon. This icon finds tables and bullet lists on page, passes them
-    to Browser View with coordinates on screenshot.
-        Input:
-            - checkbox incl_tables - find tables on page
-            - checkbox incl_bullets - find bullet lists on page
-            - checkbox incl_texts - find text elements on page
-            - checkbox incl_headlines - find headlines on page
-            - checkbox incl_links - find links on page
-            - entry by_xpath - find elements by custom XPath
-        Output:
-            Coordinates of found elements along with page screenshot, passed to Browser View
-
+    ScanWebPage Node looks for certain type of elements on web page and displays them in BrowserView
     """
 
     def __init__(self):
-
         self.icon_type = "ScanWebPage"
         self.fn_name = "Scan web page"
+
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
 
+    def _init_docs(self):
+        parameters_description = "ScanWebPage Node takes 8 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="Tables",
+            name="incl_tables",
+            description="Whether to include tables in search",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Bullet lists",
+            name="incl_bullets",
+            description="Whether to include bullet lists in search",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Texts",
+            name="incl_texts",
+            description="Whether to include texts in search",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Headlines",
+            name="incl_headlines",
+            description="Whether to include headlines in search",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Links",
+            name="incl_links",
+            description="Whether to include links in search",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Images",
+            name="incl_images",
+            description="Whether to include images in search",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Buttons",
+            name="incl_buttons",
+            description="Whether to include buttons in search",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="By XPath",
+            name="by_xpath",
+            description="XPath of custom elements to search",
+            typ="string",
+            example=['//div[@class="regular-price"]/text()', '//span[contains(text(), "Location")]']
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("Tables")
         fdl.checkbox(name="incl_tables", bool_value=False, row=1)
@@ -902,10 +1156,8 @@ class ScanWebPageHandler:
 
         self.direct_execute(incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images, incl_buttons, by_xpath)
 
-
     def direct_execute(self, incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images, incl_buttons, by_xpath, context_xpath=''):
         suh.scan_web_page(incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images, incl_buttons, by_xpath, context_xpath)
-
 
     def export_code(self, node_detail_form):
         incl_tables = node_detail_form.get_chosen_value_by_name("incl_tables", variable_handler)
@@ -1009,18 +1261,72 @@ class ScanWebPageHandler:
         return imports
 
 
-class ExtractXPathHandler:
+class ExtractXPathHandler(AbstractFunctionHandler):
+    """
+    ExtractXPath Node looks for web page element with given XPath and extracts its content
+    """
+
     def __init__(self):
         self.icon_type = "ExtractXPath"
         self.fn_name = "Extract XPath"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "ExtractXPath Node takes 6 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="XPath",
+            name="xpath",
+            description="XPath of page element to be extracted",
+            typ="string",
+            example=['//*[@id="next"]/main/section/article[15]/div[2]/h2/span[2]', '/html/body/div[4]/div[1]/a/div[2]']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Output variable",
+            name="output",
+            description="Name of variable to be created inside the platform",
+            typ="string",
+            example=['price', 'publish_date']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Write in file mode",
+            name="write_mode",
+            description="What write mode to use (a+ for appending to file, w+ for rewriting previous file content)",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Save to",
+            name="save_to",
+            description="Where to save Node output to. Possible options: GridView inside platform",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Column name",
+            name="column",
+            description="Column name for stored data",
+            typ="string",
+            example=['price', 'publish_date']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Store list as string",
+            name="list_as_str",
+            description="Whether to store list of elements as string. E.g ['2-bedrooms', '1 bathroom', '3rd floor'] will be transformed into '2-bedrooms, 1 bathroom, 3rd floor'",
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         options = ["w+", "a+"]
-        options_2 = ['DataFrame']
+        options_2 = ['GridView']
 
         fdl = FormDictList()
+
         fdl.label("Extract HTML element by XPath")
         fdl.label("XPath")
         fdl.entry(name="xpath", text="", input_types=["str"], required=True, row=1)
@@ -1030,7 +1336,7 @@ class ExtractXPathHandler:
         fdl.combobox(name="write_mode", options=options, default="w+", row=3)
         fdl.label("Save to")
         fdl.combobox(name="save_to", options=options_2, default="DataFrame", row=4)
-        # Should be dynamically appended when Save to DataFrame selected
+        # TODO: Should be dynamically appended when Save to DataFrame selected
         fdl.label("Column name")
         fdl.entry(name="column", text="", input_types=["str"], required=False, show_info=True, row=5)
         fdl.label('Store list as string')
@@ -1077,7 +1383,7 @@ class ExtractXPathHandler:
 
 
             #TODO Ilya: Better separation of frontend and backend - teporarily disabled
-            if save_to == 'DataFrame':
+            if save_to == 'GridView':
                 if isinstance(data, list):
                     if list_as_str:
                         new_data = ', '.join(data)
@@ -1174,16 +1480,43 @@ class ExtractXPathHandler:
         return imports
 
 
-class ExtractMultipleXPathHandler:
+class ExtractMultipleXPathHandler(AbstractFunctionHandler):
+    """
+    ExtractMultipleXPath Node looks for multiple web page elements with given XPaths and extracts theirs content
+    """
+
     def __init__(self):
         self.icon_type = "ExtractMultipleXPath"
         self.fn_name = "Extract Multiple XPath"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
 
+    def _init_docs(self):
+        parameters_description = "ExtractMultipleXPath Node takes 2 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="Extraction setup file",
+            name="filename",
+            description="Path to file with list of XPaths, one XPath per line",
+            typ="string",
+            example=['/Users/admin/Desktop/xpaths.txt']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Output variable",
+            name="output",
+            description="Name of variable to be created inside the platform",
+            typ="string",
+            example=['listing_details', 'product_info']
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Extract multiple HTML elements by XPath")
         fdl.label("Extraction setup file")
         fdl.entry(name="filename", text="", input_types=["str"], required=True, row=1)
@@ -1256,16 +1589,57 @@ class ExtractMultipleXPathHandler:
         return imports
 
 
-class ExtractTableXPathHandler:
+class ExtractTableXPathHandler(AbstractFunctionHandler):
+    """
+    ExtractTableXPath Node finds table using given XPath and extracts its content.
+    """
+
     def __init__(self):
         self.icon_type = "ExtractTableXPath"
         self.fn_name = "Extract Table XPath"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
 
+    def _init_docs(self):
+        parameters_description = "ExtractTableXPath Node takes 4 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="XPath Rows",
+            name="xpath_row",
+            description="XPath of row elements",
+            typ="string",
+            example=["//table[@class='my-table']//tr"]
+        )
+
+        self.docs.add_parameter_table_row(
+            title="XPath Columns",
+            name="xpath_col",
+            description="XPath of column elements",
+            typ="string",
+            example=["//td//a[@class='listing-info']//@href"]
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Output variable",
+            name="output",
+            description="Name of variable to be created inside the platform",
+            typ="string",
+            example=['listings']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Use first row as header",
+            name="first_row_header",
+            description="Whether first row should be used as header",
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Extract HTML table element by XPath")
         fdl.label("XPath Rows")
         fdl.entry(name="xpath_row", text="", required=True, row=1)
@@ -1335,11 +1709,9 @@ class ExtractTableXPathHandler:
         return imports
 
 
-class ExtractPageSourceHandler:
+class ExtractPageSourceHandler(AbstractFunctionHandler):
     """
-    Handler for ExtractPageSource icon. This icon exports the source of currently scraped page.
-       Input: Name of variable to be created inside platform
-       Output: Variable with page source
+    ExtractPageSource Node extracts the HTML source of currently loaded page.
     """
 
     def __init__(self):
@@ -1347,10 +1719,25 @@ class ExtractPageSourceHandler:
         self.fn_name = "Extract Page Source"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
 
+    def _init_docs(self):
+        parameters_description = "ExtractPageSource Node takes 1 parameter"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="Output variable",
+            name="output",
+            description="Name of variable to be created inside the platform",
+            typ="string",
+            example=['current_page_html']
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
         fdl.label("Output variable")
         fdl.entry(name="output", text="", input_types=["str"], required=True, row=1)
@@ -1402,15 +1789,27 @@ class ExtractPageSourceHandler:
         return imports
 
 
-class RefreshPageSourceHandler:
+class RefreshPageSourceHandler(AbstractFunctionHandler):
+    """
+    RefreshPageSource Node refreshes HTML source currently loaded page.
+    """
+
     def __init__(self):
         self.icon_type = "RefreshPageSource"
         self.fn_name = "Refresh Page Source"
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "RefreshPageSource Node takes no parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label(self.fn_name)
 
         return fdl
@@ -1443,9 +1842,9 @@ class RefreshPageSourceHandler:
         return imports
 
 
-class DownloadImageHandler:
+class DownloadImageHandler(AbstractFunctionHandler):
     """
-    Handler for DownloadImageIcon. This icon downloads image from url.
+    DownloadImage Node downloads image from given URL.
     """
 
     def __init__(self):
@@ -1453,8 +1852,31 @@ class DownloadImageHandler:
         self.fn_name = 'Download Image'
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "DownloadImage Node takes 2 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="Image URL",
+            name="image_url",
+            description="URL of image to download",
+            typ="string",
+            example=['https://forloop.ai/logo.png']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Output filename",
+            name="output",
+            description="Name of filename to save image to",
+            typ="string",
+            example=['logo.png', 'product_main_photo.jpg']
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
 
         fdl.label(self.fn_name)
@@ -1533,9 +1955,9 @@ class DownloadImageHandler:
         return imports
 
 
-class DownloadImagesXPathHandler:
+class DownloadImagesXPathHandler(AbstractFunctionHandler):
     """
-    Handler for DownloadImagesXPath icon. This icon downloads image using XPath.
+    DownloadImagesXPath Node downloads image using given XPath. Allows to download multiple images at once.
     """
 
     def __init__(self):
@@ -1543,14 +1965,37 @@ class DownloadImagesXPathHandler:
         self.fn_name = 'Download Images XPath'
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "DownloadImagesXPath Node takes 2 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="XPath",
+            name="image_xpath",
+            description="XPath of image element(s)",
+            typ="string",
+            example=['/html/body/header/div[3]/div[1]/div[2]/section//picture/img']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Output filename",
+            name="output",
+            description="Name of filename to save image to",
+            typ="string",
+            example=['logo.png', 'product_main_photo.jpg']
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
 
         fdl.label(self.fn_name)
         fdl.label("XPath")
         fdl.entry(name="image_xpath", text="", input_types=["str"], required=True, row=1)
-        fdl.label("Output name")
+        fdl.label("Output filename")
         fdl.entry(name="output", text="", input_types=["str"], required=True, row=2)
         fdl.label("Multiple images can be downloaded", row=3)
 
@@ -1601,9 +2046,9 @@ class DownloadImagesXPathHandler:
         return imports
 
 
-class SetProxyHandler:
+class SetProxyHandler(AbstractFunctionHandler):
     """
-    Handler for SetProxy icon. This icon changes the IP via proxy.
+    SetProxy Node sets up the proxy for sending scraping requests.
     """
 
     def __init__(self):
@@ -1611,8 +2056,47 @@ class SetProxyHandler:
         self.fn_name = 'Set Proxy'
 
         self.type_category = ntcm.categories.webscraping
+        self._init_docs()
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "SetProxy Node takes 4 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="IP",
+            name="ip",
+            description="Proxy IP",
+            typ="string",
+            example=['99.129.22.4']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Port",
+            name="port",
+            description="Proxy port",
+            typ="integer",
+            example=['7784']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Username",
+            name="username",
+            description="Username (if proxy with authentication is used)",
+            typ="string",
+            example=['user1']
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Password",
+            name="password",
+            description="Password (if proxy with authentication is used)",
+            typ="string",
+            example=['mypassword123']
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
 
         fdl.label(self.fn_name)
@@ -1623,7 +2107,7 @@ class SetProxyHandler:
         fdl.label("Username")
         fdl.entry(name="username", text="", input_types=["str"], required=False, row=3)
         fdl.label("Password")
-        fdl.entry(name="password", text="", input_types=["str"], required=False, row=4)
+        fdl.entry(name="password", text="", input_types=["str"], type='password', required=False, row=4)
 
         return fdl
 
@@ -1726,16 +2210,18 @@ class SetProxyHandler:
 """TODO - OLD IMPLEMENTATION - REFACTOR"""
 
 
-class ScrapeSendKeysHandler:
+class ScrapeSendKeysHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "ScrapeSendKeys"
         self.fn_name = "Scrape Send Keys"
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
 
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+
         fdl.label("Send Keys During Scraping (blocking)")
 
         return fdl
@@ -1771,14 +2257,16 @@ class ScrapeSendKeysHandler:
         return pid
 
 
-class ClickHTMLTagHandler:
+class ClickHTMLTagHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "ClickHTMLTag"
         self.fn_name = "Click HTML Tag Send Keys"
 
         self.type_category = ntcm.categories.webscraping
 
-    def make_form_dict_list(self, *args, node_detail_form=None):
+        super().__init__()
+
+    def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
 
         fdl.label(self.fn_name)
