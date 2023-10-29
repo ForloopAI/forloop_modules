@@ -224,7 +224,7 @@ class PostRequestHandler(AbstractFunctionHandler):
         fdl.entry(name="cookies", text="", input_types=["dict"], row=4)
         fdl.label("Data")
         fdl.entry(name="filename", text="", input_types=["str"], required=True, row=5)
-        fdl.button(function=self.open_data_file, function_args=node_detail_form, text="Look up file", enforce_required=False)
+        fdl.button(function=self.open_data_file, function_args=node_detail_form, text="Look up file", enforce_required=False, name="lookup_txt_csv_file")
         fdl.label("Save as ")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=7)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -415,7 +415,7 @@ class PutRequestHandler(AbstractFunctionHandler):
         fdl.entry(name="cookies", text="", input_types=["dict"], row=4)
         fdl.label("Data")
         fdl.entry(name="filename", text="", input_types=["str"], required=True, row=5)
-        fdl.button(function=self.open_data_file, function_args=node_detail_form, text="Look up file", enforce_required=False)
+        fdl.button(function=self.open_data_file, function_args=node_detail_form, text="Look up file", enforce_required=False, name="lookup_txt_csv_file")
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl

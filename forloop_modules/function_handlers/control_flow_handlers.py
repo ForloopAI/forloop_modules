@@ -102,13 +102,13 @@ class WaitHandler(AbstractFunctionHandler):
     def _init_docs(self):
         parameter_description = "Two parameters are required:"
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
-        self.docs.add(title="Miliseconds", name="milliseconds", 
-                      description="Waiting time interval in miliseconds.", 
-                      typ="int | float", example="1000 → 1000 ms (1 s) waiting time before another step")
-        self.docs.add(title="Add random ms", name="rand_ms", 
-                      description="Adds a random real picked from a uniform distribution defined on the interval (- entered value, + entered value).",
-                      typ="int | float"
-                      )
+        self.docs.add_parameter_table_row(title="Miliseconds", name="milliseconds",
+                                          description="Waiting time interval in miliseconds.",
+                                          typ="int | float", example="1000 → 1000 ms (1 s) waiting time before another step")
+        self.docs.add_parameter_table_row(title="Add random ms", name="rand_ms",
+                                          description="Adds a random real picked from a uniform distribution defined on the interval (- entered value, + entered value).",
+                                          typ="int | float"
+                                          )
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         fdl=FormDictList(docs=self.docs)
@@ -209,15 +209,15 @@ class IfConditionHandler(AbstractFunctionHandler):
         branch” will run or the “False branch”.
         """
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
-        self.docs.add(title="Value 1", name="value_p", 
-                      description="The first value used in the condition."
-                      , example="100 | True")
-        self.docs.add(title="Operator", name="operator", 
-                      description="The operator used used in the condition."
-                      )
-        self.docs.add(title="Value 2", name="value_q", 
-                      description="The second value used in the condition.", example="27 | ['a', 'b', 'c'] | {'name':'Sarah'}"
-                      )
+        self.docs.add_parameter_table_row(title="Value 1", name="value_p",
+                                          description="The first value used in the condition."
+                                          , example="100 | True")
+        self.docs.add_parameter_table_row(title="Operator", name="operator",
+                                          description="The operator used used in the condition."
+                                          )
+        self.docs.add_parameter_table_row(title="Value 2", name="value_q",
+                                          description="The second value used in the condition.", example="27 | ['a', 'b', 'c'] | {'name':'Sarah'}"
+                                          )
 
     def make_form_dict_list(self, *args, node_detail_form=None):
     

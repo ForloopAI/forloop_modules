@@ -229,7 +229,7 @@ class DefineFunctionHandler(AbstractFunctionHandler):
         fdl.label("Code")
         fdl.entry(name="code_label", text="", category="arguments", input_types=["str"], required=True, row=1)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        fdl.button(function=self.show_help, function_args=node_detail_form, text="Help")
+        fdl.button(function=self.show_help, function_args=node_detail_form, text="Help", name="help")
 
         return fdl
 

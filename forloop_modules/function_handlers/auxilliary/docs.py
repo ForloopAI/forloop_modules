@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import Optional, Union
 from collections import UserDict
+
 
 class Docs(UserDict):
     
@@ -8,10 +9,23 @@ class Docs(UserDict):
         self.description = description
         self.parameters_description = parameters_description
         
-    def add(self, name: str, title: str, description: str, typ: Optional[str] = None, example: Optional[str] = None):
+    def add_parameter_table_row(
+            self,
+            name: str,
+            title: str,
+            description: str,
+            typ: Optional[Union[str, list[str]]] = None,
+            example: Optional[Union[str, list[str]]] = None
+    ):
         if typ is None:
             typ = "Any"
-            
+
+        if isinstance(typ, list):
+            typ = ' | '.join(typ)
+
+        if isinstance(example, list):
+            example = ' | '.join(example)
+
         parameter_table_row = {
             "title": title,
             "description": description,
