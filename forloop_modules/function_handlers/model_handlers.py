@@ -9,6 +9,7 @@ import forloop_modules.queries.node_context_requests_backend as ncrb
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
+from forloop_modules.globals.docs_categories import DocsCategories
 
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler 
 
@@ -93,13 +94,14 @@ class LoadPythonScriptHandler(AbstractFunctionHandler):
         self.fn_name = "Load Python Script"
 
         self.type_category = ntcm.categories.model
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, options={}, node_detail_form=None):
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("File path:")
         fdl.entry(name="file_name", text="./my_python_file.py", required=True, input_types=["str"], row=1)
-        fdl.button(function=self.open_python_script, function_args=node_detail_form, text="Look up file", enforce_required=False)
+        fdl.button(function=self.open_python_script, function_args=node_detail_form, text="Look up file", enforce_required=False, name="lookup_py_file")
         fdl.label("Load and run")
         fdl.checkbox(name="load_and_run", bool_value=False, row=3)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -151,13 +153,14 @@ class LoadJupyterScriptHandler(AbstractFunctionHandler):
         self.fn_name = "Load Jupyter Script"
 
         self.type_category = ntcm.categories.model
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, options={}, node_detail_form=None):
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("File path:")
         fdl.entry(name="file_name", text="./jupyter_ntb.ipynb", required=True, input_types=["str"], row=1)
-        fdl.button(function=self.open_jupyter_script, function_args=node_detail_form, text="Look up file", enforce_required=False)
+        fdl.button(function=self.open_jupyter_script, function_args=node_detail_form, text="Look up file", enforce_required=False, name="lookup_ipynb_file")
         fdl.label("Load and run")
         fdl.checkbox(name="load_and_run", bool_value=False, row=3)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -246,6 +249,7 @@ class TrainModelHandler:
         self.fn_name = 'Train Model'
 
         self.type_category = ntcm.categories.model
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -275,6 +279,7 @@ class PredictModelValuesHandler:
         self.fn_name = 'Predict Model Values'
 
         self.type_category = ntcm.categories.model
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 

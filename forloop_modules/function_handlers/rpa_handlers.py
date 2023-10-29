@@ -9,7 +9,8 @@ import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
-from forloop_modules.globals.variable_handler import variable_handler 
+from forloop_modules.globals.variable_handler import variable_handler
+from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList   
 
 from forloop_modules.node_detail_form import NodeField
@@ -93,6 +94,7 @@ class ClickImageHandler:  # TODO: AbstractFunctionHandler
         self.fn_name = "Click Image"
 
         self.type_category = ntcm.categories.rpa
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -150,6 +152,7 @@ class WriteHandler(AbstractFunctionHandler):  # TODO AbstractFunctionHandler
         self.fn_name = "Write"
 
         self.type_category = ntcm.categories.rpa
+        self.docs_category = DocsCategories.webscraping_and_rpa
         
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -199,6 +202,7 @@ class UseKeyHandler(AbstractFunctionHandler):
         self.fn_name = 'Use Key'
         
         self.type_category = ntcm.categories.rpa
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None, **kwargs):
         
@@ -211,7 +215,7 @@ class UseKeyHandler(AbstractFunctionHandler):
         fdl.label("Use Key (or Combination of Keys)")
         fdl.label("Key 1")
         fdl.comboentry(name="key1", text="Enter (Return)", options=options1, row=1)
-        fdl.button(function=self.add_key, function_args=node_detail_form, text="Add key", enforce_required=False)
+        fdl.button(function=self.add_key, function_args=node_detail_form, text="Add key", enforce_required=False, name="add_key")
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
         
         # for template init (without node_detail_form

@@ -9,6 +9,7 @@ import forloop_modules.queries.node_context_requests_backend as ncrb
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
+from forloop_modules.globals.docs_categories import DocsCategories
 
 from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
@@ -20,6 +21,7 @@ class DeleteFileHandler(AbstractFunctionHandler):
         self.fn_name = "Delete File"
 
         self.type_category = ntcm.categories.file_management
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -27,7 +29,7 @@ class DeleteFileHandler(AbstractFunctionHandler):
         fdl.label(self.fn_name)
         fdl.label("File name:")
         fdl.entry(name="filename", text="", input_types=["str"], required=True, row=1)
-        fdl.button(function=self.select_file, function_args=node_detail_form, text="Look up file", enforce_required=False)
+        fdl.button(function=self.select_file, function_args=node_detail_form, text="Look up file", enforce_required=False, name="lookup_file")
         fdl.button(self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
@@ -78,6 +80,7 @@ class CreateFolderHandler(AbstractFunctionHandler):
         self.fn_name = 'Create Folder'
 
         self.type_category = ntcm.categories.file_management
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -85,7 +88,7 @@ class CreateFolderHandler(AbstractFunctionHandler):
         fdl.label(self.fn_name)
         fdl.label("Folder location:")
         fdl.entry(name="folder_loc", text="./", category="arguments", input_types=["str"], required=True, row=1)
-        fdl.button(function=self.open_folder_location, function_args=node_detail_form, text="Load folder path", enforce_required=False)
+        fdl.button(function=self.open_folder_location, function_args=node_detail_form, text="Load folder path", enforce_required=False, name="lookup_folder")
         fdl.label("Folder name:")
         fdl.entry(name="folder_name", text="My new folder", category="arguments", input_types=["str"], required=True, row=3)
         fdl.button(self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -147,6 +150,7 @@ class MoveFileHandler(AbstractFunctionHandler):
         self.fn_name = 'Move File'
 
         self.type_category = ntcm.categories.file_management
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -154,10 +158,10 @@ class MoveFileHandler(AbstractFunctionHandler):
         fdl.label(self.fn_name)
         fdl.label("File:")
         fdl.entry(name="filename", text="User\\Forloop\\file.txt", category="arguments", input_types=["str"], required=True, row=1)
-        fdl.button(function=self.open_file_location, function_args=node_detail_form, text="Load file path", enforce_required=False)
+        fdl.button(function=self.open_file_location, function_args=node_detail_form, text="Load file path", enforce_required=False, name="lookup_file")
         fdl.label("Move to:")
         fdl.entry(name="folder_name", text="User\\Forloop\\new_folder", category="arguments", input_types=["str"], required=True, row=3)
-        fdl.button(function=self.open_folder_location, function_args=node_detail_form, text="Load folder path", enforce_required=False)
+        fdl.button(function=self.open_folder_location, function_args=node_detail_form, text="Load folder path", enforce_required=False, name="lookup_destination_folder")
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
@@ -223,6 +227,7 @@ class CreateFileQueueHandler(AbstractFunctionHandler):
         self.fn_name = 'Create File Queue'
 
         self.type_category = ntcm.categories.file_management
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -234,7 +239,7 @@ class CreateFileQueueHandler(AbstractFunctionHandler):
         fdl.label(self.fn_name)
         fdl.label("Root folder:")
         fdl.entry(name="folder_name", text="", category="arguments", input_types=["str"], required=True, row=1)
-        fdl.button(function=self.open_folder_location, function_args=node_detail_form, text="Search directory", enforce_required=False)
+        fdl.button(function=self.open_folder_location, function_args=node_detail_form, text="Search directory", enforce_required=False, name="lookup_folder")
         fdl.label("Queue name:")
         fdl.entry(name="queue_name", text="My_queue", category="arguments", input_types=["str"], required=True, row=3)
         fdl.label("Suffix:")
@@ -304,6 +309,7 @@ class ProcessItemInQueueHandler(AbstractFunctionHandler):
         self.fn_name = 'Process Item In Queue'
 
         self.type_category = ntcm.categories.file_management
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 

@@ -126,10 +126,7 @@ class FormDictList(UserList):
             focused (bool, optional): If True, button will be executed after Enter push. Defaults to False.
             enforce_required (bool, optional): If True, button will check whether compulsory elements are filled. Defaults to True.
             row (int): row number of the element - specified only if it's not first element on the same row
-        """
-        if name is None:
-            flog.warning("Add parameter `name` to fdl.button() with following form_dict_list: "+str(self))
-    
+        """    
         key = "Button"
         value = {"name": name, "function": function, "function_args": function_args, "text": text, "focused": focused, "enforce_required": enforce_required, "frontend_implementation": frontend_implementation}
         self.insert_element_to_form_dict_list(key, value, row)

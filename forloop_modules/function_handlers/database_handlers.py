@@ -15,6 +15,7 @@ from forloop_modules.function_handlers.auxilliary.node_type_categories_manager i
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.database_utilities_handler import duh
+from forloop_modules.globals.docs_categories import DocsCategories
 
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 from forloop_modules.function_handlers.auxilliary.data_types_validation import validate_input_data_types
@@ -77,7 +78,7 @@ class DBQueryHandler(AbstractFunctionHandler):
         self.fn_name = "DB Query"
 
         self.type_category = ntcm.categories.database
-
+        self.docs_category = DocsCategories.data_sources
 
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
@@ -179,7 +180,7 @@ class DBSelectHandler(AbstractFunctionHandler):
         self.fn_name = "DB Select"
 
         self.type_category = ntcm.categories.database
-
+        self.docs_category = DocsCategories.data_sources
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         if options is not None:
@@ -415,6 +416,7 @@ class DBInsertHandler(AbstractFunctionHandler):
         self.fn_name = "DB Insert"
 
         self.type_category = ntcm.categories.database
+        self.docs_category = DocsCategories.data_sources
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         db_tables = []
@@ -562,6 +564,7 @@ class DBDeleteHandler(AbstractFunctionHandler):
         self.fn_name = "DB Delete"
 
         self.type_category = ntcm.categories.database
+        self.docs_category = DocsCategories.data_sources
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         operators = ["=", "<", ">", ">=", "<=", "<>", " IN "]
@@ -656,6 +659,7 @@ class DBUpdateHandler(AbstractFunctionHandler):
         self.fn_name = "DB Update"
 
         self.type_category = ntcm.categories.database
+        self.docs_category = DocsCategories.data_sources
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         operators = ["=", "<", ">", ">=", "<=", "<>", " IN "]
@@ -877,7 +881,7 @@ class CreateMigrationFileHandler(AbstractFunctionHandler):
         fdl.label("Save to json")
         fdl.checkbox("save_to_file", row=7)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        fdl.button(function=self.open_migration_file, function_args=node_detail_form, text="Prepare to run")
+        fdl.button(function=self.open_migration_file, function_args=node_detail_form, text="Prepare to run", name="prepare_migration")
 
         return fdl
 
@@ -950,7 +954,7 @@ class RunMigrationFileHandler(AbstractFunctionHandler):
         # fdl.label("Migration file name:")
         # fdl.entry(name="filename", text="migration-1", input_types=["str"], row=3)
 
-        fdl.button(function=self.open_migration_file, function_args=node_detail_form, text="Load file")
+        fdl.button(function=self.open_migration_file, function_args=node_detail_form, text="Load file", name="lookup_json_file")
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl

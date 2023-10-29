@@ -12,6 +12,7 @@ from forloop_modules.function_handlers.auxilliary.node_type_categories_manager i
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.globals.variable_handler import variable_handler, LocalVariable
+from forloop_modules.globals.docs_categories import DocsCategories
 
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
 from forloop_modules.errors.errors import CriticalPipelineError
@@ -35,16 +36,17 @@ class NewVariableHandler(AbstractFunctionHandler):
         self.fn_name = 'New Variable'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
         self._init_docs()
         
     def _init_docs(self):
         parameter_description = "Add New Variable Node requires 2 parameters for a succesful creation of a new variable."
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
-        self.docs.add(title="Variable name", name="variable_name", 
-                      description="A name of the just defined variable under which will it be stored in the variable explorer.", 
-                      typ="string", example="new_test_var")
-        self.docs.add(title="Value", name="variable_value", description="Value of the new variable", 
-                      example="123.4 | [1,2,3,4] | {'name': 'John'} | 'Hello world'")
+        self.docs.add_parameter_table_row(title="Variable name", name="variable_name",
+                                          description="A name of the just defined variable under which will it be stored in the variable explorer.",
+                                          typ="string", example="new_test_var")
+        self.docs.add_parameter_table_row(title="Value", name="variable_value", description="Value of the new variable",
+                                          example="123.4 | [1,2,3,4] | {'name': 'John'} | 'Hello world'")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["int", "float", "str", "bool", "list", "dict"]
@@ -138,20 +140,21 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
         self.fn_name = 'Convert Variable Type'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
         self._init_docs()
         
     def _init_docs(self):
         parameter_description = "Convert Variable Type Node requires 2 parameters for a succesful conversion of the variable type."
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
-        self.docs.add(title="Variable name", name="variable_name", 
-                      description="A name of the variable present in the variable explorer whose type is to be changed.", 
-                      typ="string", example="test_float")
-        self.docs.add(title="Convert to type", name="variable_type", 
-                      description="A new type of the selected variable after the conversion. It can be selected as one of the options of the combobox."
-                      )
-        self.docs.add(title="New variable name", name="new_variable_name", 
-                      description="Name of the new variable containing the converted value. If left blank the initial variable will get overwritten.", 
-                      typ="string", example="float_to_str")
+        self.docs.add_parameter_table_row(title="Variable name", name="variable_name",
+                                          description="A name of the variable present in the variable explorer whose type is to be changed.",
+                                          typ="string", example="test_float")
+        self.docs.add_parameter_table_row(title="Convert to type", name="variable_type",
+                                          description="A new type of the selected variable after the conversion. It can be selected as one of the options of the combobox."
+                                          )
+        self.docs.add_parameter_table_row(title="New variable name", name="new_variable_name",
+                                          description="Name of the new variable containing the converted value. If left blank the initial variable will get overwritten.",
+                                          typ="string", example="float_to_str")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -264,6 +267,7 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
         self.fn_name = 'Math Modify Variable'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
 
         self.math_function_dict = {
             "+": lambda x, y: x + y,
@@ -287,18 +291,18 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
         created while preserving the old variable.
         """
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
-        self.docs.add(title="Variable name", name="variable_name", 
-                      description="A name of the variable present in the variable explorer which would be used for the operation.", 
-                      typ="string", example="math_var")
-        self.docs.add(title="Math operation", name="math_operation", 
-                      description="A math operation to be perfomed on the selected variable. It can be selected as one of the options of the combobox.", 
-                      )
-        self.docs.add(title="Argument", name="argument", 
-                      description="An argument of the selected mathematical operation, i.e. in case of e.g. division the argument is divisor.", 
-                      typ="string", example="123 | 19.98")
-        self.docs.add(title="New variable name", name="new_variable_name", 
-                      description="Name of the new variable whose value will be equal to the old value modifed by the selected operation. If left blank the initial variable will get overwritten.", 
-                      typ="string", example="sum_a_and_b")
+        self.docs.add_parameter_table_row(title="Variable name", name="variable_name",
+                                          description="A name of the variable present in the variable explorer which would be used for the operation.",
+                                          typ="string", example="math_var")
+        self.docs.add_parameter_table_row(title="Math operation", name="math_operation",
+                                          description="A math operation to be perfomed on the selected variable. It can be selected as one of the options of the combobox.",
+                                          )
+        self.docs.add_parameter_table_row(title="Argument", name="argument",
+                                          description="An argument of the selected mathematical operation, i.e. in case of e.g. division the argument is divisor.",
+                                          typ="string", example="123 | 19.98")
+        self.docs.add_parameter_table_row(title="New variable name", name="new_variable_name",
+                                          description="Name of the new variable whose value will be equal to the old value modifed by the selected operation. If left blank the initial variable will get overwritten.",
+                                          typ="string", example="sum_a_and_b")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -430,6 +434,7 @@ class StringModifyVariableHandler(AbstractFunctionHandler):
         self.fn_name = 'String Modify Variable'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
         self.operation_options = ["Concatenate", "Split", "Replace", "Strip", "Lower", "Upper"]
         
         self._init_docs()
@@ -444,21 +449,21 @@ class StringModifyVariableHandler(AbstractFunctionHandler):
         variable.
         """
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
-        self.docs.add(title="Variable name", name="variable_name", 
-                      description="A name of the variable present in the variable explorer which would be used for the operation.", 
-                      typ="string", example="str_var")
-        self.docs.add(title="String operation", name="string_operation", 
-                      description="A string operation to be perfomed on the selected variable. It can be selected as one of the options of the combobox.", 
-                      )
-        self.docs.add(title="Argument", name="argument", 
-                      description="The first argument of the selected string operation.", 
-                      typ="string", example="'Hello world!'")
-        self.docs.add(title="Argument 2", name="argument2", 
-                      description="The second argument of the selected mathematical operation.", 
-                      typ="string", example="'Some other string here'")
-        self.docs.add(title="New variable name", name="new_variable_name", 
-                      description="Name of the new variable whose value will be equal to the old value modifed by the selected operation. If left blank the initial variable will get overwritten.", 
-                      typ="string", example="str_operation_result")
+        self.docs.add_parameter_table_row(title="Variable name", name="variable_name",
+                                          description="A name of the variable present in the variable explorer which would be used for the operation.",
+                                          typ="string", example="str_var")
+        self.docs.add_parameter_table_row(title="String operation", name="string_operation",
+                                          description="A string operation to be perfomed on the selected variable. It can be selected as one of the options of the combobox.",
+                                          )
+        self.docs.add_parameter_table_row(title="Argument", name="argument",
+                                          description="The first argument of the selected string operation.",
+                                          typ="string", example="'Hello world!'")
+        self.docs.add_parameter_table_row(title="Argument 2", name="argument2",
+                                          description="The second argument of the selected mathematical operation.",
+                                          typ="string", example="'Some other string here'")
+        self.docs.add_parameter_table_row(title="New variable name", name="new_variable_name",
+                                          description="Name of the new variable whose value will be equal to the old value modifed by the selected operation. If left blank the initial variable will get overwritten.",
+                                          typ="string", example="str_operation_result")
 
     def make_form_dict_list(self, *args, node_detail_form=None):        
         fdl = FormDictList(docs=self.docs)
@@ -623,6 +628,7 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
         self.fn_name = 'List Modify Variable'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
 
         self.list_operations = {
             "Get Element": lambda var, arg: var[arg],
@@ -649,18 +655,18 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
         while preserving the old variable.
         """
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
-        self.docs.add(title="Variable name", name="variable_name", 
-                      description="A name of the variable (list) present in the variable explorer which would be used for the operation.", 
-                      typ="string", example="str_var")
-        self.docs.add(title="List operation", name="list_operation", 
-                      description="A list operation to be perfomed on the selected variable. It can be selected as one of the options of the combobox.", 
-                      )
-        self.docs.add(title="Argument", name="argument", 
-                      description="The first argument of the selected list operation.", 
-                      typ="string", example="'Hello world!'")
-        self.docs.add(title="New variable name", name="new_variable_name", 
-                      description="Name of the new variable whose value will be equal to the old value modifed by the selected operation. If left blank the initial variable will get overwritten.", 
-                      typ="string", example="str_operation_result")
+        self.docs.add_parameter_table_row(title="Variable name", name="variable_name",
+                                          description="A name of the variable (list) present in the variable explorer which would be used for the operation.",
+                                          typ="string", example="str_var")
+        self.docs.add_parameter_table_row(title="List operation", name="list_operation",
+                                          description="A list operation to be perfomed on the selected variable. It can be selected as one of the options of the combobox.",
+                                          )
+        self.docs.add_parameter_table_row(title="Argument", name="argument",
+                                          description="The first argument of the selected list operation.",
+                                          typ="string", example="'Hello world!'")
+        self.docs.add_parameter_table_row(title="New variable name", name="new_variable_name",
+                                          description="Name of the new variable whose value will be equal to the old value modifed by the selected operation. If left blank the initial variable will get overwritten.",
+                                          typ="string", example="str_operation_result")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = list(self.list_operations.keys())
@@ -859,32 +865,33 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         self.fn_name = 'Dictionary Modify Variable'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
         self._init_docs()
         
     def _init_docs(self):
         parameter_description = """
-        Dictionary Modify Variable Node requires 2-4 parameters to succesfully perform an operation on a stored 
-        dictionary. Argument is required only for the Get value by key function. The last parameter, New variable name, 
-        is optional in a sense that if left blank the value of the chosen variable will be rewritten adequately to the 
+        Dictionary Modify Variable Node requires 2-4 parameters to succesfully perform an operation on a stored dictionary. 
+        *Argument* is required only for the *Get value by key* function. The last parameter, *New variable name*, is 
+        optional in a sense that if left blank the value of the chosen variable will be rewritten adequately to the 
         performed operation. However if a new name is inserted a new variable bearing the new name with the value of 
         the old one modified by the selected operation will be created while preserving the old variable.
         """
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
-        self.docs.add(title="Variable name", name="variable_name", 
-                      description="A name of the variable (dictionary) present in the variable explorer which would be used for the operation.", 
-                      typ="string", example="dict_var")
-        self.docs.add(title="List operation", name="dictionary_operation", 
-                      description="A string operation to be perfomed on the selected variable. It can be selected as one of the options of the combobox.", 
-                      )
-        self.docs.add(title="Argument", name="argument", 
-                      description="A first argument of a given operation (can be left blank - get keys, get values).", 
-                      typ="Any", example="'name' | 'key_1'")
-        self.docs.add(title="Argument 2", name="argument2", 
-                      description="A second argument of agiven operation (can be left blank).", 
-                      typ="Any", example="'new value' | [1,2,3] | {'name': 'John'}")
-        self.docs.add(title="New variable name", name="new_variable_name", 
-                      description="Name of the new variable whose value will be equal to the old value modifed by the selected operation. If left blank the initial variable will get overwritten.", 
-                      typ="string", example="dict_operation_result")
+        self.docs.add_parameter_table_row(title="Variable name", name="variable_name",
+                                          description="A name of the variable (dictionary) present in the variable explorer which would be used for the operation.",
+                                          typ="string", example="dict_var")
+        self.docs.add_parameter_table_row(title="List operation", name="dictionary_operation",
+                                          description="A string operation to be perfomed on the selected variable. It can be selected as one of the options of the combobox.",
+                                          )
+        self.docs.add_parameter_table_row(title="Argument", name="argument",
+                                          description="A first argument of a given operation (can be left blank - get keys, get values).",
+                                          typ="Any", example="'name' | 'key_1'")
+        self.docs.add_parameter_table_row(title="Argument 2", name="argument2",
+                                          description="A second argument of agiven operation (can be left blank).",
+                                          typ="Any", example="'new value' | [1,2,3] | {'name': 'John'}")
+        self.docs.add_parameter_table_row(title="New variable name", name="new_variable_name",
+                                          description="Name of the new variable whose value will be equal to the old value modifed by the selected operation. If left blank the initial variable will get overwritten.",
+                                          typ="string", example="dict_operation_result")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["Get Value By Key", "Keys", "Values", "Join Dictionaries", "Delete Value by Key", "Invert Dictionary", "Add key"]
@@ -1132,13 +1139,14 @@ class PrintVariableHandler:
         self.fn_name = "Print Variable"
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
         self._init_docs()
         
     def _init_docs(self):
         self.docs = Docs(description=self.__doc__)
-        self.docs.add(title="Variable name", name="variable_name", 
-                      description="A name of the variable to be printed.", 
-                      typ="string", example="my_awesome_var")
+        self.docs.add_parameter_table_row(title="Variable name", name="variable_name",
+                                          description="A name of the variable to be printed.",
+                                          typ="string", example="my_awesome_var")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 

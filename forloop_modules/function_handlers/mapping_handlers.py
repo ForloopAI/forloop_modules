@@ -7,6 +7,7 @@ import forloop_modules.queries.node_context_requests_backend as ncrb
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.globals.variable_handler import variable_handler, defined_functions_dict, custom_icons_imports
+from forloop_modules.globals.docs_categories import DocsCategories
 
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 import forloop_modules.function_handlers.auxilliary.forloop_code_eval as fce
@@ -92,6 +93,7 @@ class ApplyMappingHandler(AbstractFunctionHandler):
         self.fn_name = 'Apply Mapping'
 
         self.type_category = ntcm.categories.mapping
+        self.docs_category = DocsCategories.cleaning
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         if options is None:
@@ -217,6 +219,7 @@ class DefineFunctionHandler(AbstractFunctionHandler):
         self.fn_name = 'Define Function'
 
         self.type_category = ntcm.categories.mapping
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         # TODO: show name, args, arg types if any, return
@@ -226,7 +229,7 @@ class DefineFunctionHandler(AbstractFunctionHandler):
         fdl.label("Code")
         fdl.entry(name="code_label", text="", category="arguments", input_types=["str"], required=True, row=1)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        fdl.button(function=self.show_help, function_args=node_detail_form, text="Help")
+        fdl.button(function=self.show_help, function_args=node_detail_form, text="Help", name="help")
 
         return fdl
 
@@ -304,6 +307,7 @@ class DefineLambdaFunctionHandler(AbstractFunctionHandler):
         self.fn_name = 'Define Lambda Function'
 
         self.type_category = ntcm.categories.mapping
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         # TODO: show name, args, arg types if any, return
@@ -367,6 +371,7 @@ class RunFunctionHandler(AbstractFunctionHandler):
         self.fn_name = 'Run Function'
 
         self.type_category = ntcm.categories.mapping
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
