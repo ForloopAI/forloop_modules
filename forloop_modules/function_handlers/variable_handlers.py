@@ -12,6 +12,7 @@ from forloop_modules.function_handlers.auxilliary.node_type_categories_manager i
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.globals.variable_handler import variable_handler, LocalVariable
+from forloop_modules.globals.docs_categories import DocsCategories
 
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
 from forloop_modules.errors.errors import CriticalPipelineError
@@ -35,6 +36,7 @@ class NewVariableHandler(AbstractFunctionHandler):
         self.fn_name = 'New Variable'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
         self._init_docs()
         
     def _init_docs(self):
@@ -138,6 +140,7 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
         self.fn_name = 'Convert Variable Type'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
         self._init_docs()
         
     def _init_docs(self):
@@ -264,6 +267,7 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
         self.fn_name = 'Math Modify Variable'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
 
         self.math_function_dict = {
             "+": lambda x, y: x + y,
@@ -430,6 +434,7 @@ class StringModifyVariableHandler(AbstractFunctionHandler):
         self.fn_name = 'String Modify Variable'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
         self.operation_options = ["Concatenate", "Split", "Replace", "Strip", "Lower", "Upper"]
         
         self._init_docs()
@@ -623,6 +628,7 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
         self.fn_name = 'List Modify Variable'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
 
         self.list_operations = {
             "Get Element": lambda var, arg: var[arg],
@@ -859,13 +865,14 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         self.fn_name = 'Dictionary Modify Variable'
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
         self._init_docs()
         
     def _init_docs(self):
         parameter_description = """
-        Dictionary Modify Variable Node requires 2-4 parameters to succesfully perform an operation on a stored 
-        dictionary. Argument is required only for the Get value by key function. The last parameter, New variable name, 
-        is optional in a sense that if left blank the value of the chosen variable will be rewritten adequately to the 
+        Dictionary Modify Variable Node requires 2-4 parameters to succesfully perform an operation on a stored dictionary. 
+        *Argument* is required only for the *Get value by key* function. The last parameter, *New variable name*, is 
+        optional in a sense that if left blank the value of the chosen variable will be rewritten adequately to the 
         performed operation. However if a new name is inserted a new variable bearing the new name with the value of 
         the old one modified by the selected operation will be created while preserving the old variable.
         """
@@ -1132,6 +1139,7 @@ class PrintVariableHandler:
         self.fn_name = "Print Variable"
 
         self.type_category = ntcm.categories.variable
+        self.docs_category = DocsCategories.control
         self._init_docs()
         
     def _init_docs(self):

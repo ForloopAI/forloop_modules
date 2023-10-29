@@ -7,19 +7,21 @@ import forloop_modules.flog as flog
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.function_handlers.auxilliary.docs import Docs
+from forloop_modules.globals.docs_categories import DocsCategories
 
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 
 
 class StartHandler(AbstractFunctionHandler):
     """
-    Marks the starting point of a pipeline, i.e. it should be the first node in the pipeline.
+    Marks the starting point of a pipeline, i.e. it should be **the first** node in the pipeline.
     """
     
     def __init__(self):
         self.icon_type = "Start"
         self.fn_name = "Start"
         self.type_category = ntcm.categories.control_flow
+        self.docs_category = DocsCategories.control
         self._init_docs()
         
     def _init_docs(self):
@@ -48,12 +50,13 @@ class StartHandler(AbstractFunctionHandler):
 
 class FinishHandler(AbstractFunctionHandler):
     """
-    Marks the ending of a pipeline, i.e. it should be the last node in the pipeline.
+    Marks the ending of a pipeline, i.e. it should be **the last** node in the pipeline.
     """
     def __init__(self):
         self.icon_type = "Finish"
         self.fn_name = "Finish"
         self.type_category = ntcm.categories.control_flow
+        self.docs_category = DocsCategories.control
 
         self._init_docs()
 
@@ -93,6 +96,7 @@ class WaitHandler(AbstractFunctionHandler):
         self.fn_name = "Wait"
 
         self.type_category = ntcm.categories.control_flow
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
     def _init_docs(self):
@@ -181,6 +185,7 @@ class IfConditionHandler(AbstractFunctionHandler):
         self.icon_type = 'IfCondition'
         self.fn_name = 'If Condition'
         self.type_category = ntcm.categories.control_flow
+        self.docs_category = DocsCategories.control
 
         self.operators = {
             '==': operator.eq,
@@ -302,6 +307,7 @@ class IterateHandler:
         self.fn_name = "Iterate"
 
         self.type_category = ntcm.categories.control_flow
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         options2 = ["Iterate whole list", "Infinite loop", "Custom"]
@@ -328,6 +334,7 @@ class BatchHandler(AbstractFunctionHandler):
         self.fn_name = "Batch"
 
         self.type_category = ntcm.categories.control_flow
+        self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         form_dict_list = [

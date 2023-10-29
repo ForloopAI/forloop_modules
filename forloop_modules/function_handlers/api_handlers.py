@@ -12,6 +12,7 @@ import forloop_modules.queries.node_context_requests_backend as ncrb
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList 
 from forloop_modules.globals.variable_handler import variable_handler
+from forloop_modules.globals.docs_categories import DocsCategories
 
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 
@@ -117,6 +118,7 @@ class GetRequestHandler(AbstractFunctionHandler):
         self.fn_name = "Get Request"
 
         self.type_category = ntcm.categories.api
+        self.docs_category = DocsCategories.data_sources
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -206,6 +208,7 @@ class PostRequestHandler(AbstractFunctionHandler):
         self.fn_name = "Post Request"
 
         self.type_category = ntcm.categories.api
+        self.docs_category = DocsCategories.data_sources
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -314,6 +317,7 @@ class DeleteRequestHandler(AbstractFunctionHandler):
         self.fn_name = "Delete Request"
 
         self.type_category = ntcm.categories.api
+        self.docs_category = DocsCategories.data_sources
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -395,6 +399,7 @@ class PutRequestHandler(AbstractFunctionHandler):
         self.fn_name = "Put Request"
 
         self.type_category = ntcm.categories.api
+        self.docs_category = DocsCategories.data_sources
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 

@@ -20,6 +20,7 @@ from forloop_modules.function_handlers.variable_handlers import variable_handler
 
 from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.globals.scraping_utilities_handler import suh
+from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.globals.variable_handler import variable_handler
 
 from forloop_modules.errors.errors import CriticalPipelineError
@@ -46,6 +47,7 @@ class OpenBrowserHandler(AbstractFunctionHandler):
         self.fn_name = "Open Browser"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -53,6 +55,7 @@ class OpenBrowserHandler(AbstractFunctionHandler):
     def _init_docs(self):
         parameters_description = "OpenBrowser Node takes 2 parameters"
         self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
 
         self.docs.add_parameter_table_row(
             title="Show browser",
@@ -215,6 +218,7 @@ class LoadWebsiteHandler(AbstractFunctionHandler):
         self.fn_name = "Load Website"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -340,6 +344,7 @@ class DismissCookiesHandler(AbstractFunctionHandler):
         self.fn_name = "Dismiss Cookies"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -394,6 +399,7 @@ class NextPageHandler(AbstractFunctionHandler):
         self.fn_name = "Next Page"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -498,6 +504,7 @@ class ClickXPathHandler(AbstractFunctionHandler):
         self.fn_name = "Click XPath"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -572,6 +579,7 @@ class ClickNameHandler(AbstractFunctionHandler):
         self.fn_name = "Click Name"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -649,6 +657,7 @@ class ClickIdHandler(AbstractFunctionHandler):
         self.fn_name = "Click Id"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -727,6 +736,7 @@ class CloseBrowserHandler(AbstractFunctionHandler):
         self.fn_name = "Close browser after scraping"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -775,6 +785,7 @@ class GetCurrentURLHandler(AbstractFunctionHandler):
         self.fn_name = "Get current URL"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -946,6 +957,8 @@ class ScrollWebPageHandler(AbstractFunctionHandler):
         self.fn_name = "Scroll web page"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
+
         self._init_docs()
 
         super().__init__()
@@ -1049,8 +1062,9 @@ class ScanWebPageHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "ScanWebPage"
         self.fn_name = "Scan web page"
-
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
+
         self._init_docs()
 
         super().__init__()
@@ -1271,6 +1285,7 @@ class ExtractXPathHandler(AbstractFunctionHandler):
         self.fn_name = "Extract XPath"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -1490,6 +1505,7 @@ class ExtractMultipleXPathHandler(AbstractFunctionHandler):
         self.fn_name = "Extract Multiple XPath"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -1599,6 +1615,8 @@ class ExtractTableXPathHandler(AbstractFunctionHandler):
         self.fn_name = "Extract Table XPath"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
+
         self._init_docs()
 
         super().__init__()
@@ -1719,6 +1737,7 @@ class ExtractPageSourceHandler(AbstractFunctionHandler):
         self.fn_name = "Extract Page Source"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -1799,6 +1818,7 @@ class RefreshPageSourceHandler(AbstractFunctionHandler):
         self.fn_name = "Refresh Page Source"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -1852,6 +1872,7 @@ class DownloadImageHandler(AbstractFunctionHandler):
         self.fn_name = 'Download Image'
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -1965,6 +1986,7 @@ class DownloadImagesXPathHandler(AbstractFunctionHandler):
         self.fn_name = 'Download Images XPath'
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -2056,6 +2078,7 @@ class SetProxyHandler(AbstractFunctionHandler):
         self.fn_name = 'Set Proxy'
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
         self._init_docs()
 
         super().__init__()
@@ -2216,6 +2239,7 @@ class ScrapeSendKeysHandler(AbstractFunctionHandler):
         self.fn_name = "Scrape Send Keys"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
         super().__init__()
 
@@ -2263,6 +2287,7 @@ class ClickHTMLTagHandler(AbstractFunctionHandler):
         self.fn_name = "Click HTML Tag Send Keys"
 
         self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
 
         super().__init__()
 
