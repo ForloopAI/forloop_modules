@@ -356,7 +356,7 @@ class APIVariable(VariableModel):
 
 
 class APIPipeline(BaseModel):
-    name: str = "untitled"
+    name: Optional[str] = None
     start_node_uid: str = "0" # TODO: to be deprecated after introducing ExecCore for local execution
     is_active: bool = False # TODO: to be deprecated after introducing ExecCore for local execution
     #nodes_uids:list[int]
