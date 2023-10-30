@@ -2,7 +2,6 @@ import os
 import time
 import requests
 import sys
-import pandas as pd
 
 if "linux" not in sys.platform:
     import pywinauto
@@ -26,7 +25,7 @@ from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.errors.errors import CriticalPipelineError
 from forloop_modules.redis.redis_connection import kv_redis
 
-from src.gui.gui_layout_context import glc
+#from src.gui.gui_layout_context import glc
 ####################### SCRAPING HANDLERS ################################
 
 
@@ -1396,65 +1395,65 @@ class ExtractXPathHandler(AbstractFunctionHandler):
             variable_handlers_dict["NewVariable"].execute_with_params(params)
             ##variable_handler.update_data_in_variable_explorer(glc)
 
+            
+            # #TODO Dominik + Ilya: Better separation of frontend and backend - teporarily disabled - DO NOT ERASE THE WHOLE SECTION!
+            # if save_to == 'GridView':
+            #     if isinstance(data, list):
+            #         if list_as_str:
+            #             new_data = ', '.join(data)
+            #         else:
+            #             new_data = data
+            #     else:
+            #         new_data = str(data)
 
-            #TODO Ilya: Better separation of frontend and backend - teporarily disabled
-            if save_to == 'GridView':
-                if isinstance(data, list):
-                    if list_as_str:
-                        new_data = ', '.join(data)
-                    else:
-                        new_data = data
-                else:
-                    new_data = str(data)
+            #     old_df = glc.tables.elements[0].df
+            #     #old_df = None
+            #     if old_df is None:
+            #         if isinstance(new_data, list):
+            #             new_df = pd.DataFrame({column: new_data})
+            #         else:
+            #             new_df = pd.DataFrame([{column: new_data}])
+            #     else:
+            #         if column in old_df.columns:
+            #             # Get position of column
+            #             pos = list(old_df.columns).index(column)
 
-                old_df = glc.tables.elements[0].df
-                #old_df = None
-                if old_df is None:
-                    if isinstance(new_data, list):
-                        new_df = pd.DataFrame({column: new_data})
-                    else:
-                        new_df = pd.DataFrame([{column: new_data}])
-                else:
-                    if column in old_df.columns:
-                        # Get position of column
-                        pos = list(old_df.columns).index(column)
+            #             if pos == 0:
+            #                 if isinstance(new_data, list):
+            #                     new_df = pd.concat([old_df, pd.DataFrame({column: new_data})])
+            #                     """
+            #                                                     for i, elem in enumerate(new_data):
+            #                         flog.error('INSERTING ELEMENT')
+            #                         old_df = glc.tables.elements[0].df
+            #                         part_df = pd.DataFrame([{column: elem}])
+            #                         flog.error(str(part_df.shape))
+            #                         new_df = pd.concat([old_df, part_df])
 
-                        if pos == 0:
-                            if isinstance(new_data, list):
-                                new_df = pd.concat([old_df, pd.DataFrame({column: new_data})])
-                                """
-                                                                for i, elem in enumerate(new_data):
-                                    flog.error('INSERTING ELEMENT')
-                                    old_df = glc.tables.elements[0].df
-                                    part_df = pd.DataFrame([{column: elem}])
-                                    flog.error(str(part_df.shape))
-                                    new_df = pd.concat([old_df, part_df])
+            #                         glc.populate_table_with_df(new_df, 0)
+            #                         time.sleep(0.2)
+            #                     """
 
-                                    glc.populate_table_with_df(new_df, 0)
-                                    time.sleep(0.2)
-                                """
+            #                 else:
+            #                     new_df = pd.concat([old_df, pd.DataFrame({column: [new_data]})])
 
-                            else:
-                                new_df = pd.concat([old_df, pd.DataFrame({column: [new_data]})])
+            #             # Value first be nan, when replaced with actual data
+            #             else:
+            #                 new_df = old_df.copy()
 
-                        # Value first be nan, when replaced with actual data
-                        else:
-                            new_df = old_df.copy()
+            #                 if isinstance(new_data, list):
+            #                     pass
+            #                 else:
+            #                     new_df.iloc[-1, pos] = new_data
 
-                            if isinstance(new_data, list):
-                                pass
-                            else:
-                                new_df.iloc[-1, pos] = new_data
+            #         else:
+            #             if isinstance(new_data, list):
+            #                 new_df = pd.concat([old_df, pd.DataFrame({column: new_data})], axis=1)
+            #             else:
+            #                 new_df = pd.concat([old_df, pd.DataFrame({column: [new_data]})], axis=1)
 
-                    else:
-                        if isinstance(new_data, list):
-                            new_df = pd.concat([old_df, pd.DataFrame({column: new_data})], axis=1)
-                        else:
-                            new_df = pd.concat([old_df, pd.DataFrame({column: [new_data]})], axis=1)
-
-                glc.populate_table_with_df(new_df, 0)
-                variable_handler.new_variable("scraped_df", new_df)
-                #variable_handler.update_data_in_variable_explorer(glc)
+            #     glc.populate_table_with_df(new_df, 0)
+            #     variable_handler.new_variable("scraped_df", new_df)
+            #     #variable_handler.update_data_in_variable_explorer(glc)
 
 
     def export_code(self, node_detail_form):
