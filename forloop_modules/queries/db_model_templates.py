@@ -104,12 +104,11 @@ class DeleteUidObject(BaseModel):
 
 
 class APITrigger(BaseModel):
-    trigger_name: str = ""
-    machine_uid: str = ""
-    pipeline_uid: str = ""
-    first_run_datetime: datetime.datetime
-    frequency: int = ""
-    project_uid: str = "0"
+    trigger_name: Optional[str] = None
+    first_run: datetime.datetime
+    frequency: int
+    pipeline_uid: str
+    project_uid: str
 
 
 class APIDatabase(BaseModel):
@@ -385,7 +384,7 @@ class APIProject(BaseModel):
 #     trigger_name: str=""
 #     machine_uid:str=""
 #     pipeline_uid:str=""
-#     first_run_datetime: datetime.datetime
+#     first_run: datetime.datetime
 #     frequency: int=""
 #     project_uid:str="0"
     
