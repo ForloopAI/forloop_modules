@@ -1,11 +1,12 @@
+import datetime
+from enum import Enum
+from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
+
 from pydantic import BaseModel, Field
 from pydantic.functional_validators import field_validator
-from typing import Optional, Any, List, Dict, Union, Generic, TypeVar
-import datetime
-import re
 
-from enum import Enum
-    
+from forloop_common_structures.core.trigger import TriggerFrequencyEnum
+
 ##### DO NOT DELETE THIS SECTION -> Dominik will do it later
 
 #class APIEmail(BaseModel):
@@ -104,12 +105,18 @@ class DeleteUidObject(BaseModel):
 
 
 class APITrigger(BaseModel):
-    trigger_name: Optional[str] = None
+    name: Optional[str] = None
     first_run: datetime.datetime
-    frequency: int
+    frequency: TriggerFrequencyEnum
     pipeline_uid: str
     project_uid: str
 
+    @field_validator("first_run", mode="after")
+    @classmethod
+    def check_round_hours(cls, value: datetime.datetime) -> datetime.datetime:
+        if not (value.minute or value.second):
+            raise ValueError("The date must be at the start of an hour, with both minutes and seconds set to zero.")
+        return value
 
 class APIDatabase(BaseModel):
     database_name: str = ""
@@ -381,7 +388,7 @@ class APIProject(BaseModel):
 
     
 # class APITrigger(BaseModel):
-#     trigger_name: str=""
+#     name: str=""
 #     machine_uid:str=""
 #     pipeline_uid:str=""
 #     first_run: datetime.datetime
