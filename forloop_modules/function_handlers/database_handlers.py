@@ -431,7 +431,7 @@ class DBInsertHandler(AbstractFunctionHandler):
         databases_names = [database["database_name"] for database in databases]
         fdl.comboentry(name="db_name", text="", options=databases_names, row=1)
         fdl.label("Table name")
-        fdl.comboentry(name="dbtable_name", text="", options=db_tables, row=2)
+        fdl.comboentry(name="db_table_name", text="", options=db_tables, row=2)
         fdl.label("Inserted Data")
         fdl.entry(name="inserted_dataframe", text="", input_types=["list", "dict", "DataFrame"], row=3)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -507,7 +507,7 @@ class DBInsertHandler(AbstractFunctionHandler):
 
     def execute(self, node_detail_form):
         db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
-        db_table_name = node_detail_form.get_chosen_value_by_name("dbtable_name", variable_handler)
+        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
         inserted_dataframe = node_detail_form.get_chosen_value_by_name("inserted_dataframe", variable_handler)
 
         self.direct_execute(db_name, db_table_name, inserted_dataframe)
@@ -581,7 +581,7 @@ class DBDeleteHandler(AbstractFunctionHandler):
         databases_names = [database["database_name"] for database in databases]
         fdl.comboentry(name="db_name", text="", options=databases_names, row=1)
         fdl.label("From")
-        fdl.comboentry(name="dbtable_name", text="", options=db_tables, row=2)
+        fdl.comboentry(name="db_table_name", text="", options=db_tables, row=2)
         fdl.label("Where")
         fdl.label("Column")
         fdl.comboentry(name="column_name", text="", options=[], row=4)
@@ -636,7 +636,7 @@ class DBDeleteHandler(AbstractFunctionHandler):
 
     def execute(self, node_detail_form):
         db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
-        db_table_name = node_detail_form.get_chosen_value_by_name("dbtable_name", variable_handler)
+        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
         column_name = node_detail_form.get_chosen_value_by_name("column_name", variable_handler)
         operator = node_detail_form.get_chosen_value_by_name("operator", variable_handler)
         value = node_detail_form.get_chosen_value_by_name("value", variable_handler)
@@ -676,7 +676,7 @@ class DBUpdateHandler(AbstractFunctionHandler):
         databases_names = [database["database_name"] for database in databases]
         fdl.comboentry(name="db_name", text="", options=databases_names, row=1)
         fdl.label("Table name")
-        fdl.comboentry(name="dbtable_name", text="", options=db_tables, row=2)
+        fdl.comboentry(name="db_table_name", text="", options=db_tables, row=2)
         fdl.label("Set")
         fdl.label("Column")
         fdl.comboentry(name="set_column_name", text="", options=[], row=4)
@@ -752,7 +752,7 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
     def execute(self, node_detail_form):
         db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
-        db_table_name = node_detail_form.get_chosen_value_by_name("dbtable_name", variable_handler)
+        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
         set_column_name = node_detail_form.get_chosen_value_by_name("set_column_name", variable_handler)
         set_value = node_detail_form.get_chosen_value_by_name("set_value", variable_handler)
         where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name", variable_handler)
@@ -794,7 +794,7 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
         databases_names = [database["database_name"] for database in databases]
         fdl.comboentry(name="db_name", text="", options=databases_names, row=1)
         fdl.label("Table name")
-        fdl.combobox(name="table_name", options=db_tables, multiselect_indices=None, default=" ", row=2)
+        fdl.combobox(name="db_table_name", options=db_tables, multiselect_indices=None, default=" ", row=2)
         fdl.label("New variable:")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=3)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -817,20 +817,20 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
 
     def execute_with_params(self, params):
 
-        table_name = params["table_name"]
+        table_name = params["db_table_name"]
         new_var_name = params["new_var_name"]
         flog.info(f'execute table_name = {table_name}')
         self.direct_execute(table_name, new_var_name)
 
     def execute(self, node_detail_form):
         db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
-        table_name = node_detail_form.get_chosen_value_by_name("table_name", variable_handler)
+        table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
         self.direct_execute(db_name, table_name, new_var_name)
 
     def export_code(self, node_detail_form):
-        table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("table_name")
+        table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("db_table_name")
         new_var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_name", is_input_variable_name=True)
 
         code = """
