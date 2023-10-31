@@ -114,8 +114,8 @@ class APITrigger(BaseModel):
     @field_validator("first_run", mode="after")
     @classmethod
     def check_round_hours(cls, value: datetime.datetime) -> datetime.datetime:
-        if not (value.minute or value.second):
-            raise ValueError("The date must be at the start of an hour, with both minutes and seconds set to zero.")
+        if not value.second:
+            raise ValueError("The date must have seconds set to zero.")
         return value
 
 class APIDatabase(BaseModel):
