@@ -954,7 +954,7 @@ class RunMigrationFileHandler(AbstractFunctionHandler):
         # fdl.label("Migration file name:")
         # fdl.entry(name="filename", text="migration-1", input_types=["str"], row=3)
 
-        fdl.button(function=self.open_migration_file, function_args=node_detail_form, text="Load file", name="lookup_json_file")
+        fdl.button(function=self.open_migration_file, function_args=node_detail_form, text="Load file", name="lookup_file")
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
