@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from pydantic.functional_validators import field_validator
 
 from forloop_common_structures.core.trigger import TriggerFrequencyEnum
+from forloop_common_structures.core.database import DbDialectEnum
 
 ##### DO NOT DELETE THIS SECTION -> Dominik will do it later
 
@@ -113,10 +114,27 @@ class APITrigger(BaseModel):
 
     @field_validator("first_run", mode="after")
     @classmethod
-    def check_round_hours(cls, value: datetime.datetime) -> datetime.datetime:
+    def check_round_minutes(cls, value: datetime.datetime) -> datetime.datetime:
         if not value.second:
             raise ValueError("The date must have seconds set to zero.")
         return value
+
+
+class APIDatabase2(BaseModel):
+    """
+    Cleaned up APIDatabase schema used only in ScrapingPipelineBuilders, copied to retain
+    backwards-compatibility of the old version with Desktop.
+    """
+
+    name: str
+    server: str
+    port: int
+    database: str
+    username: str
+    password: str
+    dialect: DbDialectEnum
+    project_uid: str
+
 
 class APIDatabase(BaseModel):
     database_name: str = ""
