@@ -111,12 +111,6 @@ class APITrigger(BaseModel):
     pipeline_uid: str
     project_uid: str
 
-    @field_validator("first_run", mode="after")
-    @classmethod
-    def check_round_hours(cls, value: datetime.datetime) -> datetime.datetime:
-        if not value.second:
-            raise ValueError("The date must have seconds set to zero.")
-        return value
 
 class APIDatabase(BaseModel):
     database_name: str = ""
