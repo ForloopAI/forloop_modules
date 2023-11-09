@@ -1183,6 +1183,12 @@ def process_api_adjustments(adjustments_dict, project_uid):
 
     return response
 
+def get_user_log_messages(project_uid: str):
+    url = f'{BASE_API}/user_log_messages/{project_uid}'
+    response = requests.get(url)
+
+    return response
+
 def scan_website_and_take_screenshot_test(email, url):
     payload={"email":email,
              "url":url,
