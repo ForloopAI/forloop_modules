@@ -276,7 +276,7 @@ class VariableModel(BaseModel):
     name: str = ""
     value: Any = "" # strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None (anything evaluatable by ast.literal_eval)
     type: Optional[str] = None # Type can be enforced or autoinferred
-    size: Optional[int] = None # TODO: Size is never set on Frontend, it should not be a part of Validation Schema
+    size: Optional[int] = None
     is_result: bool = False
     pipeline_uid: str = "0"
     project_uid: str = "0" # TODO: Is this necessary? Node is indirectly linked to a project via pipeline
