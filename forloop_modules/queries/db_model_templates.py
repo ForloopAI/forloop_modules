@@ -118,6 +118,12 @@ class APITrigger(BaseModel):
     project_uid: str
 
 
+class DbDialectEnum(str, Enum):
+    MYSQL = "mysql"
+    POSTGRES = "postgres"
+    MONGO = "mongo"
+
+
 class APIDatabase(BaseModel):
     database_name: str = ""
     server: str = ""
