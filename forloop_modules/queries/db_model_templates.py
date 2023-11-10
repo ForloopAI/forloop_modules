@@ -1,9 +1,24 @@
 import datetime
 from enum import Enum
-from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
+from typing import Any, Dict, Generic, List, Optional, TypeVar, Union, Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, AfterValidator, PlainSerializer
 from pydantic.functional_validators import field_validator
+
+
+def is_date_utc(date: datetime.datetime) -> datetime.datetime:
+    if date.utcoffset() != datetime.timedelta(0):
+        raise ValueError('Only datetimes in a UTC zone are allowed')
+    date = date.replace(tzinfo=None) # Cast to naive datetime after validation, otherwise XlsxDB persistence will fail
+    return date
+
+# NOTE: Only UTC timestamps should be accepted by API server.
+# NOTE: Currently used only for APITriggers, as zulu datetime formating can potentially break Desktop
+UTCDatetime = Annotated[
+    datetime.datetime,
+    AfterValidator(is_date_utc),  # Validate if the date is in UTC zone (zulu format)
+    PlainSerializer(lambda date: f"{date.isoformat()}Z") # Serialize Timestamps to zulu format
+]
 
 
 ##### DO NOT DELETE THIS SECTION -> Dominik will do it later
@@ -112,17 +127,10 @@ class TriggerFrequencyEnum(str, Enum):
 
 class APITrigger(BaseModel):
     name: Optional[str] = None
-    first_run_date: datetime.datetime
+    first_run_date: UTCDatetime
     frequency: TriggerFrequencyEnum
     pipeline_uid: str
     project_uid: str
-
-    @field_validator("first_run_date", mode="after")
-    @classmethod
-    def check_round_minutes(cls, value: datetime.datetime) -> datetime.datetime:
-        if value.second != 0:
-            raise ValueError("The date must have seconds set to zero.")
-        return value
 
 
 class DbDialectEnum(str, Enum):
