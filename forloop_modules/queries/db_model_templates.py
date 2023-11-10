@@ -112,12 +112,12 @@ class TriggerFrequencyEnum(str, Enum):
 
 class APITrigger(BaseModel):
     name: Optional[str] = None
-    first_run_utc: datetime.datetime
+    first_run_date: datetime.datetime
     frequency: TriggerFrequencyEnum
     pipeline_uid: str
     project_uid: str
 
-    @field_validator("first_run_utc", mode="after")
+    @field_validator("first_run_date", mode="after")
     @classmethod
     def check_round_minutes(cls, value: datetime.datetime) -> datetime.datetime:
         if value.second != 0:
