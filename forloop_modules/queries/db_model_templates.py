@@ -120,7 +120,7 @@ class APITrigger(BaseModel):
     @field_validator("first_run_utc", mode="after")
     @classmethod
     def check_round_minutes(cls, value: datetime.datetime) -> datetime.datetime:
-        if not value.second:
+        if value.second != 0:
             raise ValueError("The date must have seconds set to zero.")
         return value
 
