@@ -117,6 +117,13 @@ class APITrigger(BaseModel):
     pipeline_uid: str
     project_uid: str
 
+    @field_validator("first_run_utc", mode="after")
+    @classmethod
+    def check_round_minutes(cls, value: datetime.datetime) -> datetime.datetime:
+        if value.second != 0:
+            raise ValueError("The date must have seconds set to zero.")
+        return value
+
 
 class DbDialectEnum(str, Enum):
     MYSQL = "mysql"
