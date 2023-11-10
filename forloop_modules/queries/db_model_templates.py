@@ -5,7 +5,6 @@ from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 from pydantic import BaseModel, Field
 from pydantic.functional_validators import field_validator
 
-from forloop_modules.queries.db_model_templates import DbDialectEnum
 
 ##### DO NOT DELETE THIS SECTION -> Dominik will do it later
 
