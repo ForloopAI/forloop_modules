@@ -5,7 +5,6 @@ from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 from pydantic import BaseModel, Field
 from pydantic.functional_validators import field_validator
 
-from forloop_common_structures.core.trigger import TriggerFrequencyEnum
 
 ##### DO NOT DELETE THIS SECTION -> Dominik will do it later
 
@@ -102,6 +101,13 @@ class DeleteUidObject(BaseModel):
 #     project_key: str = ""
 #     project_uid: str = ""
 #     last_active_pipeline_uid: Optional[str] = None
+
+
+class TriggerFrequencyEnum(str, Enum):
+    HOURLY = "hourly"
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
 
 
 class APITrigger(BaseModel):
