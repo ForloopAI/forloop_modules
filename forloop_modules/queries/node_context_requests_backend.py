@@ -1183,8 +1183,8 @@ def process_api_adjustments(adjustments_dict, project_uid):
 
     return response
 
-def get_user_log_messages(project_uid: str):
-    url = f'{BASE_API}/user_log_messages/{project_uid}'
+def get_user_logs():
+    url = f'{BASE_API}/user_logs'
     response = requests.get(url)
 
     return response
