@@ -113,7 +113,7 @@ class TriggerFrequencyEnum(str, Enum):
 
 class APITrigger(BaseModel):
     name: Optional[str] = None
-    first_run: datetime.datetime
+    first_run_utc: datetime.datetime
     frequency: TriggerFrequencyEnum
     pipeline_uid: str
     project_uid: str
@@ -124,6 +124,12 @@ class APITrigger(BaseModel):
         if not value.second:
             raise ValueError("The date must have seconds set to zero.")
         return value
+
+
+class DbDialectEnum(str, Enum):
+    MYSQL = "mysql"
+    POSTGRES = "postgres"
+    MONGO = "mongo"
 
 
 class APIDatabase2(BaseModel):
@@ -306,7 +312,7 @@ class VariableModel(BaseModel):
     name: str = ""
     value: Any = "" # strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None (anything evaluatable by ast.literal_eval)
     type: Optional[str] = None # Type can be enforced or autoinferred
-    size: Optional[int] = None # TODO: Size is never set on Frontend, it should not be a part of Validation Schema
+    size: Optional[int] = None
     is_result: bool = False
     pipeline_uid: str = "0"
     project_uid: str = "0" # TODO: Is this necessary? Node is indirectly linked to a project via pipeline
