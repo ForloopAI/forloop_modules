@@ -117,7 +117,7 @@ class APITrigger(BaseModel):
     pipeline_uid: str
     project_uid: str
 
-    @field_validator("first_run", mode="after")
+    @field_validator("first_run_utc", mode="after")
     @classmethod
     def check_round_minutes(cls, value: datetime.datetime) -> datetime.datetime:
         if not value.second:
