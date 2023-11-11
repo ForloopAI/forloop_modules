@@ -7,6 +7,7 @@ if "linux" not in sys.platform:
     import pywinauto
 
 from pathlib import Path
+from bs4 import BeautifulSoup
 from keepvariable.keepvariable_core import Var, save_variables, kept_variables
 
 import forloop_modules.flog as flog
@@ -2325,6 +2326,273 @@ class ClickHTMLTagHandler(AbstractFunctionHandler):
         save_variables(kept_variables)
 
 
+class GetPageSourceHandler(AbstractFunctionHandler):
+    """
+    GetPageSource Node retrieves HTML source of provided page.
+    """
+
+    def __init__(self):
+        self.icon_type = "GetPageSource"
+        self.fn_name = "Get Page Source"
+
+        self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
+        self._init_docs()
+
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "GetPageSource Node takes 2 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="URL",
+            name="url",
+            description="URL of web page to extract HTML source of",
+            typ="string",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Output variable",
+            name="output_variable",
+            description="Name of variable to store HTML source in"
+        )
+
+    def make_form_dict_list(self, *args, node_detail_form=None):
+        fdl = FormDictList()
+
+        fdl.label(self.fn_name)
+        fdl.label("URL")
+        fdl.entry(name="url", text="", required=True, input_types=["str"], row=1)
+        fdl.label("Output variable")
+        fdl.entry(name="output_variable", text="", required=True, input_types=["str"], row=2)
+        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True, row=3)
+
+        return fdl
+
+    def execute(self, node_detail_form):
+        url = node_detail_form.get_chosen_value_by_name("url", variable_handler)
+        output_variable = node_detail_form.get_chosen_value_by_name("output_variable", variable_handler)
+
+        self.direct_execute(url, output_variable)
+
+    def execute_with_params(self, params):
+        url = params["url"]
+        output_variable = params["output_variable"]
+
+        self.direct_execute(url, output_variable)
+
+    def direct_execute(self, url, output_variable):
+        if "http" not in url:
+            url = "http://" + url
+
+        r = requests.get(url)
+
+        variable_handler.new_variable(output_variable, r.text)
+
+    def export_code(self, node_detail_form):
+        url = node_detail_form.get_chosen_value_by_name("url", variable_handler)
+        output_variable = node_detail_form.get_chosen_value_by_name("output_variable", variable_handler)
+
+        if 'http://' not in url:
+            url = f'http://{url}'
+
+        code = f"""
+        # Get page source
+        r = requests.get(url="{url}")
+
+        {output_variable} = r.text
+        """
+
+        return code
+
+    def export_imports(self, *args):
+        imports = ["import requests"]
+
+        return imports
+
+
+class FindPageElementsHandler(AbstractFunctionHandler):
+    """
+    FindPageElements Node searches for web page elements with provided attributes
+    """
+
+    def __init__(self):
+        self.icon_type = "FindPageElements"
+        self.fn_name = "Find Page Elements"
+
+        self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
+        self._init_docs()
+
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "FindPageElements Node takes 7 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="Page source",
+            name="page_source",
+            description="HTML source of page to parse",
+            typ="string",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Tag",
+            name="tag",
+            description="HTML tag name to search for",
+            typ="string",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Class",
+            name="class_",
+            description="HTML tag class to search for",
+            typ="string",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Attributes",
+            name="attributes",
+            description="Additional attributes to search element(s) by",
+            typ="dictionary",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Get",
+            name="get",
+            description="What data to extract from found element(s). Choose from predefined or add your own one. "
+                        "Special option is '-' which will not extract any data and will store element itself "
+                        "(useful for further parsing of elements)",
+            typ="string",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Find all",
+            name="find_all",
+            description="Whether to search for all possible elements, not only for the first one",
+            typ="boolean",
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Output variable",
+            name="output_variable",
+            description="Name of variable to store found element(s) in"
+        )
+
+    def make_form_dict_list(self, *args, node_detail_form=None):
+        fdl = FormDictList()
+
+        fdl.label(self.fn_name)
+        fdl.label("Page source")
+        fdl.entry(name="page_source", text="", required=True, input_types=["str"], row=1)
+        fdl.label("Tag")
+        fdl.entry(name="tag", text="", required=True, input_types=["str"], row=2)
+        fdl.label("Class")
+        fdl.entry(name="class_", text="", required=False, input_types=["str"], row=3)
+        fdl.label("Attributes")
+        fdl.entry(name="attributes", text="", required=False, input_types=["dict"], row=4)
+        fdl.label("Get")
+        fdl.comboentry(name="get", text="text", options=['text', 'href', '-'], row=5)
+        fdl.label("Find all")
+        fdl.checkbox(name="find_all", bool_value=False, row=6)
+        fdl.label("Output variable")
+        fdl.entry(name="output_variable", text="", required=True, input_types=["str"], row=7)
+        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True, row=8)
+
+        return fdl
+
+    def execute(self, node_detail_form):
+        page_source = node_detail_form.get_chosen_value_by_name("page_source", variable_handler)
+        tag = node_detail_form.get_chosen_value_by_name("tag", variable_handler)
+        class_ = node_detail_form.get_chosen_value_by_name("class_", variable_handler)
+        attributes = node_detail_form.get_chosen_value_by_name("attributes", variable_handler)
+        get = node_detail_form.get_chosen_value_by_name("get", variable_handler)
+        find_all = node_detail_form.get_chosen_value_by_name("find_all", variable_handler)
+        output_variable = node_detail_form.get_chosen_value_by_name("output_variable", variable_handler)
+
+        self.direct_execute(page_source, tag, class_, attributes, get, find_all, output_variable)
+
+    def execute_with_params(self, params):
+        page_source = params["page_source"]
+        tag = params["tag"]
+        class_ = params["class_"]
+        attributes = params["attributes"]
+        get = params["get"]
+        find_all = params["find_all"]
+        output_variable = params["output_variable"]
+
+        self.direct_execute(page_source, tag, class_, attributes, get, find_all, output_variable)
+
+    def direct_execute(self, page_source, tag, class_, attributes, get, find_all, output_variable):
+        # '-' means not to extract any attribute from element and store element itself instead
+        get = get[0] if get else '-'
+
+        if not attributes:
+            attributes = dict()
+        else:
+            # FIXME: why 'attributes' param (defined with type dict in FDL) is stored as string?
+            attributes = eval(attributes)
+
+        if class_:
+            attributes['class'] = class_
+
+        soup = BeautifulSoup(page_source, 'html.parser')
+
+        # TODO: handle not found elements
+        if find_all:
+            elements = soup.find_all(tag, attrs=attributes)
+        else:
+            elements = [soup.find(tag, attrs=attributes)]
+
+        if get == 'text':
+            elements_data = [x.text for x in elements]
+        elif get == '-':
+            elements_data = elements
+        else:
+            elements_data = [x.get(get) for x in elements]
+
+        if not find_all:
+            elements_data = elements_data[0]
+
+        variable_handler.new_variable(output_variable, elements_data)
+
+    def export_code(self, node_detail_form):
+        page_source = node_detail_form.get_chosen_value_by_name("page_source", variable_handler)
+        tag = node_detail_form.get_chosen_value_by_name("tag", variable_handler)
+        class_ = node_detail_form.get_chosen_value_by_name("class_", variable_handler)
+        attributes = node_detail_form.get_chosen_value_by_name("attributes", variable_handler)
+        get = node_detail_form.get_chosen_value_by_name("get", variable_handler)
+        find_all = node_detail_form.get_chosen_value_by_name("find_all", variable_handler)
+        output_variable = node_detail_form.get_chosen_value_by_name("output_variable", variable_handler)
+
+        if not attributes:
+            attributes = dict()
+
+        if class_:
+            attributes['class'] = class_
+
+        if find_all:
+            code_res = f"res = soup.find_all('{tag}', attrs={attributes})"
+        else:
+            code_res = f"res = soup.find('{tag}', attrs={attributes})"
+
+        code = f"""
+        # Prepare parser object
+        soup = BeautifulSoup(r.text, 'html.parser')
+
+        {code_res}
+        """
+
+        return code
+
+    def export_imports(self, *args):
+        imports = ["from bs4 import BeautifulSoup"]
+
+        return imports
+
+
 webscraping_handlers_dict = {
     "OpenBrowser": OpenBrowserHandler(),
     "ExtractPageSource": ExtractPageSourceHandler(),
@@ -2346,5 +2614,7 @@ webscraping_handlers_dict = {
     "DownloadImage": DownloadImageHandler(),
     "DownloadImagesXPath": DownloadImagesXPathHandler(),
     "NextPage": NextPageHandler(),
-    "SetProxy": SetProxyHandler()
+    "SetProxy": SetProxyHandler(),
+    "GetPageSource": GetPageSourceHandler(),
+    "FindPageElements": FindPageElementsHandler()
 }

@@ -18,7 +18,7 @@ PIPELINE_CLEANING_ICONS = ["DropColumn", "RenameColumn", "ConstantColumn", "Sele
 SCRAPING_ICONS = ["OpenBrowser", "LoadWebsite", "RefreshPageSource", "ClickXPath", "ScanWebPage", "ExtractXPath",
                   "ExtractMultipleXPath", "ExtractTableXPath", "ClickName", "ClickId", "PrintXPath", "GetCurrentURL",
                   "CloseBrowser", "WaitUntilElementIsLocated", "ExtractPageSource", "ScrollWebPage", "DownloadImage",
-                  "DownloadImagesXPath", "SetProxy"]
+                  "DownloadImagesXPath", "SetProxy", "FindPageElements", "GetPageSource"]
 
 ROLLABLE_ICONS = ["DefineFunction"] #* Can be unrolled into sub-block of nodes (functions, classes, loops etc.)
 
