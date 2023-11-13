@@ -1,11 +1,26 @@
-from pydantic import BaseModel, Field
-from pydantic.functional_validators import field_validator
-from typing import Optional, Any, List, Dict, Union, Generic, TypeVar
 import datetime
-import re
-
 from enum import Enum
-    
+from typing import Any, Dict, Generic, List, Optional, TypeVar, Union, Annotated
+
+from pydantic import BaseModel, Field, AfterValidator, PlainSerializer
+from pydantic.functional_validators import field_validator
+
+
+def is_date_utc(date: datetime.datetime) -> datetime.datetime:
+    if date.utcoffset() != datetime.timedelta(0):
+        raise ValueError('Only datetimes in a UTC zone are allowed')
+    date = date.replace(tzinfo=None) # Cast to naive datetime after validation, otherwise XlsxDB persistence will fail
+    return date
+
+# NOTE: Only UTC timestamps should be accepted by API server.
+# NOTE: Currently used only for APITriggers, as zulu datetime formating can potentially break Desktop
+UTCDatetime = Annotated[
+    datetime.datetime,
+    AfterValidator(is_date_utc),  # Validate if the date is in UTC zone (zulu format)
+    PlainSerializer(lambda date: f"{date.isoformat()}Z") # Serialize Timestamps to zulu format
+]
+
+
 ##### DO NOT DELETE THIS SECTION -> Dominik will do it later
 
 #class APIEmail(BaseModel):
@@ -103,13 +118,25 @@ class DeleteUidObject(BaseModel):
 #     last_active_pipeline_uid: Optional[str] = None
 
 
+class TriggerFrequencyEnum(str, Enum):
+    HOURLY = "hourly"
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+
+
 class APITrigger(BaseModel):
-    trigger_name: str = ""
-    machine_uid: str = ""
-    pipeline_uid: str = ""
-    first_run_datetime: datetime.datetime
-    frequency: int = ""
-    project_uid: str = "0"
+    name: Optional[str] = None
+    first_run_date: UTCDatetime
+    frequency: TriggerFrequencyEnum
+    pipeline_uid: str
+    project_uid: str
+
+
+class DbDialectEnum(str, Enum):
+    MYSQL = "mysql"
+    POSTGRES = "postgres"
+    MONGO = "mongo"
 
 
 class APIDatabase(BaseModel):
@@ -276,7 +303,7 @@ class VariableModel(BaseModel):
     name: str = ""
     value: Any = "" # strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None (anything evaluatable by ast.literal_eval)
     type: Optional[str] = None # Type can be enforced or autoinferred
-    size: Optional[int] = None # TODO: Size is never set on Frontend, it should not be a part of Validation Schema
+    size: Optional[int] = None
     is_result: bool = False
     pipeline_uid: str = "0"
     project_uid: str = "0" # TODO: Is this necessary? Node is indirectly linked to a project via pipeline
@@ -382,10 +409,10 @@ class APIProject(BaseModel):
 
     
 # class APITrigger(BaseModel):
-#     trigger_name: str=""
+#     name: str=""
 #     machine_uid:str=""
 #     pipeline_uid:str=""
-#     first_run_datetime: datetime.datetime
+#     first_run: datetime.datetime
 #     frequency: int=""
 #     project_uid:str="0"
     
