@@ -6,6 +6,9 @@ import shutil
 
 import os
 import pickle
+import sys
+
+import bs4.element
 import forloop_modules.flog as flog
 
 
@@ -21,9 +24,16 @@ def save_data_dict_to_pickle_folder(data_dict, folder, clean_existing_folder=Tru
     os.makedirs(folder, exist_ok=True) #create folder if doesnt exist
 
     for k, v in data_dict.items():
+        # FIXME Ilya: serialization of BS objects hits recursion limit. Custom serializer is probably needed
+        if type(v) == bs4.element.Tag:
+            sys.setrecursionlimit(8000)
+
         print("datadict",k,v)
         with Path(folder, k+".pickle").open(mode='wb') as pickle_file:
             pickle.dump(v, pickle_file) #to serialize DF
+
+        # Set back default recursion limit
+        sys.setrecursionlimit(1000)
 
 def load_data_dict_from_pickle_folder(folder):
     
