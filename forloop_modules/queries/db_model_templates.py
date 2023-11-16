@@ -232,6 +232,10 @@ class APIScanWebpage(BaseModel):
     incl_images: Optional[bool]
     incl_buttons: Optional[bool]
     xpath: Optional[str]
+    
+class APIFilterWebpageElements(BaseModel):
+    elements: list[dict]
+    objective: str
 
 
 # class APIPaginationMode(BaseModel):
