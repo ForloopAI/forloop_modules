@@ -4,6 +4,7 @@
 #It is forbidden to add imports to popup handlers, pipeline function handlers, or any gui components
 
 import os
+import sys
 import re
 import forloop_modules.flog as flog
 import numpy as np
@@ -137,6 +138,72 @@ class ScrapingUtilitiesHandler:
         self.webpage_elements = webpage_elements
 
         return self.webpage_elements
+    
+    def rescale_webpage_elements(self, webpage_elements, scaling_factor_x):
+        """
+        webpage_elements -> browser_view_elements
+        """
+
+        # Loading mode of browser (normal/headless)
+        try:
+            browser_info = self.webscraping_client.get_browser_meta_data()['browser']
+            headless = browser_info['headless']
+            driver_type = browser_info['driver']
+
+            # Due to some issues when rerunning pipeline
+            if headless is None:
+                headless = False
+        except Exception as e:
+            flog.error(f'Error while loading bool_scrape_in_browser / driver type!: {e}')
+            headless = True
+            driver_type = 'Firefox'
+
+        bool_scrape_in_browser = not headless
+
+        # TODO: ScanWebPage icon was not tested on Linux platform
+        # Coordinates / size of elements (rectangles) vary on different platforms/drivers, so need to be scaled by coefficient
+        # scaling_coef - scaling coefficient depending on OS
+        # x, y, height, width - padding
+        # [coefficient in headless mode, coefficient with GUI]
+        coefs_by_platform_and_driver = {'Firefox': {'scaling_coef':
+                                                        {'darwin': [1, 2], 'win32': [1, 1], 'linux2': [1, 1]},
+                                                    'x': [3, 3],
+                                                    'y': [1, 2],
+                                                    'height': [4, 4],
+                                                    'width': [6, 4]},
+                                        'Chrome': {'scaling_coef':
+                                                       {'darwin': [2, 2], 'win32': [1, 1], 'linux2': [1, 1]},
+                                                   'x': [3, 3],
+                                                   'y': [1, 2],
+                                                   'height': [4, 4],
+                                                   'width': [6, 4]}}
+
+        padding_x = coefs_by_platform_and_driver[driver_type]['x'][bool_scrape_in_browser]
+        padding_y = coefs_by_platform_and_driver[driver_type]['y'][bool_scrape_in_browser]
+        padding_height = coefs_by_platform_and_driver[driver_type]['height'][bool_scrape_in_browser]
+        padding_width = coefs_by_platform_and_driver[driver_type]['width'][bool_scrape_in_browser]
+
+        scaling_coef = coefs_by_platform_and_driver[driver_type]['scaling_coef'][sys.platform][bool_scrape_in_browser]
+
+        browser_view_elements = []
+
+        # Transfer coordinates of elements to Browser Editor (Browser View)
+        for element in webpage_elements:
+            # +/- X at the end of line creates padding
+
+            x = element['rect']['x'] * scaling_factor_x * scaling_coef - padding_x
+            y = element['rect']['y'] * scaling_factor_x * scaling_coef - padding_y
+            h = element['rect']['height'] * scaling_factor_x * scaling_coef + padding_height
+            w = element['rect']['width'] * scaling_factor_x * scaling_coef + padding_width
+
+            name = element['name']
+            xpath = element['xpath']
+            data = element['data']
+            type_ = element['type']
+
+            browser_view_elements.append({"pos": [x, y], "size": [w, h], 'name': name, 'type': type_, 'xpath': xpath, 'data': data})
+
+        self.append_browser_view_elements(browser_view_elements)
 
     def get_webpage_elements(self):
         """
