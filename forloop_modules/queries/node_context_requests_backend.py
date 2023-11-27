@@ -484,7 +484,8 @@ def delete_all_edges():
 
 def update_last_active_dataframe_node_uid(last_active_dataframe_node_uid: Optional[str]):
     payload = {
-        "last_active_dataframe_node_uid": last_active_dataframe_node_uid,
+        "project_uid": aet.project_uid,
+        "last_active_dataframe_node_uid": last_active_dataframe_node_uid
     }
 
     flog.info(f'Last active DF node_uid payload: {payload}')
@@ -498,7 +499,7 @@ def update_last_active_dataframe_node_uid(last_active_dataframe_node_uid: Option
 
 
 def get_last_active_dataframe_node_uid():
-    url = f'{BASE_API}/last_active_dataframe_node_uid'
+    url = f'{BASE_API}/last_active_dataframe_node_uid?project_uid={aet.project_uid}'
     response = requests.get(url)
     flog.debug(f'GET Last active DF node_uid response: {response.text}')
 

@@ -94,7 +94,7 @@ class LocalVariableHandler:
   
         #serialization for objects
         if variable.typ in REDIS_STORED_TYPES_AS_STRINGS:
-            value = kv_redis.get(variable.name)
+            value = kv_redis.get("stored_variable_" + variable.name)
             value.attrs["name"] = variable.name
 
             response = ncrb.get_variable_by_name(variable.name)
@@ -198,7 +198,7 @@ class LocalVariableHandler:
             response = ncrb.new_variable(name, value)
         else:
             if self.is_value_redis_compatible(value):
-                kv_redis.set(name, value, additional_params)
+                kv_redis.set("stored_variable_" + name, value, additional_params)
             else:
                 data_dict={}
                 data_dict[name]=value
@@ -215,7 +215,7 @@ class LocalVariableHandler:
         if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
             value=ast.literal_eval(str(value))
         elif type in REDIS_STORED_TYPES_AS_STRINGS:
-            value = kv_redis.get(name)
+            value = kv_redis.get("stored_variable_" + name)
 
             if isinstance(value, pd.DataFrame):
                 value = self.process_dataframe_variable_on_initialization(name, value)
@@ -267,7 +267,7 @@ class LocalVariableHandler:
         if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
             value=ast.literal_eval(str(value))
         elif type in REDIS_STORED_TYPES_AS_STRINGS:
-            value = kv_redis.get(name)
+            value = kv_redis.get("stored_variable_" + name)
         
         variable=self.variables[name]
         self.variables[name].value=value #Update
