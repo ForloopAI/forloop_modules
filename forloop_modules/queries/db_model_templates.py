@@ -194,6 +194,12 @@ class APIFile(BaseModel):
     upload_status: str = "Not started"
 
 
+class APIVariableToBeAssignedToFile(BaseModel):
+    variable_name: str = ""
+    project_uid: str = "0"
+    pipeline_uid: str = "0"
+
+
 class APIScript(BaseModel):
     script_name: str = ""
     text: str = ""
@@ -232,6 +238,10 @@ class APIScanWebpage(BaseModel):
     incl_images: Optional[bool]
     incl_buttons: Optional[bool]
     xpath: Optional[str]
+    
+class APIFilterWebpageElements(BaseModel):
+    elements: list[dict]
+    objective: str
 
 
 # class APIPaginationMode(BaseModel):

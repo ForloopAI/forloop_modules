@@ -243,7 +243,7 @@ class LocalVariableHandler:
                 response = ncrb.update_variable_by_uid(variable_uid, name, value, result["is_result"])
             else:
                 if self.is_value_redis_compatible(value):
-                    kv_redis.set(name, value, additional_params)
+                    kv_redis.set("stored_variable_" + name, value, additional_params)
                 else:
                     data_dict={}
                     data_dict[name]=value

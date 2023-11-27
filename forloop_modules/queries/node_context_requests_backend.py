@@ -1205,3 +1205,14 @@ def scan_website_and_take_screenshot_test(email, url):
     response=requests.post(url=url,json=payload)
     print(json.loads(response.content))
     return response
+
+def filter_webpage_elements_based_on_objective(elements: list[dict], objective: str):
+    payload = {
+        "elements": elements,
+        "objective": objective
+    }
+    
+    url = f'{BASE_API}/filter_webpage_elements_based_on_objective'
+    response = requests.post(url=url, json=payload)
+    
+    return response
