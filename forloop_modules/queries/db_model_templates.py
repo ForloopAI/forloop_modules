@@ -7,7 +7,7 @@ from pydantic.functional_validators import field_validator
 
 
 def is_date_utc(date: datetime.datetime) -> datetime.datetime:
-    if date.utcoffset() != datetime.timedelta(0):
+    if date.utcoffset() is not None and date.utcoffset() != datetime.timedelta(0):
         raise ValueError('Only datetimes in a UTC zone are allowed')
     date = date.replace(tzinfo=None) # Cast to naive datetime after validation, otherwise XlsxDB persistence will fail
     return date
@@ -116,6 +116,13 @@ class DeleteUidObject(BaseModel):
 #     project_key: str = ""
 #     project_uid: str = ""
 #     last_active_pipeline_uid: Optional[str] = None
+
+
+class PipelineJobStats(BaseModel):
+    webpage_count: int
+    webpage_avg_cycle_time: float
+    node_count: int
+    node_avg_cycle_time: float
 
 
 class TriggerFrequencyEnum(str, Enum):
