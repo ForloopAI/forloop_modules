@@ -6,10 +6,10 @@ import sys
 if "linux" not in sys.platform:
     import pywinauto
 
+import pandas as pd
 from pathlib import Path
 from bs4 import BeautifulSoup
 from keepvariable.keepvariable_core import Var, save_variables, kept_variables
-
 import forloop_modules.flog as flog
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
@@ -23,7 +23,7 @@ from forloop_modules.globals.scraping_utilities_handler import suh
 from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.globals.variable_handler import variable_handler
 
-from forloop_modules.errors.errors import CriticalPipelineError
+from forloop_modules.errors.errors import CriticalPipelineError, SoftPipelineError
 from forloop_modules.redis.redis_connection import kv_redis
 
 #from src.gui.gui_layout_context import glc
@@ -2593,6 +2593,126 @@ class FindPageElementsHandler(AbstractFunctionHandler):
         return imports
 
 
+class ExtractGroupedXPathsHandler(AbstractFunctionHandler):
+    """Alternative implementation of ExtractXPath node used in Scraping Pipeline Builders."""
+    def __init__(self):
+        self.icon_type = "ExtractGroupedXPaths"
+        self.fn_name = "Extract Grouped XPaths"
+
+        self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
+        self._init_docs()
+
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "ExtractGroupedXPaths Node takes 4 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="XPaths", name="xpaths",
+            description="List with XPaths. Must be of same length as Columns parameters",
+            typ="list of strings", example=[
+                '//*[@id="next"]/main/section/article[15]/div[2]/h2/span[2]',
+                '/html/body/div[4]/div[1]/a/div[2]'
+            ]
+        )
+        self.docs.add_parameter_table_row(
+            title="Columns", name="columns",
+            description="List with column names. Must be of same length as XPath parameter",
+            typ="list of strings", example=['price', 'publish_date']
+        )
+        self.docs.add_parameter_table_row(
+            title="DataFrame", name="df_name", description="Name of variable with a DataFrame",
+            typ="string", example=None
+        )
+        self.docs.add_parameter_table_row(
+            title="Write in file mode", name="write_mode",
+            description="Parameter specifying should the DataFrame be overwritten or appended to",
+            example=["Write", "Append"]
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
+        options = ("Write", "Append")
+
+        fdl = FormDictList()
+
+        fdl.label("Extract grouped HTML elements by XPaths")
+        fdl.label("XPaths")
+        fdl.entry(name="xpaths", text="", input_types=["list"], required=True, row=1)
+        fdl.label("DataFrame")
+        fdl.entry(name="df_name", text="", input_types=["DataFrame"], required=True, row=2)
+        fdl.label("Write mode")
+        fdl.combobox(name="write_mode", options=options, row=3)
+        fdl.label("Column names")
+        fdl.entry(name="columns", text="", input_types=["list"], required=True, row=4)
+        return fdl
+
+    def execute(self, node_detail_form):
+        xpaths = node_detail_form.get_chosen_value_by_name("xpaths", variable_handler)
+        columns = node_detail_form.get_chosen_value_by_name("columns", variable_handler)
+        df_name = node_detail_form.get_chosen_value_by_name("df_name", variable_handler)
+        write_mode = node_detail_form.get_chosen_value_by_name("write_mode", variable_handler)
+
+        self.direct_execute(xpaths, df_name, write_mode, columns)
+
+    def execute_with_params(self, params):
+        xpaths = params["xpaths"]
+        df_name = params["df_name"]
+        write_mode = params["write_mode"]
+        columns = params["columns"]
+
+        self.direct_execute(xpaths, df_name, write_mode, columns)
+
+    def direct_execute(self, xpaths, df_name, write_mode, columns):
+        if not all(isinstance(xpath, str) for xpath in xpaths):
+            raise CriticalPipelineError("XPaths must be provided as a list of strings")
+        if not all(isinstance(column, str) for column in columns):
+            raise CriticalPipelineError("Columns must be provided as a list of strings")
+        if len(columns) != len(xpaths):
+            raise CriticalPipelineError("Selected XPaths must be of same length as Columns")
+
+        var = variable_handler.variables.get(df_name)
+        if write_mode == "Update" and var is None:
+            raise SoftPipelineError(
+                f"Existing DataFrame must be provided when using {write_mode} mode"
+            )
+
+        filename = f'{df_name}.txt'
+        data_dict = {}
+        for xpath, column in zip(xpaths, columns):
+            xpath = suh.check_xpath_apostrophes(xpath)
+            suh.webscraping_client.extract_xpath(xpath, filename, "w+")
+            data = suh.wait_until_data_is_extracted(filename, timeout=3, xpath_func=True)
+            data_dict[column] = data
+
+        if write_mode == "Write":
+            new_df = pd.DataFrame(data_dict)
+        elif write_mode == "Append":
+            old_df: pd.DataFrame = var.value
+            new_rows = pd.DataFrame(data_dict)
+            new_df = pd.concat([old_df, new_rows], ignore_index=True)
+
+        if df_name in variable_handler.variables.keys():
+            variable_handler.update_variable(df_name, new_df)
+        else:
+            variable_handler.create_variable(df_name, new_df)
+
+    def export_code(self, node_detail_form):
+        xpaths = node_detail_form.get_chosen_value_by_name("xpaths", variable_handler)
+        columns = node_detail_form.get_chosen_value_by_name("columns", variable_handler)
+        df_name = node_detail_form.get_chosen_value_by_name("df_name", variable_handler)
+        write_mode = node_detail_form.get_chosen_value_by_name("write_mode", variable_handler)
+
+        code = f"# WARNING: Code export not implemented for {self.icon_type} node"
+        return code
+
+    def export_imports(self, *args):
+        imports = ["from selenium import webdriver", "from selenium.webdriver.common.by import By"]
+
+        return imports
+
+
 webscraping_handlers_dict = {
     "OpenBrowser": OpenBrowserHandler(),
     "ExtractPageSource": ExtractPageSourceHandler(),
@@ -2609,6 +2729,7 @@ webscraping_handlers_dict = {
     "ScrollWebPage": ScrollWebPageHandler(),
     "ScanWebPage": ScanWebPageHandler(),
     "ExtractXPath": ExtractXPathHandler(),
+    "ExtractGroupedXPaths": ExtractGroupedXPathsHandler(),
     "ExtractMultipleXPath": ExtractMultipleXPathHandler(),
     "ExtractTableXPath": ExtractTableXPathHandler(),
     "DownloadImage": DownloadImageHandler(),
