@@ -26,14 +26,17 @@ if DEVELOPER_MODE:
     # parse existing file
     config.read(Path('config/flog_config.ini'))
 
-
-    output_stream = config.get("LOGGER", "Output stream")
-    if output_stream == "file":
-        if not os.path.exists('../logs'):
-            os.makedirs('../logs')
-
-        OUTPUT = open("../logs/flog.out", "a+")
-    else:
+    try:
+        output_stream = config.get("LOGGER", "Output stream")
+        if output_stream == "file":
+            if not os.path.exists('../logs'):
+                os.makedirs('../logs')
+    
+            OUTPUT = open("../logs/flog.out", "a+")
+        else:
+            OUTPUT = sys.stdout
+    except Exception as e:
+        print("forloop_modules.flog: Warning: Output stream couldn't be defined - ignoring ",e)
         OUTPUT = sys.stdout
 else:
     OUTPUT = sys.stdout
@@ -76,9 +79,14 @@ FLOG_CONFIG = {
 
 if DEVELOPER_MODE:
     # update FLOG_CONFIG with config.ini settings
-    ini_flog_config = dict(config.items("LOGGER.FLOG_CONFIG"))
-    for key, value in ini_flog_config.items():
-        FLOG_CONFIG[key] = eval(f"FlogLevel.{value}")
+    try:
+        ini_flog_config = dict(config.items("LOGGER.FLOG_CONFIG"))
+        for key, value in ini_flog_config.items():
+            FLOG_CONFIG[key] = eval(f"FlogLevel.{value}")
+            
+    except Exception as e:
+        print("forloop_modules.flog: Warning: FLOG_CONFIG wasn't redefined - ignoring ",e)
+        
 
 
 class EmptyClass:

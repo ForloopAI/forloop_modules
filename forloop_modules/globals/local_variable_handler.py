@@ -95,7 +95,6 @@ class LocalVariableHandler:
         #serialization for objects
         if variable.typ in REDIS_STORED_TYPES_AS_STRINGS:
             value = kv_redis.get("stored_variable_" + variable.name)
-
             value.attrs["name"] = variable.name
 
             response = ncrb.get_variable_by_name(variable.name)

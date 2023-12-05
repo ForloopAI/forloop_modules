@@ -266,8 +266,11 @@ class APIFilterWebpageElements(BaseModel):
 #     dataset_uid: str
 #     sheet_name: str
 #     email: str
-    
-    
+
+
+class APILastActiveDFNodeUid(BaseModel):
+    project_uid: str = "0"
+    last_active_dataframe_node_uid: Optional[str]
     
     
     
