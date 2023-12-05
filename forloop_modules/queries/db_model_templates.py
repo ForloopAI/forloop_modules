@@ -420,6 +420,9 @@ class APIPipeline(BaseModel):
     remaining_nodes_uids: list[int] = [] # TODO: to be deprecated after introducing ExecCore for local execution
     project_uid: str = "0"
 
+class APIExecutePipelineSchema(BaseModel):
+    name: str
+    user_email: str
 
 class APIPopup(BaseModel):
     pos: list[int] = [0, 0]
