@@ -85,6 +85,7 @@ class ScrapingUtilitiesHandler:
 
         # Used for refreshing highlighted elements in BrowserView
         self.are_elements_updated = False
+        self.are_all_elements_selected = False
 
         self._is_browser_active = None
 
@@ -228,6 +229,9 @@ class ScrapingUtilitiesHandler:
 
     def append_browser_view_elements(self, browser_view_elements):
         self.browser_view_elements.extend(browser_view_elements)
+
+    def append_browser_view_selected_elements(self, selected_elements_elements):
+        self.browser_view_selected_elements.extend(selected_elements_elements)
 
     @property
     def is_browser_active(self) -> bool:
@@ -633,6 +637,44 @@ class ScrapingUtilitiesHandler:
             element_data = element['data']['text']
 
         return element_data
+    
+    def find_content_on_page(self):
+        self.are_all_elements_selected = True
+        self.scan_web_page(by_xpath='//div[count(p) > 4]/*//text()')
+    
+    def group_elements(self):
+        selected_elements = self.get_browser_view_selected_elements()
+    
+        if len(selected_elements) == 0:
+            flog.warning('No elements selected')
+        elif len(selected_elements) == 1:
+            flog.warning('At least 2 elements should be selected to create a group')
+        else:
+            xpaths = [x['xpath'] for x in selected_elements]
+            names = [x['name'] for x in selected_elements]
+            common_xpath_part = str(os.path.commonprefix(list(xpaths))).rstrip('/')
+    
+            first_elem_pos, last_elem_pos = selected_elements[0]['pos'], selected_elements[-1]['pos']
+            first_elem_size = selected_elements[0]['size']
+            size = [first_elem_size[0], abs(last_elem_pos[1] - first_elem_pos[1])]
+    
+            rest_of_browser_view_elements = [x for x in self.browser_view_elements if x['name'] not in names]
+    
+            new_elem = {
+                'name': 'group',
+                'type': 'group',
+                'pos': first_elem_pos,
+                'size': size,
+                'xpath': common_xpath_part,
+                'data': {
+                    'text': '\n'.join([x['data'].get('text', '') for x in selected_elements])
+                }
+            }
+    
+            self.browser_view_elements = rest_of_browser_view_elements + [new_elem]
+            self.reset_browser_view_selected_elements()
+    
+            flog.warning(self.browser_view_elements)
 
 
 
