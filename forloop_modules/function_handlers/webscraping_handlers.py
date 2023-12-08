@@ -2708,7 +2708,10 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
             xpath = suh.check_xpath_apostrophes(xpath)
             suh.webscraping_client.extract_xpath(xpath, filename, "w+")
             data = suh.wait_until_data_is_extracted(filename, timeout=3, xpath_func=True)
-            data_dict[column] = data
+            if isinstance(data, list):
+                data_dict[column] = data
+            elif isinstance(data, str):
+                data_dict[column] = [data]
 
         if write_mode == "Write":
             new_df = pd.DataFrame(data_dict)
