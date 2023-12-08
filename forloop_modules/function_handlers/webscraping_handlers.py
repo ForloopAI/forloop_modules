@@ -2622,7 +2622,7 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
             typ="list of strings", example=['price', "['price', 'publish_date']"]
         )
         self.docs.add_parameter_table_row(
-            title="DataFrame", name="df_entry", description="Name of variable holding a DataFrame",
+            title="DataFrame", name="entry_df", description="Name of variable holding a DataFrame",
             typ="string", example=None
         )
         self.docs.add_parameter_table_row(
@@ -2651,7 +2651,7 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
         fdl.label("Column(s)")
         fdl.entry(name="columns", text="", input_types=["str", "list"], required=True, row=2)
         fdl.label("DataFrame")
-        fdl.entry(name="df_entry", text="", input_types=["DataFrame"], required=True, row=3)
+        fdl.entry(name="entry_df", text="", input_types=["DataFrame"], required=True, row=3)
         fdl.label("Write mode")
         fdl.combobox(name="write_mode", options=options, row=4)
         fdl.label("New variable")
@@ -2667,24 +2667,24 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
     def execute(self, node_detail_form):
         xpaths = node_detail_form.get_chosen_value_by_name("xpaths", variable_handler)
         columns = node_detail_form.get_chosen_value_by_name("columns", variable_handler)
-        df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
+        entry_df = node_detail_form.get_chosen_value_by_name("entry_df", variable_handler)
         write_mode = node_detail_form.get_chosen_value_by_name("write_mode", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
         new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
-        self.direct_execute(xpaths, df_entry, write_mode, columns)
+        self.direct_execute(xpaths, entry_df, write_mode, columns)
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     def execute_with_params(self, params):
         xpaths = params["xpaths"]
         columns = params["columns"]
-        df_entry = params["df_entry"]
+        entry_df = params["entry_df"]
         write_mode = params["write_mode"]
         new_var_name = params["new_var_name"]
 
-        self.direct_execute(xpaths, columns, df_entry, write_mode, new_var_name)
+        self.direct_execute(xpaths, columns, entry_df, write_mode, new_var_name)
 
-    def direct_execute(self, xpaths, columns, df_entry, write_mode, new_var_name):
+    def direct_execute(self, xpaths, columns, entry_df, write_mode, new_var_name):
         def is_list_of_strings(var) -> bool:
             return isinstance(var, list) and not all(isinstance(v, str) for v in var)
 
@@ -2698,12 +2698,11 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
         inp = Input()
         inp.assign("xpaths", xpaths)
         inp.assign("columns", columns)
-        inp.assign("df_entry", df_entry)
+        inp.assign("entry_df", entry_df)
         inp.assign("write_mode", write_mode)
         inp.assign("new_var_name", new_var_name)
 
-        filename = f'{df_entry}.txt'
-        old_df_var = variable_handler.variables.get(df_entry)
+        filename = f'{new_var_name}.txt'
         data_dict = {}
         for xpath, column in zip(xpaths, columns):
             xpath = suh.check_xpath_apostrophes(xpath)
@@ -2714,12 +2713,11 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
         if write_mode == "Write":
             new_df = pd.DataFrame(data_dict)
         elif write_mode == "Append":
-            if old_df_var is None:
+            if entry_df is None:
                 new_df = pd.DataFrame(data_dict)
             else:
-                old_df: pd.DataFrame = old_df_var.value
                 new_rows = pd.DataFrame(data_dict)
-                new_df = pd.concat([old_df, new_rows], ignore_index=True)
+                new_df = pd.concat([entry_df, new_rows], ignore_index=True)
 
         if new_var_name in variable_handler.variables.keys():
             variable_handler.update_variable(new_var_name, new_df)
@@ -2732,7 +2730,7 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
     def export_code(self, node_detail_form):
         xpaths = node_detail_form.get_chosen_value_by_name("xpaths", variable_handler)
         columns = node_detail_form.get_chosen_value_by_name("columns", variable_handler)
-        df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
+        entry_df = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         write_mode = node_detail_form.get_chosen_value_by_name("write_mode", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
