@@ -1,8 +1,8 @@
 import datetime
 from enum import Enum
-from typing import Any, Dict, Generic, List, Optional, TypeVar, Union, Annotated
+from typing import Annotated, Any, Dict, Generic, List, Literal, Optional, TypeVar, Union
 
-from pydantic import BaseModel, Field, AfterValidator, PlainSerializer
+from pydantic import AfterValidator, BaseModel, Field, PlainSerializer
 from pydantic.functional_validators import field_validator
 
 
@@ -140,12 +140,6 @@ class APITrigger(BaseModel):
     project_uid: str
 
 
-class DbDialectEnum(str, Enum):
-    MYSQL = "mysql"
-    POSTGRES = "postgres"
-    MONGO = "mongo"
-
-
 class APIDatabase2(BaseModel):
     """
     Cleaned up APIDatabase schema used only in ScrapingPipelineBuilders, copied to retain
@@ -158,7 +152,7 @@ class APIDatabase2(BaseModel):
     database: str
     username: str
     password: str
-    dialect: DbDialectEnum
+    dialect: Literal["mysql", "postgres", "mongo"]
     project_uid: str
 
 
@@ -507,19 +501,12 @@ class APIUser(BaseModel):
     picture_url: str #auth0 response - picture
 
 
-class PlatformEnum(str, Enum):
-    """Simple enum listing options for platform_type attribute in Session dataclass/validation schema."""
-
-    CLOUD = "cloud"
-    DESKTOP = "desktop"
-
-
 # Commented out fields are internal REST API fields, not used on frontend
 class APISession(BaseModel):
     # user_uid: Optional[str] = None
     auth0_session_id: str  # auth0 response - session_id
     version: Optional[str] = None  # forloop platform version
-    platform_type: PlatformEnum  # cloud or desktop
+    platform_type: Literal["cloud", "desktop"]  # cloud or desktop
     ip: Optional[str] = None  # only in desktop/execution core version
     mac_address: Optional[str] = None  # only in desktop/execution core version
     hostname: Optional[str] = None  # only in desktop/execution core version
