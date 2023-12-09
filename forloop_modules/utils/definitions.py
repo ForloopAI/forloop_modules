@@ -8,7 +8,7 @@ STANDARD_ICONS = ["Wait", "Write", "SaveExcel", "SaveList",
                   "DfToList", "ListToDf", "Iterate", "PostRequest", "GetRequest", "Trigger"
                   ]
 
-PIPELINE_CLEANING_ICONS = ["DropColumn", "RenameColumn", "ConstantColumn", "SelectColumns", "RemoveEmptyRows",
+PIPELINE_CLEANING_ICONS = ["NewDataFrame", "DropColumn", "RenameColumn", "ConstantColumn", "SelectColumns", "RemoveEmptyRows",
                            "RemoveDuplicates", "KNNImputation", "Imputation", "Outliers", "Replace", "StripColumn",
                            "Search", "FilterString", "ApplyMapping",
                            "SplitString", "Sort", "ColumnWiseShift", "DifferenceData", "Concatenate",
@@ -21,6 +21,7 @@ SCRAPING_ICONS = ["OpenBrowser", "LoadWebsite", "RefreshPageSource", "ClickXPath
                   "DownloadImagesXPath", "SetProxy", "FindPageElements", "GetPageSource"]
 
 ROLLABLE_ICONS = ["DefineFunction"] #* Can be unrolled into sub-block of nodes (functions, classes, loops etc.)
+DIRECT_EXECUTE_CORE_HANDLERS = ["ConvertVariableType", "NewVariable"] #! Temporary information holder for testing of an experimental approach in codeview
 
 # Folders with icons
 WEBSCRAPING_RPA_ICONS_FOLDER = 'web_scraping_and_rpa'
@@ -134,4 +135,3 @@ JSON_SERIALIZABLE_TYPES = [str, int, bool, list, dict, float, tuple]
 JSON_SERIALIZABLE_TYPES_AS_STRINGS = [typ.__name__ for typ in JSON_SERIALIZABLE_TYPES]
 REDIS_STORED_TYPES = [pd.DataFrame, datetime.datetime]
 REDIS_STORED_TYPES_AS_STRINGS = [typ.__name__ for typ in REDIS_STORED_TYPES] + ["function", "class"]
-DIRECT_EXECUTE_CORE_HANDLERS = ["ConvertVariableType", "NewVariable"] #! Temporary information holder for testing of an experimental approach in codeview

@@ -166,18 +166,26 @@ class ScrapingUtilitiesHandler:
         # scaling_coef - scaling coefficient depending on OS
         # x, y, height, width - padding
         # [coefficient in headless mode, coefficient with GUI]
-        coefs_by_platform_and_driver = {'Firefox': {'scaling_coef':
-                                                        {'darwin': [1, 2], 'win32': [1, 1], 'linux2': [1, 1]},
-                                                    'x': [3, 3],
-                                                    'y': [1, 2],
-                                                    'height': [4, 4],
-                                                    'width': [6, 4]},
-                                        'Chrome': {'scaling_coef':
-                                                       {'darwin': [2, 2], 'win32': [1, 1], 'linux2': [1, 1]},
-                                                   'x': [3, 3],
-                                                   'y': [1, 2],
-                                                   'height': [4, 4],
-                                                   'width': [6, 4]}}
+        coefs_by_platform_and_driver = {
+            'Firefox':
+                {
+                    'scaling_coef':
+                        {'darwin': [1, 2], 'win32': [1, 1], 'linux2': [1, 1], 'linux': [1, 1]},
+                    'x': [3, 3],
+                    'y': [1, 2],
+                    'height': [4, 4],
+                    'width': [6, 4],
+                },
+            'Chrome':
+                {
+                    'scaling_coef':
+                        {'darwin': [2, 2], 'win32': [1, 1], 'linux2': [1, 1], 'linux': [1, 1]},
+                    'x': [3, 3],
+                    'y': [1, 2],
+                    'height': [4, 4],
+                    'width': [6, 4],
+                },
+        }
 
         padding_x = coefs_by_platform_and_driver[driver_type]['x'][bool_scrape_in_browser]
         padding_y = coefs_by_platform_and_driver[driver_type]['y'][bool_scrape_in_browser]
