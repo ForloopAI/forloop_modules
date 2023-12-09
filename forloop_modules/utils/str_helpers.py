@@ -1,9 +1,9 @@
-import re
+import ast
 import math
-
+import re
 from collections import Counter
 from difflib import SequenceMatcher
-
+from typing import Any
 
 # https://stackoverflow.com/a/59449963
 
@@ -44,3 +44,11 @@ def get_common_prefix(string1, string2):
     new_col_name = string1[match.a:match.a + match.size]
 
     return new_col_name
+
+
+def parse_variable_value(value: str) -> Any:
+    """Parse a string to a Python built-in data type, return original string if unsuccessful."""
+    try:
+        return ast.literal_eval(value)
+    except Exception:
+        return value
