@@ -7,6 +7,10 @@ from pydantic.functional_validators import field_validator
 
 
 def is_date_utc(date: datetime.datetime) -> datetime.datetime:
+    # NOTE: For naive datetime objects, date.utcoffset will return None
+    # NOTE: For TZ-aware datetime objects, date.utcoffset will return timedelta with offset to UTC TZ
+    # NOTE: Using DataFrame for storing resources casts datetimes into pandas custom Timestamp
+    # objects, which might unexpectedly cast TZ info to/from naive/aware datetime
     if date.utcoffset() is not None and date.utcoffset() != datetime.timedelta(0):
         raise ValueError('Only datetimes in a UTC zone are allowed')
     date = date.replace(tzinfo=None) # Cast to naive datetime after validation, otherwise XlsxDB persistence will fail
