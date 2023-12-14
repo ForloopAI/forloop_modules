@@ -7,6 +7,9 @@ import forloop_modules.flog as flog
 from forloop_modules.integrations.slack_integration import send_message_to_slack_direct_execute
 
 
+from config.config import other_config #TODO Dominik: Circular dependency to forloop_platform repository # not ideal #Maybe solve with os.environ?
+slack_token = other_config.SLACK_TOKEN
+
 SLACK_NOTIFICATION_INTERVAL=1#3600*24 #by default should be 1s, if you are extensively testing the tests, you can increase it temporarily
 
 
@@ -37,7 +40,7 @@ def send_notification_to_slack_no_spam(msg, filename):
 
     if send_message_to_slack:
 
-        send_message_to_slack_direct_execute("testing", msg)
+        send_message_to_slack_direct_execute(slack_token, "testing", msg)
         last_notification_datetime = str(datetime.datetime.now().replace(microsecond=0))
         save_variables({'last_notification_datetime': last_notification_datetime}, filename=filename)
 
