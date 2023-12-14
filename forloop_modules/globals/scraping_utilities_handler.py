@@ -643,6 +643,20 @@ class ScrapingUtilitiesHandler:
     def find_content_on_page(self):
         self.are_all_elements_selected = True
         self.scan_web_page(by_xpath='//div[count(p) > 4]/*//text()')
+        
+    def move_webpage_element_from_current_group_to_previous_group(self, element):
+        element_group_index = self.get_group_idex_of_webpage_element(element)
+        self.browser_view_selected_element_groups[element_group_index].remove(element)
+                                
+        previous_group_index = element_group_index - 1
+        
+        if previous_group_index < 0:
+            new_group = [element]
+            self.browser_view_selected_element_groups.append(new_group)
+        else:
+            self.browser_view_selected_element_groups[previous_group_index].append(element)
+            
+        self.delete_empty_groups()
     
     def group_elements(self):
         selected_elements = self.get_browser_view_selected_elements()
