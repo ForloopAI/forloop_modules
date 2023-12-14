@@ -31,7 +31,7 @@ def parse_if_dataframe_from_db(row: pd.Series) -> Any:
     return row
 
 
-def serialize_if_dataframe_to_db(row: pd.Series) -> JSON_SERIALIZABLE_TYPES:
+def serialize_if_dataframe_to_db(row: pd.Series) -> Any:
     """Cast a DF to a dict format compatible with the DB."""
     if row['type'] == 'DataFrame':
         df = row["value"]
