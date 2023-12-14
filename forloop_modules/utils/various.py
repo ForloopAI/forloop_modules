@@ -26,16 +26,16 @@ def parse_if_dataframe_from_db(row: pd.Series) -> Any:
     if row['type'] == 'DataFrame':
         df_dict = row["value"]
         df = pd.DataFrame(df_dict["data"], index=df_dict["index"], columns=df_dict["columns"])
-        df.attrs = row["attrs"]
-        return df
-    return row['value']
+        df.attrs = df_dict["attrs"]
+        row["value"] = df
+    return row
 
 
-def serialize_if_dataframe_to_db(self, row: pd.Series) -> JSON_SERIALIZABLE_TYPES:
+def serialize_if_dataframe_to_db(row: pd.Series) -> JSON_SERIALIZABLE_TYPES:
     """Cast a DF to a dict format compatible with the DB."""
     if row['type'] == 'DataFrame':
-        df = row["type"]
+        df = row["value"]
         df_dict = df.to_dict(orient="split")
         df_dict["attrs"] = df.attrs
-        return df_dict
-    return row['value']
+        row["value"] = df_dict
+    return row
