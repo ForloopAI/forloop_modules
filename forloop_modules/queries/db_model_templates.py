@@ -570,6 +570,20 @@ class APIToggleStatus(BaseModel):
 
 class APIButtonName(BaseModel):
     button_name:str=""
+    
+
+class LastActiveScriptUid(BaseModel):
+    uid: Union[str, None] = None
+    
+
+
+class PipelineAdjustmentUsingChatGPT(BaseModel):
+    user_input_text: str
+    openai_api_key: str
+
+class PipelineAdjustmentDict(BaseModel):
+    adjustments_dict: list
+    project_uid: str
 
 
 class APIFindSimilarItemsBody(BaseModel):
