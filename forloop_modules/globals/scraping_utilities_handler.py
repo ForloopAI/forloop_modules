@@ -115,6 +115,22 @@ class ScrapingUtilitiesHandler:
             flog.warning("PROXY KEY WASNT FOUND",self)
             self.scraperapi_key = None
             self.scrapingbee_key = None
+            
+    @property
+    def is_browser_active(self) -> bool:
+        # TODO: replace with webscraping_client.is_browser_active()
+
+        """
+        Defines, whether browser instance is currently active (browser was not closed)
+        """
+
+        last_function = self.webscraping_client.get_browser_meta_data()['function']
+
+        function = last_function['name']
+        is_function_done = last_function['done']
+        self._is_browser_active = not (function == 'close_browser' and is_function_done)
+
+        return self._is_browser_active
 
     def update_webpage_elements(self, refresh_browser_view_elements: bool = True):
         """
@@ -234,22 +250,6 @@ class ScrapingUtilitiesHandler:
 
     def append_browser_view_selected_elements(self, selected_elements_elements):
         self.browser_view_selected_elements.extend(selected_elements_elements)
-
-    @property
-    def is_browser_active(self) -> bool:
-        # TODO: replace with webscraping_client.is_browser_active()
-
-        """
-        Defines, whether browser instance is currently active (browser was not closed)
-        """
-
-        last_function = self.webscraping_client.get_browser_meta_data()['function']
-
-        function = last_function['name']
-        is_function_done = last_function['done']
-        self._is_browser_active = not (function == 'close_browser' and is_function_done)
-
-        return self._is_browser_active
 
     def check_xpath_apostrophes(self, xpath):
         """
