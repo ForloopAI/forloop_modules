@@ -2,6 +2,7 @@ import os
 import time
 import requests
 import sys
+import ast
 
 if "linux" not in sys.platform:
     import pywinauto
@@ -1603,6 +1604,91 @@ class ExtractMultipleXPathHandler(AbstractFunctionHandler):
             ]
 
         return imports
+    
+# NOTE: Temporary handler used in browser view element grouping
+# TODO: Either refactor ExtractMultipleXPaths so it takes list variable and delete this one or leave both
+# TODO 2: If this will be left, add docs
+class ExtractMultipleXPathFromListHandler(AbstractFunctionHandler):
+    def __init__(self):
+        self.icon_type = "ExtractMultipleXPathFromList"
+        self.fn_name = "Extract Multiple XPath From List"
+
+        self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
+
+        super().__init__()
+
+    def make_form_dict_list(self, node_detail_form=None):
+        fdl = FormDictList()
+
+        fdl.label("Extract multiple HTML elements by XPath")
+        fdl.label("XPaths")
+        fdl.entry(name="xpaths", text="", input_types=["list"], required=True, row=1)
+        fdl.label("Output variable")
+        fdl.entry(name="output", text="", input_types=["str"], required=True, row=2)
+
+        return fdl
+
+    def execute(self, node_detail_form):
+        xpaths = node_detail_form.get_chosen_value_by_name("xpaths", variable_handler)
+        output = node_detail_form.get_chosen_value_by_name("output", variable_handler)
+
+        self.direct_execute(xpaths, output)
+
+    def execute_with_params(self, params):
+        xpaths = params["xpaths"]
+        output = params["output"]
+
+        self.direct_execute(xpaths, output)
+
+    def direct_execute(self, xpaths, output):
+        try:
+            xpaths = ast.literal_eval(xpaths)
+        except Exception as e:
+            flog.warning(f'XPaths parsing failed: {e}')
+        
+        if type(xpaths) != list:
+            raise TypeError("XPaths argument must be a list.")
+            
+        xpaths = [suh.check_xpath_apostrophes(xpath) for xpath in xpaths]
+
+        output_filename = output + ".txt"
+
+        suh.webscraping_client.extract_multiple_xpath(xpaths, output_filename)
+
+        data = suh.wait_until_data_is_extracted(output_filename, timeout=3, xpath_func=True)
+
+        if data is not None:
+            params = {"variable_name": output, "variable_value": str(data)}
+            variable_handlers_dict["NewVariable"].execute_with_params(params)
+
+    def export_code(self, node_detail_form):
+        xpaths = node_detail_form.get_chosen_value_by_name("xpaths", variable_handler)
+        output = node_detail_form.get_chosen_value_by_name("output", variable_handler)
+
+        code = f"""
+        xpaths = {xpaths}
+        {output} = []
+            
+        for xpath in xpaths:
+            # Find the element using its XPath
+            target_element = driver.find_element(By.XPATH, xpath)
+
+            # Extract the text or other attributes of the element
+            element_text = target_element.text
+            
+            {output}.append(element_text)
+        """
+        
+        return code
+
+    def export_imports(self, *args):
+        imports = [
+            "from selenium import webdriver",
+            "from selenium.webdriver.common.by import By"
+            ]
+
+        return imports
 
 
 class ExtractTableXPathHandler(AbstractFunctionHandler):
@@ -2610,6 +2696,7 @@ webscraping_handlers_dict = {
     "ScanWebPage": ScanWebPageHandler(),
     "ExtractXPath": ExtractXPathHandler(),
     "ExtractMultipleXPath": ExtractMultipleXPathHandler(),
+    "ExtractMultipleXPathFromList": ExtractMultipleXPathFromListHandler(),
     "ExtractTableXPath": ExtractTableXPathHandler(),
     "DownloadImage": DownloadImageHandler(),
     "DownloadImagesXPath": DownloadImagesXPathHandler(),
