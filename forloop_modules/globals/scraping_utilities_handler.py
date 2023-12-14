@@ -236,6 +236,21 @@ class ScrapingUtilitiesHandler:
 
     def get_browser_view_selected_elements(self):
         return self.browser_view_selected_elements
+    
+    def get_group_idex_of_webpage_element(self, element):
+        element_group_index = None
+        
+        for i, group in enumerate(suh.browser_view_selected_element_groups):
+            if element in group:
+                element_group_index = i
+                break
+            
+        return element_group_index
+    
+    def delete_empty_groups(self):
+        for i, element_group in reversed(list(enumerate(self.browser_view_selected_element_groups))):
+            if len(element_group) == 0:
+                self.browser_view_selected_element_groups.pop(i)
 
     def reset_browser_view_elements(self):
         self.browser_view_elements = []
