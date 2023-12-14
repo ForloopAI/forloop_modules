@@ -16,7 +16,7 @@ PIPELINE_CLEANING_ICONS = ["DropColumn", "RenameColumn", "ConstantColumn", "Sele
                            "CategorizeColumn", "SimilarityMatching", "CleanData", "ExtractString"]
 
 SCRAPING_ICONS = ["OpenBrowser", "LoadWebsite", "RefreshPageSource", "ClickXPath", "ScanWebPage", "ExtractXPath",
-                  "ExtractMultipleXPath", "ExtractMultipleXPathFromList", "ExtractTableXPath", "ClickName", "ClickId", "PrintXPath", "GetCurrentURL",
+                  "ExtractMultipleXPath", "ExtractTableXPath", "ClickName", "ClickId", "PrintXPath", "GetCurrentURL",
                   "CloseBrowser", "WaitUntilElementIsLocated", "ExtractPageSource", "ScrollWebPage", "DownloadImage",
                   "DownloadImagesXPath", "SetProxy", "FindPageElements", "GetPageSource"]
 
