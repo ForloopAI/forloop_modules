@@ -78,6 +78,7 @@ class ScrapingUtilitiesHandler:
         self.webpage_elements = []
         self.browser_view_elements = []
         self.browser_view_selected_elements = []
+        self.browser_view_selected_element_groups = []
 
         # Used for refreshing image in BrowserView
         self.is_screenshot_updated = False
@@ -223,6 +224,7 @@ class ScrapingUtilitiesHandler:
     def reset_browser_view_elements(self):
         self.browser_view_elements = []
         self.browser_view_selected_elements = []
+        self.browser_view_selected_element_groups = []
 
     def reset_browser_view_selected_elements(self):
         self.browser_view_selected_elements = []
