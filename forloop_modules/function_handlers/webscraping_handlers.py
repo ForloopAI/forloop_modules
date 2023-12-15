@@ -2,6 +2,7 @@ import os
 import time
 import requests
 import sys
+import ast
 
 if "linux" not in sys.platform:
     import pywinauto
@@ -1493,13 +1494,12 @@ class ExtractXPathHandler(AbstractFunctionHandler):
             ]
 
         return imports
-
-
+    
 class ExtractMultipleXPathHandler(AbstractFunctionHandler):
     """
     ExtractMultipleXPath Node looks for multiple web page elements with given XPaths and extracts theirs content
     """
-
+    
     def __init__(self):
         self.icon_type = "ExtractMultipleXPath"
         self.fn_name = "Extract Multiple XPath"
@@ -1509,17 +1509,17 @@ class ExtractMultipleXPathHandler(AbstractFunctionHandler):
         self._init_docs()
 
         super().__init__()
-
+        
     def _init_docs(self):
         parameters_description = "ExtractMultipleXPath Node takes 2 parameters"
         self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
 
         self.docs.add_parameter_table_row(
-            title="Extraction setup file",
-            name="filename",
-            description="Path to file with list of XPaths, one XPath per line",
+            title="XPaths",
+            name="list",
+            description="A list of XPaths to be extracted.",
             typ="string",
-            example=['/Users/admin/Desktop/xpaths.txt']
+            example=['["/html/body/div[3]/div/div/div/div[3]/p[1]", "/html/body/div[3]/div/div/div/div[3]/p[2]"]']
         )
 
         self.docs.add_parameter_table_row(
@@ -1534,55 +1534,53 @@ class ExtractMultipleXPathHandler(AbstractFunctionHandler):
         fdl = FormDictList()
 
         fdl.label("Extract multiple HTML elements by XPath")
-        fdl.label("Extraction setup file")
-        fdl.entry(name="filename", text="", input_types=["str"], required=True, row=1)
+        fdl.label("XPaths")
+        fdl.entry(name="xpaths", text="", input_types=["list"], required=True, row=1)
         fdl.label("Output variable")
         fdl.entry(name="output", text="", input_types=["str"], required=True, row=2)
 
         return fdl
 
     def execute(self, node_detail_form):
-        filename = node_detail_form.get_chosen_value_by_name("filename", variable_handler)
+        xpaths = node_detail_form.get_chosen_value_by_name("xpaths", variable_handler)
         output = node_detail_form.get_chosen_value_by_name("output", variable_handler)
 
-        self.direct_execute(filename, output)
+        self.direct_execute(xpaths, output)
 
     def execute_with_params(self, params):
-        filename = params["filename"]
+        xpaths = params["xpaths"]
         output = params["output"]
 
-        self.direct_execute(filename, output)
+        self.direct_execute(xpaths, output)
 
-    def direct_execute(self, filename, output):
-        with Path(aet.home_folder, filename).open(mode='r', encoding="utf-8") as f:
-            xpaths = f.readlines()
-
-        xpaths = [suh.check_xpath_apostrophes(x.replace("\n", "")) for x in xpaths]
+    def direct_execute(self, xpaths, output):
+        try:
+            xpaths = ast.literal_eval(xpaths)
+        except Exception as e:
+            flog.warning(f'XPaths parsing failed: {e}')
+        
+        if type(xpaths) != list:
+            raise TypeError("XPaths argument must be a list.")
+            
+        xpaths = [suh.check_xpath_apostrophes(xpath) for xpath in xpaths]
 
         output_filename = output + ".txt"
-        flog.info(f"XPATHS: {xpaths}")
 
         suh.webscraping_client.extract_multiple_xpath(xpaths, output_filename)
 
         data = suh.wait_until_data_is_extracted(output_filename, timeout=3, xpath_func=True)
 
         if data is not None:
-            params = {"variable_name": output, "variable_value": str(data)}  # rows str(rows)
+            params = {"variable_name": output, "variable_value": str(data)}
             variable_handlers_dict["NewVariable"].execute_with_params(params)
-            ##variable_handler.update_data_in_variable_explorer(glc)
 
     def export_code(self, node_detail_form):
-        filename = node_detail_form.get_chosen_value_by_name("filename", variable_handler)
+        xpaths = node_detail_form.get_chosen_value_by_name("xpaths", variable_handler)
         output = node_detail_form.get_chosen_value_by_name("output", variable_handler)
 
         code = f"""
-        filename = "{filename}"
-        if not os.path.exists(filename):
-            raise FileNotFoundError(f'File "{{filename}}" does not exist.')
-            
+        xpaths = {xpaths}
         {output} = []
-        with open(filename, "r") as file:
-            xpaths = file.readlines()
             
         for xpath in xpaths:
             # Find the element using its XPath
