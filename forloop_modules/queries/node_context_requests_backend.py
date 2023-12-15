@@ -1187,8 +1187,15 @@ def process_api_adjustments(adjustments_dict, project_uid):
 def get_user_logs():
     url = f'{BASE_API}/user_logs'
     response = requests.get(url)
+    return response
+
+
+def clean_data(data):
+    url = f'{BASE_API}/clean_data'
+    response = requests.post(url, data=data)
 
     return response
+
 
 def scan_website_and_take_screenshot_test(email, url):
     payload={"email":email,
