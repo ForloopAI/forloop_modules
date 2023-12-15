@@ -249,7 +249,7 @@ class LocalVariableHandler:
                     data_dict[name]=value
                     folder=".//file_transfer"
                     save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
-                response = ncrb.update_variable_by_uid(variable_uid, name, "", type=type(value).__name__)
+                response = ncrb.update_variable_by_uid(variable_uid, name, "", is_result=result["is_result"], type=type(value).__name__)
             
             result = response.content.decode('utf-8')
             

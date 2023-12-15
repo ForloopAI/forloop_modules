@@ -7,25 +7,25 @@ import ast
 if "linux" not in sys.platform:
     import pywinauto
 
+import pandas as pd
 from pathlib import Path
 from bs4 import BeautifulSoup
 from keepvariable.keepvariable_core import Var, save_variables, kept_variables
-
 import forloop_modules.flog as flog
+from forloop_modules.utils.various import is_list_of_strings
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.function_handlers.auxilliary.docs import Docs
-from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
+from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
 from forloop_modules.function_handlers.variable_handlers import variable_handlers_dict
-
 from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.globals.scraping_utilities_handler import suh
 from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.globals.variable_handler import variable_handler
-
-from forloop_modules.errors.errors import CriticalPipelineError
+from forloop_modules.errors.errors import CriticalPipelineError, SoftPipelineError
 from forloop_modules.redis.redis_connection import kv_redis
+import forloop_modules.queries.node_context_requests_backend as ncrb
 
 #from src.gui.gui_layout_context import glc
 ####################### SCRAPING HANDLERS ################################
@@ -2591,6 +2591,160 @@ class FindPageElementsHandler(AbstractFunctionHandler):
         return imports
 
 
+class ExtractXPathsToDfHandler(AbstractFunctionHandler):
+    """Extract text from HTML elements by providing XPaths and column names. Construct a DataFrame with the output data."""
+
+    def __init__(self):
+        self.icon_type = "ExtractXPathsToDf"
+        self.fn_name = "Extract XPaths To Df"
+
+        self.type_category = ntcm.categories.webscraping
+        self.docs_category = DocsCategories.webscraping_and_rpa
+        self._init_docs()
+
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = f"{self.icon_type} Node takes 4 parameters"
+        self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
+
+        self.docs.add_parameter_table_row(
+            title="XPath(s)", name="xpaths",
+            description="XPath string or a list with XPaths. Must be of same length as Columns parameters",
+            typ="list of strings", example=[
+                '/html/body/div[4]/div[1]/a/div[2]', "['/html/body/div[4]', '/html/body/p']"
+            ]
+        )
+        self.docs.add_parameter_table_row(
+            title="Column(s)", name="columns",
+            description="Column name string or a list with column names. Must be of same length as XPath parameter",
+            typ="list of strings", example=['price', "['price', 'publish_date']"]
+        )
+        self.docs.add_parameter_table_row(
+            title="DataFrame", name="entry_df", description="Name of variable holding a DataFrame",
+            typ="string"
+        )
+        self.docs.add_parameter_table_row(
+            title="Write in file mode", name="write_mode",
+            description="Parameter specifying should the DataFrame be overwritten or appended to",
+            example=["Write", "Append"]
+        )
+        self.docs.add_parameter_table_row(
+            title="Write in file mode", name="write_mode",
+            description="Parameter specifying should the DataFrame be overwritten or appended to",
+            example=["Write", "Append"]
+        )
+        self.docs.add_parameter_table_row(title="New variable name", name="new_var_name",
+            description="A name for the new Dataframe variable",
+            typ="String", example="'new_df'"
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
+        options = ("Write", "Append")
+
+        fdl = FormDictList()
+
+        fdl.label("Extract HTML elements by XPaths")
+        fdl.label("XPath(s)")
+        fdl.entry(name="xpaths", text="", input_types=["str", "list"], required=True, row=1)
+        fdl.label("Column(s)")
+        fdl.entry(name="columns", text="", input_types=["str", "list"], required=True, row=2)
+        fdl.label("DataFrame")
+        fdl.entry(name="entry_df", text="", input_types=["DataFrame"], required=True, row=3)
+        fdl.label("Write mode")
+        fdl.combobox(name="write_mode", options=options, row=4)
+        fdl.label("New variable")
+        fdl.entry(
+            name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=5
+        )
+        fdl.button(
+            name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True
+        )
+
+        return fdl
+
+    def execute(self, node_detail_form):
+        xpaths = node_detail_form.get_chosen_value_by_name("xpaths", variable_handler)
+        columns = node_detail_form.get_chosen_value_by_name("columns", variable_handler)
+        entry_df = node_detail_form.get_chosen_value_by_name("entry_df", variable_handler)
+        write_mode = node_detail_form.get_chosen_value_by_name("write_mode", variable_handler)
+        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
+
+        new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
+        self.direct_execute(xpaths, entry_df, write_mode, columns)
+        ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
+
+    def execute_with_params(self, params):
+        xpaths = params["xpaths"]
+        columns = params["columns"]
+        entry_df = params["entry_df"]
+        write_mode = params["write_mode"]
+        new_var_name = params["new_var_name"]
+
+        self.direct_execute(xpaths, columns, entry_df, write_mode, new_var_name)
+
+    def direct_execute(self, xpaths, columns, entry_df, write_mode, new_var_name):
+        columns_no, columns_type = len(columns), list if isinstance(columns, list) else 1, str
+        xpaths_no, xpaths_type = len(xpaths), list if isinstance(xpaths, list) else 1, str
+
+        if not (xpaths_type == str or is_list_of_strings(xpaths)):
+            raise CriticalPipelineError("XPaths must be provided as a string or a list of strings")
+        if not (columns_type == str or is_list_of_strings(columns)):
+            raise CriticalPipelineError("Columns must be provided as a string or as a list of strings")
+        if columns_no != xpaths_no:
+            raise CriticalPipelineError("The same number of XPaths and Columns must be specified")
+
+        inp = Input()
+        inp.assign("xpaths", xpaths)
+        inp.assign("columns", columns)
+        inp.assign("entry_df", entry_df)
+        inp.assign("write_mode", write_mode)
+        inp.assign("new_var_name", new_var_name)
+
+        filename = f'{new_var_name}.txt'
+        data_dict = {}
+        # XPaths/Columns with len >= must be lists, as string can store only 1 element.
+        if xpaths_no >= 1:
+            for xpath, column in zip(xpaths, columns):
+                xpath = suh.check_xpath_apostrophes(xpath)
+                suh.webscraping_client.extract_xpath(xpath, filename, "w+")
+                data = suh.wait_until_data_is_extracted(filename, timeout=3, xpath_func=True)
+                data_dict[column] = data if isinstance(data, list) else [data]
+        # XPaths/Columns with len == 1 can be either a string or a list of length == 1. Handle both cases:
+        elif xpaths_no == 1:
+            if xpaths_type == str:
+                xpath = suh.check_xpath_apostrophes(xpaths)
+                suh.webscraping_client.extract_xpath(xpaths, filename, "w+")
+            elif xpaths_type == list:
+                xpath = suh.check_xpath_apostrophes(xpaths[0])
+                suh.webscraping_client.extract_xpath(xpaths[0], filename, "w+")
+
+            if columns_type == str:
+                # 'data' variable generated by SUH can also be returned as a list or string
+                data_dict[columns] = data if isinstance(data, list) else [data]
+            elif columns_type == list:
+                data_dict[columns[0]] = data if isinstance(data, list) else [data]
+
+        if write_mode == "Write":
+            new_df = pd.DataFrame(data_dict)
+        elif write_mode == "Append":
+            if entry_df is None:
+                new_df = pd.DataFrame(data_dict)
+            else:
+                new_rows = pd.DataFrame(data_dict)
+                new_df = pd.concat([entry_df, new_rows], ignore_index=True)
+
+        if new_var_name in variable_handler.variables.keys():
+            variable_handler.update_variable(new_var_name, new_df)
+        else:
+            variable_handler.create_variable(new_var_name, new_df)
+
+    def export_imports(self, *args):
+        imports = ["from selenium import webdriver", "from selenium.webdriver.common.by import By"]
+
+        return imports
+
+
 webscraping_handlers_dict = {
     "OpenBrowser": OpenBrowserHandler(),
     "ExtractPageSource": ExtractPageSourceHandler(),
@@ -2607,6 +2761,7 @@ webscraping_handlers_dict = {
     "ScrollWebPage": ScrollWebPageHandler(),
     "ScanWebPage": ScanWebPageHandler(),
     "ExtractXPath": ExtractXPathHandler(),
+    "ExtractXPathsToDf": ExtractXPathsToDfHandler(),
     "ExtractMultipleXPath": ExtractMultipleXPathHandler(),
     "ExtractTableXPath": ExtractTableXPathHandler(),
     "DownloadImage": DownloadImageHandler(),
