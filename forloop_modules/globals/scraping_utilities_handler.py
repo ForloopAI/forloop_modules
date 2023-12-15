@@ -245,7 +245,7 @@ class ScrapingUtilitiesHandler:
     def get_browser_view_selected_elements(self):
         return self.browser_view_selected_elements
     
-    def get_group_idex_of_webpage_element(self, element):
+    def get_group_index_of_webpage_element(self, element):
         element_group_index = None
         
         for i, group in enumerate(suh.browser_view_selected_element_groups):
@@ -668,7 +668,7 @@ class ScrapingUtilitiesHandler:
         self.scan_web_page(by_xpath='//div[count(p) > 4]/*//text()')
         
     def move_webpage_element_from_current_group_to_previous_group(self, element):
-        element_group_index = self.get_group_idex_of_webpage_element(element)
+        element_group_index = self.get_group_index_of_webpage_element(element)
         self.browser_view_selected_element_groups[element_group_index].remove(element)
                                 
         previous_group_index = element_group_index - 1
