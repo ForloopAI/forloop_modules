@@ -542,7 +542,7 @@ class APIPaginationMode(BaseModel):
     
 class APIMultipleXPaths(BaseModel):
     url: str
-    xpaths: list[str]
+    xpaths: List[Union[str, List[str]]]
     
     
 class APIMultipleXPathsMultipleURLs(BaseModel):
