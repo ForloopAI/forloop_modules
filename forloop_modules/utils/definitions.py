@@ -23,6 +23,9 @@ SCRAPING_ICONS = ["OpenBrowser", "LoadWebsite", "RefreshPageSource", "ClickXPath
 ROLLABLE_ICONS = ["DefineFunction"] #* Can be unrolled into sub-block of nodes (functions, classes, loops etc.)
 DIRECT_EXECUTE_CORE_HANDLERS = ["ConvertVariableType", "NewVariable"] #! Temporary information holder for testing of an experimental approach in codeview
 
+# Nodes for which a 'websites_scraped' param in PipelineJobStats should be incremented
+WEBSITES_SCRAPED_NODES = ["LoadWebsite", "NextPage"]
+
 # Folders with icons
 WEBSCRAPING_RPA_ICONS_FOLDER = 'web_scraping_and_rpa'
 DATA_SOURCES_ICONS_FOLDER = 'data_sources'
@@ -135,3 +138,7 @@ JSON_SERIALIZABLE_TYPES = [str, int, bool, list, dict, float, tuple]
 JSON_SERIALIZABLE_TYPES_AS_STRINGS = [typ.__name__ for typ in JSON_SERIALIZABLE_TYPES]
 REDIS_STORED_TYPES = [pd.DataFrame, datetime.datetime]
 REDIS_STORED_TYPES_AS_STRINGS = [typ.__name__ for typ in REDIS_STORED_TYPES] + ["function", "class"]
+
+# Regex used for validating URLs across the whole app
+# NOTE: Regex created by Joaquin, simply mirrored on backend
+URL_VALIDATION_REGEX = r"(https?://)?(([a-z\d][a-z\d\-]*[a-z\d])\.)+[a-z]{2,}(:\d*)?(.*)?"
