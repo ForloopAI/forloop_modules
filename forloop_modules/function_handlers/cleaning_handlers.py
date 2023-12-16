@@ -2123,7 +2123,7 @@ class ConcatHandler(AbstractFunctionHandler):
         """
         Execution of the drop column transformation
         """
-        df_entry1 = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
+        df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         df_entry2 = node_detail_form.get_chosen_value_by_name("df_entry2", variable_handler)
         axis = node_detail_form.get_chosen_value_by_name("axis", variable_handler)
         join = node_detail_form.get_chosen_value_by_name("join", variable_handler)
@@ -2131,7 +2131,7 @@ class ConcatHandler(AbstractFunctionHandler):
 
         new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
 
-        self.direct_execute([df_entry1, df_entry2], axis, join, new_var_name)
+        self.direct_execute(df_entry, df_entry2, axis, join, new_var_name)
 
         # glc.last_active_dataframe_icon = image
 
@@ -2140,30 +2140,33 @@ class ConcatHandler(AbstractFunctionHandler):
 
 
     def execute_with_params(self, params):
-        df_entry1 = params["df_entry"]
+        df_entry = params["df_entry"]
         df_entry2 = params["df_entry2"]
         axis = params["axis"]
         join = params["join"]
         new_var_name = params["new_var_name"]
 
-        self.direct_execute([df_entry1, df_entry2], axis, join, new_var_name)
+        self.direct_execute(df_entry, df_entry2, axis, join, new_var_name)
 
-    def debug(self, df_entries: List[pd.DataFrame], axis: int, join: str, new_var_name: str):
+    def debug(self, df_entry, df_entry2, axis: int, join: str, new_var_name: str):
         flog.debug("APPLY CONCAT")
-        for i, df_entry in enumerate(df_entries):
+        for i, df_entry in enumerate([df_entry, df_entry2]):
             flog.debug(f"DF{i} = {df_entry}")
         flog.debug(f"AXIS = {axis}")
         flog.debug(f"JOIN = {join}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entries: List[pd.DataFrame], axis: int, join: str, new_var_name: str, *args):
-        self.debug(df_entries, axis, join, new_var_name)
-
+    
+    def direct_execute(
+            self, df_entry: pd.DataFrame, df_entry2: pd.DataFrame, axis: int, join: str,
+            new_var_name: str, *args
+        ):
         inp = Input()
-        inp.assign("df_entry1", df_entries[0])
-        inp.assign("df_entry2", df_entries[1])
+        inp.assign("df_entry", df_entry)
+        inp.assign("df_entry2", df_entry2)
         inp.assign("axis", axis)
         inp.assign("join", join)
+
 
         try:
             df_new = self.input_execute(inp)
@@ -2175,8 +2178,7 @@ class ConcatHandler(AbstractFunctionHandler):
             flog.error(f"Undefined error ({e}) occurred")
 
         variable_handler.new_variable(new_var_name, df_new)
-        #variable_handler.update_data_in_variable_explorer(glc)
-
+        
     def input_execute(self, inp):
         df_new = pd.concat([inp("df_entry"), inp("df_entry2")], axis=inp("axis"), join=inp("join"))
 
