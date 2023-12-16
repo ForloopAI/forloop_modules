@@ -663,6 +663,20 @@ class ScrapingUtilitiesHandler:
 
         return element_data
     
+    def extract_data_from_xpath(self, xpath: str, filename: str, write_mode: str = "w+", timeout: int = 3):
+        xpath = self.check_xpath_apostrophes(xpath)
+        self.webscraping_client.extract_xpath(xpath, filename, write_mode)
+        data = self.wait_until_data_is_extracted(filename, timeout=timeout, xpath_func=True)
+        
+        return data
+    
+    def extract_data_from_list_of_xpaths(self, xpaths: list[str], filename: str, timeout: int = 3):
+        xpaths = [self.check_xpath_apostrophes(xpath) for xpath in xpaths]
+        self.webscraping_client.extract_multiple_xpath(xpaths, filename)
+        data = self.wait_until_data_is_extracted(filename, timeout=timeout, xpath_func=True)
+        
+        return data
+    
     def find_content_on_page(self):
         self.are_all_elements_selected = True
         self.scan_web_page(by_xpath='//div[count(p) > 4]/*//text()')
