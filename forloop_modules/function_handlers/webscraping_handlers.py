@@ -2685,13 +2685,6 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
         if columns_no != xpaths_no:
             raise CriticalPipelineError("The same number of XPaths and Columns must be specified")
 
-        inp = Input()
-        inp.assign("xpaths", xpaths)
-        inp.assign("columns", columns)
-        inp.assign("entry_df", entry_df)
-        inp.assign("write_mode", write_mode)
-        inp.assign("new_var_name", new_var_name)
-
         filename = f'{new_var_name}.txt'
         data_dict = {}
         # XPaths/Columns with len >= must be lists, as string can store only 1 element.
