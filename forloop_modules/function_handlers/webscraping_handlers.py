@@ -1557,14 +1557,9 @@ class ExtractMultipleXPathHandler(AbstractFunctionHandler):
         
         if type(xpaths) != list:
             raise TypeError("XPaths argument must be a list.")
-            
-        xpaths = [suh.check_xpath_apostrophes(xpath) for xpath in xpaths]
-
+        
         output_filename = output + ".txt"
-
-        suh.webscraping_client.extract_multiple_xpath(xpaths, output_filename)
-
-        data = suh.wait_until_data_is_extracted(output_filename, timeout=3, xpath_func=True)
+        data = suh.extract_data_from_list_of_xpaths(xpaths, output_filename)
 
         if data is not None:
             params = {"variable_name": output, "variable_value": str(data)}
