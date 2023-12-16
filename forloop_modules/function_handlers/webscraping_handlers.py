@@ -2,6 +2,7 @@ import os
 import time
 import requests
 import sys
+import ast
 
 if "linux" not in sys.platform:
     import pywinauto
@@ -11,7 +12,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from keepvariable.keepvariable_core import Var, save_variables, kept_variables
 import forloop_modules.flog as flog
-
+from forloop_modules.utils.various import is_list_of_strings
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
@@ -1493,13 +1494,12 @@ class ExtractXPathHandler(AbstractFunctionHandler):
             ]
 
         return imports
-
-
+    
 class ExtractMultipleXPathHandler(AbstractFunctionHandler):
     """
     ExtractMultipleXPath Node looks for multiple web page elements with given XPaths and extracts theirs content
     """
-
+    
     def __init__(self):
         self.icon_type = "ExtractMultipleXPath"
         self.fn_name = "Extract Multiple XPath"
@@ -1509,17 +1509,17 @@ class ExtractMultipleXPathHandler(AbstractFunctionHandler):
         self._init_docs()
 
         super().__init__()
-
+        
     def _init_docs(self):
         parameters_description = "ExtractMultipleXPath Node takes 2 parameters"
         self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
 
         self.docs.add_parameter_table_row(
-            title="Extraction setup file",
-            name="filename",
-            description="Path to file with list of XPaths, one XPath per line",
+            title="XPaths",
+            name="list",
+            description="A list of XPaths to be extracted.",
             typ="string",
-            example=['/Users/admin/Desktop/xpaths.txt']
+            example=['["/html/body/div[3]/div/div/div/div[3]/p[1]", "/html/body/div[3]/div/div/div/div[3]/p[2]"]']
         )
 
         self.docs.add_parameter_table_row(
@@ -1534,55 +1534,53 @@ class ExtractMultipleXPathHandler(AbstractFunctionHandler):
         fdl = FormDictList()
 
         fdl.label("Extract multiple HTML elements by XPath")
-        fdl.label("Extraction setup file")
-        fdl.entry(name="filename", text="", input_types=["str"], required=True, row=1)
+        fdl.label("XPaths")
+        fdl.entry(name="xpaths", text="", input_types=["list"], required=True, row=1)
         fdl.label("Output variable")
         fdl.entry(name="output", text="", input_types=["str"], required=True, row=2)
 
         return fdl
 
     def execute(self, node_detail_form):
-        filename = node_detail_form.get_chosen_value_by_name("filename", variable_handler)
+        xpaths = node_detail_form.get_chosen_value_by_name("xpaths", variable_handler)
         output = node_detail_form.get_chosen_value_by_name("output", variable_handler)
 
-        self.direct_execute(filename, output)
+        self.direct_execute(xpaths, output)
 
     def execute_with_params(self, params):
-        filename = params["filename"]
+        xpaths = params["xpaths"]
         output = params["output"]
 
-        self.direct_execute(filename, output)
+        self.direct_execute(xpaths, output)
 
-    def direct_execute(self, filename, output):
-        with Path(aet.home_folder, filename).open(mode='r', encoding="utf-8") as f:
-            xpaths = f.readlines()
-
-        xpaths = [suh.check_xpath_apostrophes(x.replace("\n", "")) for x in xpaths]
+    def direct_execute(self, xpaths, output):
+        try:
+            xpaths = ast.literal_eval(xpaths)
+        except Exception as e:
+            flog.warning(f'XPaths parsing failed: {e}')
+        
+        if type(xpaths) != list:
+            raise TypeError("XPaths argument must be a list.")
+            
+        xpaths = [suh.check_xpath_apostrophes(xpath) for xpath in xpaths]
 
         output_filename = output + ".txt"
-        flog.info(f"XPATHS: {xpaths}")
 
         suh.webscraping_client.extract_multiple_xpath(xpaths, output_filename)
 
         data = suh.wait_until_data_is_extracted(output_filename, timeout=3, xpath_func=True)
 
         if data is not None:
-            params = {"variable_name": output, "variable_value": str(data)}  # rows str(rows)
+            params = {"variable_name": output, "variable_value": str(data)}
             variable_handlers_dict["NewVariable"].execute_with_params(params)
-            ##variable_handler.update_data_in_variable_explorer(glc)
 
     def export_code(self, node_detail_form):
-        filename = node_detail_form.get_chosen_value_by_name("filename", variable_handler)
+        xpaths = node_detail_form.get_chosen_value_by_name("xpaths", variable_handler)
         output = node_detail_form.get_chosen_value_by_name("output", variable_handler)
 
         code = f"""
-        filename = "{filename}"
-        if not os.path.exists(filename):
-            raise FileNotFoundError(f'File "{{filename}}" does not exist.')
-            
+        xpaths = {xpaths}
         {output} = []
-        with open(filename, "r") as file:
-            xpaths = file.readlines()
             
         for xpath in xpaths:
             # Find the element using its XPath
@@ -2594,7 +2592,8 @@ class FindPageElementsHandler(AbstractFunctionHandler):
 
 
 class ExtractXPathsToDfHandler(AbstractFunctionHandler):
-    """Alternative implementation of ExtractXPath node used in Scraping Pipeline Builders."""
+    """Extract text from HTML elements by providing XPaths and column names. Construct a DataFrame with the output data."""
+
     def __init__(self):
         self.icon_type = "ExtractXPathsToDf"
         self.fn_name = "Extract XPaths To Df"
@@ -2623,7 +2622,7 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
         )
         self.docs.add_parameter_table_row(
             title="DataFrame", name="entry_df", description="Name of variable holding a DataFrame",
-            typ="string", example=None
+            typ="string"
         )
         self.docs.add_parameter_table_row(
             title="Write in file mode", name="write_mode",
@@ -2637,7 +2636,7 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
         )
         self.docs.add_parameter_table_row(title="New variable name", name="new_var_name",
             description="A name for the new Dataframe variable",
-            typ="String", example="'rename_column_df'"
+            typ="String", example="'new_df'"
         )
 
     def make_form_dict_list(self, node_detail_form=None):
@@ -2685,15 +2684,15 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
         self.direct_execute(xpaths, columns, entry_df, write_mode, new_var_name)
 
     def direct_execute(self, xpaths, columns, entry_df, write_mode, new_var_name):
-        def is_list_of_strings(var) -> bool:
-            return isinstance(var, list) and not all(isinstance(v, str) for v in var)
+        columns_no, columns_type = len(columns), list if isinstance(columns, list) else 1, str
+        xpaths_no, xpaths_type = len(xpaths), list if isinstance(xpaths, list) else 1, str
 
-        if isinstance(xpaths, str) or is_list_of_strings(xpaths):
+        if not (xpaths_type == str or is_list_of_strings(xpaths)):
             raise CriticalPipelineError("XPaths must be provided as a string or a list of strings")
-        if isinstance(columns, str) or is_list_of_strings(columns):
+        if not (columns_type == str or is_list_of_strings(columns)):
             raise CriticalPipelineError("Columns must be provided as a string or as a list of strings")
-        if len(columns) != len(xpaths):
-            raise CriticalPipelineError("Selected XPaths must be of same length as Columns")
+        if columns_no != xpaths_no:
+            raise CriticalPipelineError("The same number of XPaths and Columns must be specified")
 
         inp = Input()
         inp.assign("xpaths", xpaths)
@@ -2704,14 +2703,27 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
 
         filename = f'{new_var_name}.txt'
         data_dict = {}
-        for xpath, column in zip(xpaths, columns):
-            xpath = suh.check_xpath_apostrophes(xpath)
-            suh.webscraping_client.extract_xpath(xpath, filename, "w+")
-            data = suh.wait_until_data_is_extracted(filename, timeout=3, xpath_func=True)
-            if isinstance(data, list):
-                data_dict[column] = data
-            elif isinstance(data, str):
-                data_dict[column] = [data]
+        # XPaths/Columns with len >= must be lists, as string can store only 1 element.
+        if xpaths_no >= 1:
+            for xpath, column in zip(xpaths, columns):
+                xpath = suh.check_xpath_apostrophes(xpath)
+                suh.webscraping_client.extract_xpath(xpath, filename, "w+")
+                data = suh.wait_until_data_is_extracted(filename, timeout=3, xpath_func=True)
+                data_dict[column] = data if isinstance(data, list) else [data]
+        # XPaths/Columns with len == 1 can be either a string or a list of length == 1. Handle both cases:
+        elif xpaths_no == 1:
+            if xpaths_type == str:
+                xpath = suh.check_xpath_apostrophes(xpaths)
+                suh.webscraping_client.extract_xpath(xpaths, filename, "w+")
+            elif xpaths_type == list:
+                xpath = suh.check_xpath_apostrophes(xpaths[0])
+                suh.webscraping_client.extract_xpath(xpaths[0], filename, "w+")
+
+            if columns_type == str:
+                # 'data' variable generated by SUH can also be returned as a list or string
+                data_dict[columns] = data if isinstance(data, list) else [data]
+            elif columns_type == list:
+                data_dict[columns[0]] = data if isinstance(data, list) else [data]
 
         if write_mode == "Write":
             new_df = pd.DataFrame(data_dict)
@@ -2726,19 +2738,6 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
             variable_handler.update_variable(new_var_name, new_df)
         else:
             variable_handler.create_variable(new_var_name, new_df)
-
-    def input_execute(self, inp: Input):
-        raise NotImplementedError()
-
-    def export_code(self, node_detail_form):
-        xpaths = node_detail_form.get_chosen_value_by_name("xpaths", variable_handler)
-        columns = node_detail_form.get_chosen_value_by_name("columns", variable_handler)
-        entry_df = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
-        write_mode = node_detail_form.get_chosen_value_by_name("write_mode", variable_handler)
-        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
-
-        code = f"# WARNING: Code export not implemented for {self.icon_type} node"
-        return code
 
     def export_imports(self, *args):
         imports = ["from selenium import webdriver", "from selenium.webdriver.common.by import By"]

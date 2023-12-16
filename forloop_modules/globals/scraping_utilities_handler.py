@@ -78,6 +78,7 @@ class ScrapingUtilitiesHandler:
         self.webpage_elements = []
         self.browser_view_elements = []
         self.browser_view_selected_elements = []
+        self.browser_view_selected_element_groups = []
 
         # Used for refreshing image in BrowserView
         self.is_screenshot_updated = False
@@ -114,6 +115,22 @@ class ScrapingUtilitiesHandler:
             flog.warning("PROXY KEY WASNT FOUND",self)
             self.scraperapi_key = None
             self.scrapingbee_key = None
+            
+    @property
+    def is_browser_active(self) -> bool:
+        # TODO: replace with webscraping_client.is_browser_active()
+
+        """
+        Defines, whether browser instance is currently active (browser was not closed)
+        """
+
+        last_function = self.webscraping_client.get_browser_meta_data()['function']
+
+        function = last_function['name']
+        is_function_done = last_function['done']
+        self._is_browser_active = not (function == 'close_browser' and is_function_done)
+
+        return self._is_browser_active
 
     def update_webpage_elements(self, refresh_browser_view_elements: bool = True):
         """
@@ -227,10 +244,26 @@ class ScrapingUtilitiesHandler:
 
     def get_browser_view_selected_elements(self):
         return self.browser_view_selected_elements
+    
+    def get_group_idex_of_webpage_element(self, element):
+        element_group_index = None
+        
+        for i, group in enumerate(suh.browser_view_selected_element_groups):
+            if element in group:
+                element_group_index = i
+                break
+            
+        return element_group_index
+    
+    def delete_empty_groups(self):
+        for i, element_group in reversed(list(enumerate(self.browser_view_selected_element_groups))):
+            if len(element_group) == 0:
+                self.browser_view_selected_element_groups.pop(i)
 
     def reset_browser_view_elements(self):
         self.browser_view_elements = []
         self.browser_view_selected_elements = []
+        self.browser_view_selected_element_groups = []
 
     def reset_browser_view_selected_elements(self):
         self.browser_view_selected_elements = []
@@ -240,22 +273,6 @@ class ScrapingUtilitiesHandler:
 
     def append_browser_view_selected_elements(self, selected_elements_elements):
         self.browser_view_selected_elements.extend(selected_elements_elements)
-
-    @property
-    def is_browser_active(self) -> bool:
-        # TODO: replace with webscraping_client.is_browser_active()
-
-        """
-        Defines, whether browser instance is currently active (browser was not closed)
-        """
-
-        last_function = self.webscraping_client.get_browser_meta_data()['function']
-
-        function = last_function['name']
-        is_function_done = last_function['done']
-        self._is_browser_active = not (function == 'close_browser' and is_function_done)
-
-        return self._is_browser_active
 
     def check_xpath_apostrophes(self, xpath):
         """
@@ -649,6 +666,20 @@ class ScrapingUtilitiesHandler:
     def find_content_on_page(self):
         self.are_all_elements_selected = True
         self.scan_web_page(by_xpath='//div[count(p) > 4]/*//text()')
+        
+    def move_webpage_element_from_current_group_to_previous_group(self, element):
+        element_group_index = self.get_group_idex_of_webpage_element(element)
+        self.browser_view_selected_element_groups[element_group_index].remove(element)
+                                
+        previous_group_index = element_group_index - 1
+        
+        if previous_group_index < 0:
+            new_group = [element]
+            self.browser_view_selected_element_groups.append(new_group)
+        else:
+            self.browser_view_selected_element_groups[previous_group_index].append(element)
+            
+        self.delete_empty_groups()
     
     def group_elements(self):
         selected_elements = self.get_browser_view_selected_elements()
