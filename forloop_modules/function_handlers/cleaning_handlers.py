@@ -107,7 +107,7 @@ class NewDataFrameHandler(AbstractFunctionHandler):
         self.direct_execute(columns, data, new_var_name)
 
     def direct_execute(self, data, columns, new_var_name):
-        if isinstance(data, list) and not all(isinstance(d, list) for d in data):
+        if isinstance(data, list) and not all(type(row) == list for row in data):
             raise CriticalPipelineError(
                 "When Data is provided as a list, it must contain lists of values for each column"
             )
@@ -119,7 +119,7 @@ class NewDataFrameHandler(AbstractFunctionHandler):
         elif data != "" and isinstance(data, str):
             raise CriticalPipelineError("Data cannot be provided as a string")
 
-        if (isinstance(columns, list) and not all(isinstance(c, str) for c in columns)) or \
+        if (isinstance(columns, list) and not all(type(column) == str for column in columns)) or \
            columns != "" and isinstance(columns, str):
             raise CriticalPipelineError("Columns must be provided as a list of strings")
 
