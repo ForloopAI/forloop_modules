@@ -138,3 +138,7 @@ JSON_SERIALIZABLE_TYPES = [str, int, bool, list, dict, float, tuple]
 JSON_SERIALIZABLE_TYPES_AS_STRINGS = [typ.__name__ for typ in JSON_SERIALIZABLE_TYPES]
 REDIS_STORED_TYPES = [pd.DataFrame, datetime.datetime]
 REDIS_STORED_TYPES_AS_STRINGS = [typ.__name__ for typ in REDIS_STORED_TYPES] + ["function", "class"]
+
+# Regex used for validating URLs across the whole app
+# NOTE: Regex created by Joaquin, simply mirrored on backend
+URL_VALIDATION_REGEX = r"(https?://)?(([a-z\d][a-z\d\-]*[a-z\d])\.)+[a-z]{2,}(:\d*)?(.*)?"
