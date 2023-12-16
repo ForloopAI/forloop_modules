@@ -1381,15 +1381,11 @@ class ExtractXPathHandler(AbstractFunctionHandler):
         self.direct_execute(xpath, output, write_mode, save_to, column, list_as_str)
 
     def direct_execute(self, xpath, output, write_mode, save_to, column, list_as_str):
-        xpath = suh.check_xpath_apostrophes(xpath)
         filename = f'{output}.txt'
+        data = suh.extract_data_from_xpath(xpath, filename, write_mode)
 
         #if not glc.table1.visible: #temporary disabled - should be rather in psm
         #    glc.toggle_grid_view([glc.table1])
-
-        suh.webscraping_client.extract_xpath(xpath, filename, write_mode)
-
-        data = suh.wait_until_data_is_extracted(filename, timeout=3, xpath_func=True)
         flog.warning(data)
 
         if data is not None and column:
