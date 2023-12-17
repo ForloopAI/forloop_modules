@@ -20,7 +20,7 @@ def is_value_redis_compatible(value) -> bool:
 
 def is_list_of_strings(var) -> bool:
     """Check for list[str] variable type."""
-    return isinstance(var, list) and not all(isinstance(v, str) for v in var)
+    return isinstance(var, list) and all(isinstance(v, str) for v in var)
 
 
 def is_value_redis_compatible(value) -> bool:
