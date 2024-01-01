@@ -139,6 +139,11 @@ JSON_SERIALIZABLE_TYPES_AS_STRINGS = [typ.__name__ for typ in JSON_SERIALIZABLE_
 REDIS_STORED_TYPES = [pd.DataFrame, datetime.datetime]
 REDIS_STORED_TYPES_AS_STRINGS = [typ.__name__ for typ in REDIS_STORED_TYPES] + ["function", "class"]
 
-# Regex used for validating URLs across the whole app
-# NOTE: Regex created by Joaquin, simply mirrored on backend
+# Regex used for validating URLs across the whole app. To be kept synchronized with it's frontend
+# counterpart.
+# 1. Protocol Handling: Matches URLs with optional http or https protocols.
+# 2. Domain Name Match: Recognizes domain names containing alphanumeric characters and
+#    hyphens, ending with a top-level domain of at least two letters.
+# 3. Port Numbers: Optionally includes port numbers, specified with a colon and digits.
+# 4. Additional Parameters: Accommodates extra path or query parameters in the URL.
 URL_VALIDATION_REGEX = r"(https?://)?(([a-z\d][a-z\d\-]*[a-z\d])\.)+[a-z]{2,}(:\d*)?(.*)?"
