@@ -301,7 +301,7 @@ class AbstractFunctionHandler(abc.ABC):
         if not isinstance(node_params, NodeParams):
             raise TypeError(f"Entered node_params must be a NodeParams object, not {type(node_params)}")
         
-        ERROR_CODE_MESSAGE = "# Code could not be loaded..."
+        ERROR_CODE_MESSAGE = f"# {self.icon_type}: Code could not be loaded..."
         
         if not hasattr(self, "input_execute"):
             return ERROR_CODE_MESSAGE
