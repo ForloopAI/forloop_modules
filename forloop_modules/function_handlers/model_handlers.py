@@ -11,7 +11,6 @@ from forloop_modules.function_handlers.auxilliary.node_type_categories_manager i
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.docs_categories import DocsCategories
-
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler 
 
 
@@ -137,92 +136,35 @@ class LoadJupyterScriptHandler(AbstractFunctionHandler):
         self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, options={}, node_detail_form=None):
+        file_types=[('Jupyter notebooks', '*.ipynb')]
+        
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("File path:")
-        fdl.entry(name="file_name", text="./jupyter_ntb.ipynb", required=True, input_types=["str"], row=1)
-        fdl.button(function=self.open_jupyter_script, function_args=node_detail_form, text="Look up file", enforce_required=False, name="lookup_ipynb_file")
-        fdl.label("Load and run")
-        fdl.checkbox(name="load_and_run", bool_value=False, row=3)
+        fdl.entry(name="file_path", text="", required=True, type="file", file_types=file_types, row=1)
+        fdl.label("Script name:")
+        fdl.entry(name="script_name", text="", input_types=["str"], row=2)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
 
-        # fdl = FormDictList()
-        # fdl.label("Jupyter Notebook Script")
-        # fdl.label("Script filename")
-        # fdl.entry(name="script", text="script.py", input_types=["str"], row=1)
-
-        # return fdl
-
-    def open_jupyter_script(self, node_detail_form):
-        file = askopenfile(mode='r', filetypes=[('Jupyter notebooks', '*.ipynb')])
-
-        if file is not None:
-            filename = file.name
-            params_dict = node_detail_form.assign_value_by_name(name='file_name', value=filename)
-            ncrb.update_node_by_uid(node_detail_form.node_uid, params=params_dict)
-
     def execute(self, node_detail_form):
-        filename = node_detail_form.get_chosen_value_by_name("file_name", variable_handler)
-        load_and_run = node_detail_form.get_chosen_value_by_name("load_and_run", variable_handler)
+        file_path = node_detail_form.get_chosen_value_by_name("file_path", variable_handler)
+        script_name = node_detail_form.get_chosen_value_by_name("script_name", variable_handler)
 
-        if filename and os.path.isfile(filename):
-            
-            # short_filename = filename.split("/")[-1]
-            
-            # jupyter_image = self.itm.new_image_via_API([400, 180],"JupyterScript",label_text=short_filename)
-            ncrb.new_node(pos=[500, 300], typ="JupyterScript")
-            # jupyter_image.item_detail_form.elements[2].text = filename
-            
-            if load_and_run:
-                self._run_jupyter_script(filename)
+        self.direct_execute(file_path, script_name)
 
-        else:
-            flog.error(f"Given path `{filename}` is not a file")
-            return None
-
-    def direct_execute(self, filename):
-
-        self._run_jupyter_script(filename)
-
-        # command = "runipy"
-        # location = "C:\\Users\\EUROCOM\\Documents\\Git\\ForloopAI\\forloop_platform_dominik\\"
-
-        # os.chdir(location)
-        # os.system("start cmd cd " + location + script + " /k " + command + " " + location + script)
-
-    def _run_jupyter_script(self, filename):
-
-        # short_filename = filename.split("/")[-1]
-        # run_path = filename.replace(short_filename, "")
+    def direct_execute(self, file_path, script_name):
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f"Given path `{file_path}` is not a file.")
         
-        # notebook_filename_out = f'executed_{short_filename}'
-        # notebook_filename_out = os.path.join(run_path, notebook_filename_out)
-
-        # with open(filename) as f:
-        #     nb = nbformat.read(f, as_version=4)
-
-        # ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
-
-        # try:
-        #     out = ep.preprocess(nb, {'metadata': {'path': run_path}})
-        # except CellExecutionError:
-        #     out = None
-        #     msg = 'Error executing the notebook "%s".\n\n' % filename
-        #     msg += 'See notebook "%s" for the traceback.' % notebook_filename_out
-        #     print(msg)
-        #     raise
-        # finally:
-        #     with open(notebook_filename_out, mode='w', encoding='utf-8') as f:
-        #         nbformat.write(nb, f)
-
-        try:
-            os.system(f"jupyter nbconvert --to notebook --execute {filename}")
-            #os.system(f'runipy "{filename}"')
-        except Exception as e:
-            print("RunJupyterScript Error: ", e)
-
+        if not script_name or script_name.isspace():
+            script_name = file_path.split("/")[-1]
+            
+        with open(file_path, "r") as file:
+            code = file.read()
+            
+        su.create_new_script(script_name, text=code)
 
 class TrainModelHandler:
     def __init__(self):
