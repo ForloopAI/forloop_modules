@@ -5,6 +5,7 @@ from tkinter.filedialog import askopenfile
 
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
+import forloop_modules.utils.script_utils as su
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
@@ -97,55 +98,35 @@ class LoadPythonScriptHandler(AbstractFunctionHandler):
         self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, options={}, node_detail_form=None):
+        file_types=[('Python scripts', '*.py')]
+        
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("File path:")
-        fdl.entry(name="file_name", text="./my_python_file.py", required=True, input_types=["str"], row=1)
-        fdl.button(function=self.open_python_script, function_args=node_detail_form, text="Look up file", enforce_required=False, name="lookup_py_file")
-        fdl.label("Load and run")
-        fdl.checkbox(name="load_and_run", bool_value=False, row=3)
+        fdl.entry(name="file_path", text="", required=True, type="file", file_types=file_types, row=1)
+        fdl.label("Script name:")
+        fdl.entry(name="script_name", text="", input_types=["str"], row=2)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
 
-    def open_python_script(self, node_detail_form):
-        file = askopenfile(mode='r', filetypes=[('Python scripts', '*.py')])
-
-        if file is not None:
-            filename = file.name
-            params_dict = node_detail_form.assign_value_by_name(name='file_name', value=filename)
-            ncrb.update_node_by_uid(node_detail_form.node_uid, params=params_dict)
-
     def execute(self, node_detail_form):
-        filename = node_detail_form.get_chosen_value_by_name("file_name", variable_handler)
-        load_and_run = node_detail_form.get_chosen_value_by_name("load_and_run", variable_handler)
-
-        if filename and os.path.isfile(filename):
-            
-            # short_filename = filename.split("/")[-1]
-            
-            # py_script_image = self.itm.new_image_via_API([400, 180],"PythonScript")  # ,label_text=short_filename
-            ncrb.new_node(pos=[400, 180], typ="PythonScript")
-            # py_script_image.item_detail_form.elements[2].text = filename
-            
-            if load_and_run:
-                self._run_python_script(filename)
-
-        else:
-            flog.error(f"Given path `{filename}` is not a file")
-            return None
-
-    def direct_execute(self, file_name):
+        file_path = node_detail_form.get_chosen_value_by_name("file_path", variable_handler)
+        script_name = node_detail_form.get_chosen_value_by_name("script_name", variable_handler)
         
-        self._run_python_script(file_name)        
+        self.direct_execute(file_path, script_name)
 
-    def _run_python_script(self, filename: str):
-
-        try:
-            os.system(f'python "{filename}"')
-        except Exception as e:
-            print("RunPythonScript Error: ", e)
-
+    def direct_execute(self, file_path, script_name):
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f"Given path `{file_path}` is not a file.")
+        
+        if not script_name or script_name.isspace():
+            script_name = file_path.split("/")[-1]
+            
+        with open(file_path, "r") as file:
+            code = file.read()
+            
+        su.create_new_script(script_name, text=code)
 
 class LoadJupyterScriptHandler(AbstractFunctionHandler):
     def __init__(self):
