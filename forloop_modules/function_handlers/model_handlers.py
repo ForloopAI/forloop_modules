@@ -103,24 +103,21 @@ class LoadPythonScriptHandler(AbstractFunctionHandler):
         fdl.label(self.fn_name)
         fdl.label("File path:")
         fdl.entry(name="file_path", text="", required=True, type="file", file_types=file_types, row=1)
-        fdl.label("Script name:")
-        fdl.entry(name="script_name", text="", input_types=["str"], row=2)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", 
+                   frontend_implementation=True, focused=True)
 
         return fdl
 
     def execute(self, node_detail_form):
         file_path = node_detail_form.get_chosen_value_by_name("file_path", variable_handler)
-        script_name = node_detail_form.get_chosen_value_by_name("script_name", variable_handler)
         
-        self.direct_execute(file_path, script_name)
+        self.direct_execute(file_path)
 
-    def direct_execute(self, file_path, script_name):
+    def direct_execute(self, file_path):
         if not os.path.isfile(file_path):
             raise FileNotFoundError(f"Given path `{file_path}` is not a file.")
         
-        if not script_name or script_name.isspace():
-            script_name = file_path.split("/")[-1]
+        script_name = file_path.split("/")[-1]
             
         with open(file_path, "r") as file:
             code = file.read()
@@ -142,24 +139,21 @@ class LoadJupyterScriptHandler(AbstractFunctionHandler):
         fdl.label(self.fn_name)
         fdl.label("File path:")
         fdl.entry(name="file_path", text="", required=True, type="file", file_types=file_types, row=1)
-        fdl.label("Script name:")
-        fdl.entry(name="script_name", text="", input_types=["str"], row=2)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", 
+                   frontend_implementation=True, focused=True)
 
         return fdl
 
     def execute(self, node_detail_form):
         file_path = node_detail_form.get_chosen_value_by_name("file_path", variable_handler)
-        script_name = node_detail_form.get_chosen_value_by_name("script_name", variable_handler)
 
-        self.direct_execute(file_path, script_name)
+        self.direct_execute(file_path)
 
-    def direct_execute(self, file_path, script_name):
+    def direct_execute(self, file_path):
         if not os.path.isfile(file_path):
             raise FileNotFoundError(f"Given path `{file_path}` is not a file.")
         
-        if not script_name or script_name.isspace():
-            script_name = file_path.split("/")[-1]
+        script_name = file_path.split("/")[-1]
             
         with open(file_path, "r") as file:
             code = file.read()
