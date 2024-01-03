@@ -204,7 +204,11 @@ class APIVariableToBeAssignedToFile(BaseModel):
     node_uid: str = ""
     project_uid: str = "0"
     pipeline_uid: str = "0"
+    
 
+class APILoadScriptViaNode(BaseModel):
+    node_uid: str = ""
+    project_uid: str = "0"
 
 class APIScript(BaseModel):
     script_name: str = ""
