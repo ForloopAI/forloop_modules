@@ -333,6 +333,8 @@ class PredictModelValuesHandler:
 model_handlers_dict = {
     "LoadPythonScript": LoadPythonScriptHandler(),
     "LoadJupyterScript": LoadJupyterScriptHandler(),
+    "RunPythonScript": RunPythonScriptHandler(),
+    "RunJupyterScript": RunJupyterScriptHandler(),
     "TrainModel": TrainModelHandler(),
     #"PredictModelValues": PredictModelValuesHandler()
 }
