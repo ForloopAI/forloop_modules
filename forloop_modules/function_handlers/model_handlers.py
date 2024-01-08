@@ -98,13 +98,18 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, options={}, node_detail_form=None):
-        response = ncrb.get_all_scripts()
+        script_names = []
         
-        if response.status_code == 200:
-            scripts = response.json()
-            script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
-        else:
-            script_names = []
+        try:
+            response = ncrb.get_all_scripts()
+        
+            if response.status_code == 200:
+                scripts = response.json()
+                
+                # TODO: Using aet.project_uid is ok on local but incorrect in general --> change when allowed to run on remote
+                script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
+        except Exception as e:
+            flog.warning(e)
         
         fdl = FormDictList()
         fdl.label(self.fn_name)
@@ -163,13 +168,18 @@ class RunJupyterScriptHandler(AbstractFunctionHandler):
         self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, options={}, node_detail_form=None):
-        response = ncrb.get_all_scripts()
+        script_names = []
         
-        if response.status_code == 200:
-            scripts = response.json()
-            script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
-        else:
-            script_names = []
+        try:
+            response = ncrb.get_all_scripts()
+        
+            if response.status_code == 200:
+                scripts = response.json()
+                
+                # TODO: Using aet.project_uid is ok on local but incorrect in general --> change when allowed to run on remote
+                script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
+        except Exception as e:
+            flog.warning(e)
         
         fdl = FormDictList()
         fdl.label(self.fn_name)
