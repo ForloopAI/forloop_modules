@@ -1,18 +1,17 @@
 import os
 import importlib
-
-from tkinter.filedialog import askopenfile
+import subprocess
 
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
 import forloop_modules.utils.script_utils as su
 
+from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler 
-
 
 class PythonScriptHandler(AbstractFunctionHandler):
     icon_type = "PythonScript"
@@ -160,6 +159,70 @@ class LoadJupyterScriptHandler(AbstractFunctionHandler):
             
         su.create_new_script(script_name, text=code)
 
+class RunPythonScriptHandler(AbstractFunctionHandler):
+    """
+    DANGER ZONE: This handler is allowed for local use only for now! Don't allow it in production!
+    """
+    
+    def __init__(self):
+        self.icon_type = "RunPythonScript"
+        self.fn_name = "Run Python Script"
+
+        self.type_category = ntcm.categories.model
+        self.docs_category = DocsCategories.control
+
+    def make_form_dict_list(self, *args, options={}, node_detail_form=None):
+        response = ncrb.get_all_scripts()
+        
+        if response.status_code == 200:
+            scripts = response.json()
+            script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
+        else:
+            script_names = []
+        
+        fdl = FormDictList()
+        fdl.label(self.fn_name)
+        fdl.label("Script:")
+        fdl.combobox(name="script_name", options=script_names, row=1)
+        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+
+        return fdl
+
+    def execute(self, node_detail_form):
+        script_name = node_detail_form.get_chosen_value_by_name("script_name", variable_handler)
+        
+        self.direct_execute(script_name)
+
+    def direct_execute(self, script_name):
+        """
+        DANGER: The code runs without any checks! 
+        
+        TODO 1: Solve security issues when running the code.
+        TODO 2: Solve scanning for packages used by script and pip installing of the missing ones.
+        """         
+        script = su.get_script_by_name(script_name)
+        script_text = script.get("text", "")
+        
+        random_id = su.generate_random_id()
+        temp_file_name = f'temp_py_script_{random_id}.py'
+        
+        with open(temp_file_name, "w") as temp_file:
+            temp_file.write(script_text)
+            
+        command = f'python3 {temp_file_name}'
+        
+        completed_process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, 
+                                           stderr=subprocess.PIPE, text=True)
+        
+        os.remove(temp_file_name)
+
+        if completed_process.returncode == 0:
+            output = completed_process.stdout
+            flog.info(f"Command output:\n{output}")
+        else:
+            error_output = completed_process.stderr
+            message = f'Executed script failed with the following traceback:\n{error_output}'
+            flog.warning(message)
 class TrainModelHandler:
     def __init__(self):
         self.icon_type = 'TrainModel'
