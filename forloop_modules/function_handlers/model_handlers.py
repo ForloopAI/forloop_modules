@@ -204,7 +204,7 @@ class RunJupyterScriptHandler(AbstractFunctionHandler):
         script_text = script.get("text", "")
         
         random_id = su.generate_random_id()
-        temp_file_name = f'temp_py_script_{random_id}.ipynb'
+        temp_file_name = f'temp_jupyter_script_{random_id}.ipynb'
         
         with open(temp_file_name, "w") as temp_file:
             temp_file.write(script_text)
