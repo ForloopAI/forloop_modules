@@ -6,6 +6,12 @@ import forloop_modules.queries.node_context_requests_backend as ncrb
 
 from forloop_modules.globals.active_entity_tracker import aet
 
+class ScriptNotFoundError(Exception):
+    pass
+
+class AmbiguousRequestError(Exception):
+    pass
+
 def create_new_script(script_name: str = "untitled", text: str = ""):
     """Creates a new script on the API and in case of a successful call it stores it's uid into auth --> aet.active_script_uid.
 
@@ -36,3 +42,23 @@ def update_active_script(code: str, script_name: Optional[str] = "untitled"):
             flog.error(f'Error {response.status_code}: {response.reason}.')
     else:
         create_new_script(text=code)
+        
+def get_script_by_name(script_name: str):
+    response = ncrb.get_all_scripts()
+        
+    if not response.ok:
+        raise Exception(f'Error {response.status_code} - {response.reason}.')
+    
+    scripts = response.json()
+    scripts_matching_name = [script for script in scripts if script["script_name"] == script_name 
+                                and script["project_uid"] == aet.project_uid]
+    
+    if len(scripts_matching_name) == 0:
+        raise ScriptNotFoundError(f'No script named "{script_name}" found for project_uid == {aet.project_uid}.')
+    elif len(scripts_matching_name) > 1:
+        message = f'Ambiguous request: {len(scripts_matching_name)} scripts named "{script_name}" found.'
+        raise AmbiguousRequestError(message)
+    
+    script = scripts_matching_name[0]
+    
+    return script
