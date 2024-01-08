@@ -223,6 +223,93 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             error_output = completed_process.stderr
             message = f'Executed script failed with the following traceback:\n{error_output}'
             flog.warning(message)
+            
+class RunJupyterScriptHandler(AbstractFunctionHandler):
+    """
+    DANGER ZONE: This handler is allowed for local use only for now! Don't allow it in production!
+    """
+    
+    def __init__(self):
+        self.icon_type = "RunJupyterScript"
+        self.fn_name = "Run Jupyter Script"
+
+        self.type_category = ntcm.categories.model
+        self.docs_category = DocsCategories.control
+
+    def make_form_dict_list(self, *args, options={}, node_detail_form=None):
+        response = ncrb.get_all_scripts()
+        
+        if response.status_code == 200:
+            scripts = response.json()
+            script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
+        else:
+            script_names = []
+        
+        fdl = FormDictList()
+        fdl.label(self.fn_name)
+        fdl.label("Script:")
+        fdl.combobox(name="script_name", options=script_names, row=1)
+        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+
+        return fdl
+
+    def execute(self, node_detail_form):
+        script_name = node_detail_form.get_chosen_value_by_name("script_name", variable_handler)
+        
+        self.direct_execute(script_name)
+
+    def direct_execute(self, script_name):
+        """
+        DANGER: The code runs without any checks! 
+        
+        TODO: Solve security issues when running the code.
+        """    
+        script = su.get_script_by_name(script_name)
+        script_text = script.get("text", "")
+        
+        random_id = su.generate_random_id()
+        temp_file_name = f'temp_py_script_{random_id}.ipynb'
+        
+        with open(temp_file_name, "w") as temp_file:
+            temp_file.write(script_text)
+            
+        command = f'jupyter nbconvert --to notebook --execute {temp_file_name}'
+        
+        completed_process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, 
+                                           stderr=subprocess.PIPE, text=True)
+        os.remove(temp_file_name)
+
+        if completed_process.returncode == 0:
+            output = completed_process.stdout
+            flog.info(f"Command output:\n{output}")
+        else:
+            error_output = completed_process.stderr
+            message = f'Executed script failed with the following traceback:\n{error_output}'
+            flog.warning(message)
+            
+        # NOTE: Alternative implementation, do not delete yet (if tempted to do so, ask Dominik first).
+        # run_path = filename.replace(script_name, "")
+        
+        # notebook_filename_out = f'executed_{script_name}'
+        # notebook_filename_out = os.path.join(run_path, notebook_filename_out)
+
+        # with open(filename) as f:
+        #     nb = nbformat.read(f, as_version=4)
+
+        # ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
+
+        # try:
+        #     out = ep.preprocess(nb, {'metadata': {'path': run_path}})
+        # except CellExecutionError:
+        #     out = None
+        #     msg = 'Error executing the notebook "%s".\n\n' % filename
+        #     msg += 'See notebook "%s" for the traceback.' % notebook_filename_out
+        #     print(msg)
+        #     raise
+        # finally:
+        #     with open(notebook_filename_out, mode='w', encoding='utf-8') as f:
+        #         nbformat.write(nb, f)
+
 class TrainModelHandler:
     def __init__(self):
         self.icon_type = 'TrainModel'
