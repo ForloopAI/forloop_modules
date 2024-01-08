@@ -1,4 +1,7 @@
 import json
+import random
+import string
+
 from typing import Optional
 
 import forloop_modules.flog as flog
@@ -62,3 +65,8 @@ def get_script_by_name(script_name: str):
     script = scripts_matching_name[0]
     
     return script
+        
+def generate_random_id(size: int = 6, chars: str = string.ascii_letters + string.digits):
+    random_id = "".join(random.choice(chars) for _ in range(size))
+    
+    return random_id
