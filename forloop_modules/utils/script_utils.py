@@ -52,7 +52,7 @@ def get_script_by_name(script_name: str):
     if not response.ok:
         raise Exception(f'Error {response.status_code} - {response.reason}.')
     
-    scripts = response.json()
+    scripts = response.json()["result"]["scripts"]
     scripts_matching_name = [script for script in scripts if script["script_name"] == script_name 
                                 and script["project_uid"] == aet.project_uid]
     

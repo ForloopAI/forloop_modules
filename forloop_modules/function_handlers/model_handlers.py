@@ -104,7 +104,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             response = ncrb.get_all_scripts()
         
             if response.status_code == 200:
-                scripts = response.json()
+                scripts = response.json()["result"]["scripts"]
                 
                 # TODO: Using aet.project_uid is ok on local but incorrect in general --> change when allowed to run on remote
                 script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
@@ -174,7 +174,7 @@ class RunJupyterScriptHandler(AbstractFunctionHandler):
             response = ncrb.get_all_scripts()
         
             if response.status_code == 200:
-                scripts = response.json()
+                scripts = response.json()["result"]["scripts"]
                 
                 # TODO: Using aet.project_uid is ok on local but incorrect in general --> change when allowed to run on remote
                 script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
