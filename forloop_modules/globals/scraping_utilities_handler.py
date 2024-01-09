@@ -655,13 +655,23 @@ class ScrapingUtilitiesHandler:
 
     def extract_element_data(self, element: dict, extract_text_from_link: bool = False):
         element_type = element['type']
-
-        if element_type in [ElementType.LINK, ElementType.BUTTON]:
-            element_data = element['data']['text'] if extract_text_from_link else element['data']['attributes'].get('href')
-        elif element_type == ElementType.IMAGE:
-            element_data = element['data']['attributes'].get('src')
+        
+        if type(element["data"])==str:
+            #old approach but still might be used when find similar items not called - requires edits on Frontend
+            flog.warning('Deprecation warning: Extracted element is not in correct format, it should be dictionary with "tag_name", "text" and "attributes" key', class_instance=self)
+            element_data = element['data']
         else:
-            element_data = element['data']['text']
+            #in future this is preferred            
+            assert "text" in element["data"].keys()
+            assert "attributes" in element["data"].keys()
+            assert "tag_name" in element["data"].keys()
+            
+            if element_type in [ElementType.LINK, ElementType.BUTTON]:
+                element_data = element['data']['text'] if extract_text_from_link else element['data']['attributes'].get('href')
+            elif element_type == ElementType.IMAGE:
+                element_data = element['data']['attributes'].get('src')
+            else:
+                element_data = element['data']['text']
 
         return element_data
     
