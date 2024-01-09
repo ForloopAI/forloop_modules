@@ -1530,8 +1530,6 @@ class InsertIntoSheetHandler(AbstractFunctionHandler):
             ) from e
         except gspread.exceptions.SpreadsheetNotFound as e:
             raise SoftPipelineError("No Google Sheet found under the provided url") from e
-        except Exception as e:
-            raise SoftPipelineError() from e
 
     def input_execute(self, inp: Input) -> None:
         insert_df: pd.DataFrame = inp("df_entry")
