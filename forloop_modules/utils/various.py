@@ -1,6 +1,7 @@
 import inspect
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from forloop_modules.utils.definitions import JSON_SERIALIZABLE_TYPES, REDIS_STORED_TYPES
@@ -48,7 +49,9 @@ def serialize_dataframe_to_api(variable_value_df: pd.DataFrame) -> dict:
     :return: Variable's value serialized as a dict
     :rtype: dict
     """
-    return {"columns": list(variable_value_df.columns), "values": variable_value_df.values.tolist()}
+    df = variable_value_df.copy()
+    df = df.replace(np.nan, None)
+    return {"columns": list(df.columns), "values": df.values.tolist()}
 
 
 def parse_if_dataframe_from_db(variable_series: pd.Series) -> Any:
