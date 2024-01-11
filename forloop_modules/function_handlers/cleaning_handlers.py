@@ -640,6 +640,163 @@ class RenameColumnHandler(AbstractFunctionHandler):
     """
 
 
+class CastColumnTypeHandler(AbstractFunctionHandler):
+    """CastColumnType Node changes data type of the selected column."""
+
+    def __init__(self):
+        super().__init__()
+        self.icon_type = 'CastColumnType'
+        self.fn_name = 'Cast Column Type'
+
+        self.type_category = ntcm.categories.cleaning
+        self.docs_category = DocsCategories.cleaning
+        self._init_docs()
+
+    def _init_docs(self):
+        parameter_description = """The CastColumnType Node requires 2 parameters (other than input dataframe and new 
+        dataframe name), a *column* whose name is to be changed and the *new column type*."""
+
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+
+        self.docs.add_parameter_table_row(
+            title="Dataframe",
+            name="df_entry",
+            description="Dataframe variable rectangle.",
+            typ="Dataframe"
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Column",
+            name="col_name",
+            description="The column to be casted. The name of the column can be either written or selected from the combobox."
+        )
+
+        self.docs.add_parameter_table_row(
+            title="New column type",
+            name="new_col_type",
+            description="A new column data type",
+            typ="String"
+        )
+
+        self.docs.add_parameter_table_row(
+            title="New variable name",
+            name="new_var_name",
+            description="A name for the new Dataframe variable",
+            typ="String",
+            example="'casted_column_df'"
+        )
+
+    def make_form_dict_list(self, *args, options: Optional[dict] = None, node_detail_form=None) -> FormDictList:
+        options = {} if options is None else options
+        columns = options.get('columns', [])
+
+        column_dtypes = ['str', 'int', 'float', 'datetime', 'boolean']
+
+        fdl = FormDictList(docs=self.docs)
+
+        fdl.label("Cast Column Type")
+
+        fdl.label("Dataframe")
+        fdl.entry(name="df_entry", text="", input_types=["DataFrame"], required=True, row=1)
+
+        fdl.label("Column")
+        fdl.comboentry(name="col_name", text="", options=columns, row=2)
+
+        # TODO: Multiple columns (pass dict as arg)?
+        fdl.label("New column type")
+        fdl.combobox(name="new_col_type", options=column_dtypes, row=3)
+
+        fdl.label("New variable")
+        fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=4)
+
+        fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+
+        return fdl
+
+    def execute(self, node_detail_form):
+        df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
+        col_name = node_detail_form.get_chosen_value_by_name("col_name", variable_handler)
+        new_col_type = node_detail_form.get_chosen_value_by_name("new_col_type", variable_handler)
+        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
+
+        new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
+
+        self.direct_execute(df_entry, col_name, new_col_type, new_var_name)
+
+        ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
+
+    def execute_with_params(self, params):
+        df_entry = params["df_entry"]
+        col_name = params["col_name"]
+        new_col_type = params["new_col_type"]
+        new_var_name = params["new_var_name"]
+
+        self.direct_execute(df_entry, col_name, new_col_type, new_var_name)
+
+    def debug(self, df_entry: pd.DataFrame, col_name: List[str], new_col_type: str, new_var_name: str):
+        flog.debug("APPLY CAST COLUMN TYPE")
+        flog.debug(f"DF = {df_entry}")
+        flog.debug(f"COLUMN = {col_name}")
+        flog.debug(f"NEW COLUMN TYPE = {new_col_type}")
+        flog.debug(f"NEW VAR = {new_var_name}")
+
+    def parse_input(self, old_col_name: List[str]) -> str:
+        return old_col_name[0] if len(old_col_name) > 0 else ""
+
+    def direct_execute(self, df_entry: pd.DataFrame, col_name: List[str], new_col_type: str, new_var_name: str, ):
+        self.debug(df_entry, col_name, new_col_type, new_var_name)
+        col_name: str = self.parse_input(col_name)
+
+        inp = Input()
+        inp.assign("df_entry", df_entry)
+        inp.assign("col_name", col_name)
+        inp.assign("new_col_type", new_col_type)
+
+        try:
+            df_new = self.input_execute(inp)
+        except KeyError:
+            df_new = inp("df_entry").copy()
+            flog.warning(f'Column name {col_name} is not present in DataFrame')
+        except AttributeError as e:
+            df_new = pd.DataFrame()
+            flog.error(f"{e}")
+        except Exception as e:
+            flog.error(f"Undefined error {e} occurred")
+            raise SoftPipelineError(f"Can not cast column {col_name} to type {new_col_type}: {e}")
+
+        variable_handler.new_variable(new_var_name, df_new)
+
+    def input_execute(self, inp):
+        col_name = inp("col_name")
+        new_col_type = inp("new_col_type")
+
+        dtype_to_pd_dtype = {
+            'str': 'str',
+            'int': 'int64',
+            'float': 'float64',
+            'datetime': 'datetime64[s]',
+            'boolean': 'bool'
+        }
+
+        df_new: pd.DataFrame = inp("df_entry").copy()
+        df_new[col_name] = df_new[col_name].astype(dtype_to_pd_dtype[new_col_type])
+
+        return df_new
+
+    def export_code(self, node_detail_form):
+        node_detail_form.node_params["col_name"]["value"] = self.parse_input(
+            node_detail_form.node_params["col_name"]["value"]
+        )
+
+        code = self.export_code_with_node_params(node_detail_form.node_params)
+
+        return code
+
+    def export_imports(self, *args):
+        imports = []
+        return imports
+
+
 class RemoveEmptyRowsHandler(AbstractFunctionHandler):
     """
     Removes empty rows. If some ID columns are filled, but other columns are empty, the filled columns can be ignored.
@@ -4266,6 +4423,7 @@ cleaning_handlers_dict = {
     'NewDataFrame': NewDataFrameHandler(),
     'DropColumn': DropColumnHandler(),
     'RenameColumn': RenameColumnHandler(),
+    'CastColumnType': CastColumnTypeHandler(),
     'ConstantColumn': ConstantColumnHandler(),
     'SelectColumns': SelectColumnsHandler(),
     'RemoveEmptyRows': RemoveEmptyRowsHandler(),

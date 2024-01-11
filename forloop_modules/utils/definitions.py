@@ -2,23 +2,26 @@ import pandas as pd
 import datetime
 
 # Standard icons - on_click creates an icon
-STANDARD_ICONS = ["Wait", "Write", "SaveExcel", "SaveList",
-                  "IfCondition", "OpenBrowser", "ClickId", "ClickXPath", "LoadWebsite", "PageSource",
-                  "PrintXPath", "Start", "Finish", "RunPipeline", "ModifyInput", "Transform", "ClickName",
-                  "DfToList", "ListToDf", "Iterate", "PostRequest", "GetRequest", "Trigger"
-                  ]
+STANDARD_ICONS = [
+    "Wait", "Write", "SaveExcel", "SaveList",  "IfCondition", "OpenBrowser", "ClickId", "ClickXPath", "LoadWebsite",
+    "PageSource", "PrintXPath", "Start", "Finish", "RunPipeline", "ModifyInput", "Transform", "ClickName",
+    "DfToList", "ListToDf", "Iterate", "PostRequest", "GetRequest", "Trigger"
+]
 
-PIPELINE_CLEANING_ICONS = ["NewDataFrame", "DropColumn", "RenameColumn", "ConstantColumn", "SelectColumns", "RemoveEmptyRows",
-                           "RemoveDuplicates", "KNNImputation", "Imputation", "Outliers", "Replace", "StripColumn",
-                           "Search", "FilterString", "ApplyMapping",
-                           "SplitString", "Sort", "ColumnWiseShift", "DifferenceData", "Concatenate",
-                           "Join", "AggregateGroupedData", "MathOperation", "FindJoinColumn", "RoundToHigherFrequency",
-                           "CategorizeColumn", "SimilarityMatching", "CleanData", "ExtractString"]
+PIPELINE_CLEANING_ICONS = [
+    "NewDataFrame", "DropColumn", "RenameColumn", "CastColumnType", "ConstantColumn", "SelectColumns",
+    "RemoveEmptyRows", "RemoveDuplicates", "KNNImputation", "Imputation", "Outliers", "Replace", "StripColumn",
+    "Search", "FilterString", "ApplyMapping", "SplitString", "Sort", "ColumnWiseShift", "DifferenceData",
+    "Concatenate", "Join", "AggregateGroupedData", "MathOperation", "FindJoinColumn", "RoundToHigherFrequency",
+    "CategorizeColumn", "SimilarityMatching", "CleanData", "ExtractString"
+]
 
-SCRAPING_ICONS = ["OpenBrowser", "LoadWebsite", "RefreshPageSource", "ClickXPath", "ScanWebPage", "ExtractXPath",
-                  "ExtractMultipleXPath", "ExtractTableXPath", "ClickName", "ClickId", "PrintXPath", "GetCurrentURL",
-                  "CloseBrowser", "WaitUntilElementIsLocated", "ExtractPageSource", "ScrollWebPage", "DownloadImage",
-                  "DownloadImagesXPath", "SetProxy", "FindPageElements", "GetPageSource"]
+SCRAPING_ICONS = [
+    "OpenBrowser", "LoadWebsite", "RefreshPageSource", "ClickXPath", "ScanWebPage", "ExtractXPath",
+    "ExtractMultipleXPath", "ExtractTableXPath", "ClickName", "ClickId", "PrintXPath", "GetCurrentURL",
+    "CloseBrowser", "WaitUntilElementIsLocated", "ExtractPageSource", "ScrollWebPage", "DownloadImage",
+    "DownloadImagesXPath", "SetProxy", "FindPageElements", "GetPageSource"
+]
 
 ROLLABLE_ICONS = ["DefineFunction"] #* Can be unrolled into sub-block of nodes (functions, classes, loops etc.)
 DIRECT_EXECUTE_CORE_HANDLERS = ["ConvertVariableType", "NewVariable"] #! Temporary information holder for testing of an experimental approach in codeview
