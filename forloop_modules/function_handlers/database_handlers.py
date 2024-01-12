@@ -90,19 +90,11 @@ class DBQueryHandler(AbstractFunctionHandler):
 
         return fdl
 
-    def debug(self, dbtable_name, query, new_var_name):
-        flog.debug("DB Query")
-        flog.debug(f"DB Table Name = {dbtable_name}")
-        flog.debug(f"QUERY = {query}")
-        flog.debug(f"NEW VAR NAME = {new_var_name}")
 
     def parse_input(self, dbtable_name: str) -> str:
         return dbtable_name[0] if len(dbtable_name) > 0 else ""
 
     def direct_execute(self, dbtable_name, query, new_var_name):
-        self.debug(dbtable_name, query, new_var_name)
-        dbtable_name = self.parse_input(dbtable_name)
-
         if dbtable_name:
             matching_dbtables = get_name_matching_db_tables(dbtable_name)
 
