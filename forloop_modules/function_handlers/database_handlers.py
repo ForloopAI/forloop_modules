@@ -870,16 +870,12 @@ class CopyDbStructureHandler(AbstractFunctionHandler):
         db_connection_destination.test_database_connection()
 
         if db_connection_origin is None or db_connection_destination is None:
-            #glc.show_warning_popup_message("Db connection not found")
             flog.error("Db connection not found",self)
             return
 
         if isinstance(db_connection_destination.db_instance, dh.MongoDb):
-            #glc.show_warning_popup_message("Cannot copy structure to Mongo")
             flog.error("Db connection not found",self)
             return
-
-
 
         origin_tables = list(db_connection_origin.table_dict.keys())
         destination_tables = list(db_connection_destination.table_dict.keys())
@@ -963,7 +959,6 @@ class CopyDbDataHandler(AbstractFunctionHandler):
         db_connection_destination.test_database_connection()
 
         if db_connection_origin is None or db_connection_destination is None:
-            #glc.show_warning_popup_message("Db connection not found")
             flog.error("Db connection not found",self)
             return
 
@@ -980,7 +975,6 @@ class CopyDbDataHandler(AbstractFunctionHandler):
         destination_tables = set(db_connection_destination.table_dict.keys())
 
         if not origin_tables.issubset(destination_tables):
-            #glc.show_warning_popup_message("Error")
             flog.error("Error",self)
             
             return
@@ -993,7 +987,6 @@ class CopyDbDataHandler(AbstractFunctionHandler):
             destination_table_structure = dict(zip(destination_table.columns, destination_table.types))
 
             if origin_table_structure != destination_table_structure:
-                #glc.show_warning_popup_message(f"Wrong structure for table {table_name}, please migrate structure first")
                 flog.error(f"Wrong structure for table {table_name}, please migrate structure first",self)
                 
                 continue
@@ -1004,8 +997,6 @@ class CopyDbDataHandler(AbstractFunctionHandler):
             #TODO: discuss what to do with duplicate ids (maybe on DUPLICATE KEY UPDATE? )
 
             destination_table.insert_from_df(df_to_copy, insert_id=True)
-
-
 
     def _copy_mongo_data(self, db_connection_origin, db_connection_destination):
 
@@ -1047,7 +1038,6 @@ def get_db_table(table_name):
         dbtable = matching_dbtables[0]
         return dbtable
     else:
-        #glc.show_warning_popup_message("Error")
         flog.error("Error")
         
         return
