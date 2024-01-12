@@ -180,6 +180,8 @@ class DBSelectHandler(AbstractFunctionHandler):
             databases = options["databases"]
         else:
             databases = []
+            
+        database_names = [database["database_name"] for database in databases]
 
         operators = ["=", "<", ">", ">=", "<=", "<>", " IN "]
         db_tables = []
@@ -189,12 +191,11 @@ class DBSelectHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         fdl.label("DB Select")
         fdl.label("Database")
-        databases_names = [database["database_name"] for database in databases]
-        fdl.comboentry(name="db_name", text="", options=databases_names, row=1)
+        fdl.comboentry(name="db_name", text="", options=database_names, row=1)
         fdl.label("From")
         fdl.comboentry(name="db_table_name", text="", options=db_tables, row=2)
         fdl.label("Select")
-        fdl.comboentry(name="select", text="*", options=[], row=3)
+        fdl.comboentry(name="select", text="*", options=["*"], row=3)
         fdl.label("Where")
         fdl.label("Column")
         fdl.comboentry(name="where_column_name", text="", options=[], row=5)
@@ -209,8 +210,49 @@ class DBSelectHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
+    
+    def execute(self, node_detail_form):
+        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
+        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        select = node_detail_form.get_chosen_value_by_name("select", variable_handler)
+        where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name", variable_handler)
+        where_operator = node_detail_form.get_chosen_value_by_name("where_operator", variable_handler)
+        where_value = node_detail_form.get_chosen_value_by_name("where_value", variable_handler)
+        limit = node_detail_form.get_chosen_value_by_name("limit", variable_handler)
+        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
+        
+        self.direct_execute(db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name)
 
+        fields = self.generate_shown_dataframe_option_field(new_var_name)
 
+        response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
+        if response.status_code in [200, 201]:
+            result = json.loads(response.content.decode('utf-8'))
+            node_uid = result["uid"]
+
+            self.direct_execute(db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name)
+
+            ncrb.update_last_active_dataframe_node_uid(node_uid)
+        else:
+            raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
+        
+    def direct_execute(self, db_name, dbtable_name, selected_columns, column_name, operator, value, limit, new_var_name):
+        dbtable_name, selected_columns = self.parse_input(dbtable_name, selected_columns)
+
+        df_new = pd.DataFrame()
+
+        if dbtable_name:
+            matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
+
+            if len(matching_dbtables) == 1:
+                dbtable = matching_dbtables[0]
+                db_instance = dbtable.db1
+
+                df_new = self._get_df(selected_columns, dbtable_name, db_instance, dbtable, column_name, operator,
+                                      value, limit)
+
+                df_new = validate_input_data_types(df_new)
+                variable_handler.new_variable(new_var_name, df_new)
 
     def parse_input(self, dbtable_name: List[str], select: List[str]) -> Tuple[str, str]:
         if len(dbtable_name) > 0:
@@ -296,61 +338,6 @@ class DBSelectHandler(AbstractFunctionHandler):
     #         return pd.DataFrame(rows, columns=dbtable.columns)
     #     else:
     #         return pd.DataFrame(columns=dbtable.columns)
-
-    def direct_execute(self, db_name, dbtable_name, selected_columns, column_name, operator, value, limit, new_var_name):
-        self.debug(dbtable_name, selected_columns, column_name, operator, value, limit, new_var_name)
-        dbtable_name, selected_columns = self.parse_input(dbtable_name, selected_columns)
-
-        df_new = pd.DataFrame()
-
-        if dbtable_name:
-            matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
-
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-                db_instance = dbtable.db1
-
-                df_new = self._get_df(selected_columns, dbtable_name, db_instance, dbtable, column_name, operator,
-                                      value, limit)
-
-                df_new = validate_input_data_types(df_new)
-                variable_handler.new_variable(new_var_name, df_new)
-                #variable_handler.update_data_in_variable_explorer(glc)
-
-    def execute_with_params(self, params):
-        db_table_name = params["db_table_name"]
-        select = params["select"]
-        where_column_name = params["where_column_name"]
-        where_operator = params["where_operator"]
-        where_value = params["where_value"]
-        limit = params["limit"]
-        new_var_name = params["new_var_name"]
-
-        self.direct_execute(db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name)
-
-    def execute(self, node_detail_form):
-        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
-        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
-        select = node_detail_form.get_chosen_value_by_name("select", variable_handler)
-        where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name", variable_handler)
-        where_operator = node_detail_form.get_chosen_value_by_name("where_operator", variable_handler)
-        where_value = node_detail_form.get_chosen_value_by_name("where_value", variable_handler)
-        limit = node_detail_form.get_chosen_value_by_name("limit", variable_handler)
-        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
-
-        new_var_name = variable_handler._set_up_unique_varname(new_var_name)
-        fields = self.generate_shown_dataframe_option_field(new_var_name)
-
-        response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
-        if response.status_code in [200, 201]:
-            result = json.loads(response.content.decode('utf-8'))
-            node_uid = result["uid"]
-
-            self.direct_execute(db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name)
-
-            ncrb.update_last_active_dataframe_node_uid(node_uid)
-        else:
-            raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
 
 
 class DBInsertHandler(AbstractFunctionHandler):
