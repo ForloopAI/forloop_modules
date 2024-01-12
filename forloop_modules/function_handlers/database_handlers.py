@@ -352,47 +352,6 @@ class DBSelectHandler(AbstractFunctionHandler):
         else:
             raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
 
-    def export_code(self, node_detail_form):
-        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name")
-        select = node_detail_form.get_chosen_value_by_name("select")
-        where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name")
-        where_operator = node_detail_form.get_chosen_value_by_name("where_operator")
-        where_value = node_detail_form.get_variable_name_or_input_value_by_element_name("where_value")
-        limit = node_detail_form.get_variable_name_or_input_value_by_element_name("limit")
-        new_var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_name", is_input_variable_name=True)
-
-        code = """
-        df = glc.tables.elements[0].df
-
-
-        matching_dbtables = [x for x in glc.dbtables if x.name == {db_table_name}]
-
-        if len(matching_dbtables) == 1:
-            dbtable = matching_dbtables[0]
-            print(dbtable,dbtable.name)
-            db_instance=dbtable.db_connection.db_instance
-            db_instance.connect_remotely() #TODO
-            dh_table = dbtable.db_connection.table_dict[dbtable.name]
-            #print(dh_table.columns)
-            #print(data_transformation.transformed_df.columns)
-            #print(len(dh_table.columns))
-            #print(len(data_transformation.transformed_df.columns))
-            #print(len(data_transformation.transformed_df.iloc[0,2:]))
-            #print(len(pd.DataFrame(data_transformation.transformed_df.iloc[0,2:])))
-            index=0
-            print(df.columns,len(df.columns))
-            print(dh_table.columns,len(dh_table.columns))
-            print(df.iloc[index,0:].to_frame().T)
-            dh_table.insert_from_df(df.iloc[index,0:].to_frame().T)
-            db_instance.close_connection()
-        """
-
-        return code.format(db_table_name='"' + db_table_name + '"')
-
-    def export_imports(self, *args):
-        imports = ["from gui_layout_context import glc"]
-        return imports
-
 
 class DBInsertHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -497,43 +456,6 @@ class DBInsertHandler(AbstractFunctionHandler):
             pickle.dump(df,pickle_file)
         """
 
-    def export_code(self, node_detail_form):
-        db_table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("db_table_name")
-        inserted_dataframe = node_detail_form.get_variable_name_or_input_value_by_element_name("inserted_dataframe")
-
-        code = """
-        df = glc.tables.elements[0].df
-
-
-        matching_dbtables = [x for x in glc.dbtables if x.name == {dbtable_name}]
-
-        if len(matching_dbtables) == 1:
-            dbtable = matching_dbtables[0]
-            print(dbtable,dbtable.name)
-            db_instance=dbtable.db_connection.db_instance
-            db_instance.connect_remotely() #TODO
-            dh_table = dbtable.db_connection.table_dict[dbtable.name]
-            #print(dh_table.columns)
-            #print(data_transformation.transformed_df.columns)
-            #print(len(dh_table.columns))
-            #print(len(data_transformation.transformed_df.columns))
-            #print(len(data_transformation.transformed_df.iloc[0,2:]))
-            #print(len(pd.DataFrame(data_transformation.transformed_df.iloc[0,2:])))
-            index=0
-            print(df.columns,len(df.columns))
-            print(dh_table.columns,len(dh_table.columns))
-            print(df.iloc[index,0:].to_frame().T)
-            dh_table.insert_from_df(df.iloc[index,0:].to_frame().T)
-            db_instance.close_connection()
-        """
-
-        return code.format(dbtable_name='"' + db_table_name + '"')
-
-    def export_imports(self, *args):
-        imports = ["from gui_layout_context import glc"]
-        return imports
-
-
 class DBDeleteHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "DBDelete"
@@ -608,16 +530,6 @@ class DBDeleteHandler(AbstractFunctionHandler):
         value = node_detail_form.get_chosen_value_by_name("value", variable_handler)
 
         self.direct_execute(db_name, db_table_name, column_name, operator, value)
-
-    def export_code(self, node_detail_form):
-        db_table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("db_table_name")
-        column_name = node_detail_form.get_variable_name_or_input_value_by_element_name("column_name")
-        operator = node_detail_form.get_variable_name_or_input_value_by_element_name("operator")
-        value = node_detail_form.get_variable_name_or_input_value_by_element_name("value")
-
-    def export_imports(self, *args):
-        pass
-
 
 class DBUpdateHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -717,18 +629,6 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
         self.direct_execute(db_name, db_table_name, set_column_name, set_value, where_column_name, where_operator, where_value)
 
-    def export_code(self, node_detail_form):
-        db_table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("db_table_name")
-        set_column_name = node_detail_form.get_variable_name_or_input_value_by_element_name("set_column_name")
-        set_value = node_detail_form.get_variable_name_or_input_value_by_element_name("set_value")
-        where_column_name = node_detail_form.get_variable_name_or_input_value_by_element_name("where_column_name")
-        where_operator = node_detail_form.get_variable_name_or_input_value_by_element_name("where_operator")
-        where_value = node_detail_form.get_variable_name_or_input_value_by_element_name("where_value")
-
-    def export_imports(self, *args):
-        pass
-
-
 class AnalyzeDbTableHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = 'AnalyzeDbTable'
@@ -783,25 +683,6 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
         self.direct_execute(db_name, table_name, new_var_name)
-
-    def export_code(self, node_detail_form):
-        table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("db_table_name")
-        new_var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_name", is_input_variable_name=True)
-
-        code = """
-        """
-
-        return code
-
-    def export_imports(self, *args):
-        imports = []
-        return imports
-
-    def make_flpl_node_dict(self, line_dict: dict) -> dict:
-        node = {"type": "UseKey",
-                "params": {"code_label": {"variable": None, "value": None}}}  # TODO: finish the node var
-        return node
-
 
 class CreateMigrationFileHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -871,24 +752,6 @@ class CreateMigrationFileHandler(AbstractFunctionHandler):
             migrator = dh.Migrator()
             migrator.migration_list = migration_list
             migrator.migration_list_to_json(filename)
-
-
-
-    def export_code(self, node_detail_form):
-        table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("table_name")
-        old_structure_dict = node_detail_form.get_variable_name_or_input_value_by_element_name("old_structure_dict")
-        new_structure_dict = node_detail_form.get_variable_name_or_input_value_by_element_name("new_structure_dict")
-        filename = node_detail_form.get_variable_name_or_input_value_by_element_name("filename")
-        save_to_file = node_detail_form.get_variable_name_or_input_value_by_element_name("save_to_file")
-
-        code = ""
-
-        return code
-
-    def export_imports(self, *args):
-        imports = []
-        return imports
-
 
 class RunMigrationFileHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -964,20 +827,6 @@ class RunMigrationFileHandler(AbstractFunctionHandler):
             db_instance.migrator.migrate_from_json(migration_list)
 
         db_instance.close_connection()
-
-
-    def export_code(self, node_detail_form):
-        db_name = node_detail_form.get_variable_name_or_input_value_by_element_name("db_name")
-        migration_list = node_detail_form.get_variable_name_or_input_value_by_element_name("migration_list")
-
-        code = """
-        """
-
-        return code
-
-    def export_imports(self, *args):
-        imports = []
-        return imports
 
 class CopyDbStructureHandler(AbstractFunctionHandler):
     def __init__(self):
