@@ -211,15 +211,6 @@ class DBSelectHandler(AbstractFunctionHandler):
         return fdl
 
 
-    def debug(self, dbtable_name, select, column_name, operator, value, limit, new_var_name):
-        flog.debug("DB Select")
-        flog.debug(f"DB Table Name = {dbtable_name}")
-        flog.debug(f"SELECT = {select}")
-        flog.debug(f"where_column_name = {column_name}")
-        flog.debug(f"where_operator = {operator}")
-        flog.debug(f"where_value = {value}")
-        flog.debug(f"LIMIT = {limit}")
-        flog.debug(f"NEW VAR NAME = {new_var_name}")
 
     def parse_input(self, dbtable_name: List[str], select: List[str]) -> Tuple[str, str]:
         if len(dbtable_name) > 0:
@@ -432,11 +423,6 @@ class DBInsertHandler(AbstractFunctionHandler):
 
         return fdl
 
-    def debug(self, dbtable_name, inserted_dataframe):
-        flog.debug("DB Insert")
-        flog.debug(f"DB Table Name = {dbtable_name}")
-        flog.debug(f"DF = {inserted_dataframe}")
-
     def parse_input(self, dbtable_name: str) -> str:
         return dbtable_name[0] if len(dbtable_name) > 0 else ""
 
@@ -454,9 +440,6 @@ class DBInsertHandler(AbstractFunctionHandler):
         return converted_inserted_dataframe
 
     def direct_execute(self, db_name, dbtable_name, inserted_dataframe):
-
-
-        self.debug(dbtable_name, inserted_dataframe)
         dbtable_name = self.parse_input(dbtable_name)
 
         if dbtable_name:
@@ -586,20 +569,10 @@ class DBDeleteHandler(AbstractFunctionHandler):
 
         return fdl
 
-    def debug(self, dbtable_name, column_name, operator, value):
-        flog.debug("DB Delete")
-        flog.debug(f"DB Table Name = {dbtable_name}")
-        flog.debug(f"column_name = {column_name}")
-        flog.debug(f"operator = {operator}")
-        flog.debug(f"value = {value}")
-
     def parse_input(self, dbtable_name: str) -> str:
         return dbtable_name[0] if len(dbtable_name) > 0 else ""
 
-
     def direct_execute(self, db_name,  dbtable_name, column_name, operator, value):
-
-        self.debug(dbtable_name, column_name, operator, value)
         dbtable_name = self.parse_input(dbtable_name)
 
         if dbtable_name:
@@ -686,15 +659,6 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
         return fdl
 
-    def debug(self, dbtable_name, set_column_name, set_value, where_column_name, where_operator, where_value):
-        flog.debug("DB Update")
-        flog.debug(f"DB Table Name = {dbtable_name}")
-        flog.debug(f"set_column_name = {set_column_name}")
-        flog.debug(f"set_value = {set_value}")
-        flog.debug(f"where_column_name = {where_column_name}")
-        flog.debug(f"where_operator = {where_operator}")
-        flog.debug(f"where_value = {where_value}")
-
     def parse_input(self, dbtable_name: str) -> str:
         return dbtable_name[0] if len(dbtable_name) > 0 else ""
 
@@ -718,7 +682,6 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
 
     def direct_execute(self, db_name, dbtable_name, set_column_name, set_value, where_column_name, where_operator, where_value):
-        self.debug(dbtable_name, set_column_name, set_value, where_column_name, where_operator, where_value)
         dbtable_name = self.parse_input(dbtable_name)
 
         if dbtable_name:
@@ -806,7 +769,6 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
         column_type_pair_dict = dict(zip(dbtable.columns, dbtable.types))
 
         variable_handler.new_variable(new_var_name, column_type_pair_dict)
-        #variable_handler.update_data_in_variable_explorer(glc)
 
     def execute_with_params(self, params):
 
