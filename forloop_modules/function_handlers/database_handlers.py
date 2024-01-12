@@ -24,6 +24,10 @@ from forloop_modules.function_handlers.auxilliary.data_types_validation import v
 #from src.gui.gui_layout_context import glc
 # ###### PROBLEMATIC IMPORTS TODO: REFACTOR #######
 
+def parse_comboentry_input(input_value: list[str]):
+    input_value = input_value[0] if isinstance(input_value, list) and len(input_value) > 0 else input_value
+    
+    return input_value
 
 def get_connected_db_tables(db_name: str = None):
     """
