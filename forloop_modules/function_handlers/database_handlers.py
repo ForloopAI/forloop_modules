@@ -93,10 +93,17 @@ class DBQueryHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
+    
+    def execute(self, node_detail_form):
+        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        db_table_name = parse_comboentry_input(input_value=db_table_name)
+        
+        query = node_detail_form.get_chosen_value_by_name("query", variable_handler)
+        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
+        new_var_name = variable_handler._set_up_unique_varname(new_var_name)
 
-    def parse_input(self, dbtable_name: str) -> str:
-        return dbtable_name[0] if len(dbtable_name) > 0 else ""
+        self.direct_execute(db_table_name, query, new_var_name)
 
     def direct_execute(self, dbtable_name, query, new_var_name):
         if dbtable_name:
@@ -139,29 +146,6 @@ class DBQueryHandler(AbstractFunctionHandler):
                             dbtable.db1.execute(query)
                         except Exception as e:
                             flog.error(f"DBTABLE EXECUTE ERROR {e}")
-
-    def execute(self, node_detail_form):
-        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
-        query = node_detail_form.get_chosen_value_by_name("query", variable_handler)
-        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
-
-        new_var_name = variable_handler._set_up_unique_varname(new_var_name)
-
-        self.direct_execute(db_table_name, query, new_var_name)
-
-    def export_code(self, node_detail_form):
-        db_table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("db_table_name")
-        query = node_detail_form.get_variable_name_or_input_value_by_element_name("query")
-        new_var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_name", is_input_variable_name=True)
-
-        code = ""
-
-        return code
-
-    def export_imports(self, *args):
-        imports = []
-        return imports
-
 
 class DBSelectHandler(AbstractFunctionHandler):
     def __init__(self):
