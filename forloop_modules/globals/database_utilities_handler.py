@@ -37,5 +37,9 @@ class DatabaseUtilitiesHandler:
         for connection in self.db_connections:
             if connection.database == db_name:
                 return connection
+            
+    def remove_db_connection_by_database_uid(self, database_uid: str):
+        db_connection = self.database_uid_db_connection_dict.pop(database_uid)
+        self.db_connections.remove(db_connection)
 
 duh = DatabaseUtilitiesHandler()
