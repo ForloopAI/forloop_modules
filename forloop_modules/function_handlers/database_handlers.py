@@ -25,7 +25,7 @@ from forloop_modules.function_handlers.auxilliary.data_types_validation import v
 # ###### PROBLEMATIC IMPORTS TODO: REFACTOR #######
 
 
-def get_connected_db_tables(db_name:str=None):
+def get_connected_db_tables(db_name: str = None):
     """
     Retrieves all valid tables from the specified database or all databases if no database name is given.
 
@@ -42,11 +42,8 @@ def get_connected_db_tables(db_name:str=None):
         for db_connection in duh.db_connections:
             if hasattr(db_connection, "table_dict") and db_connection.database == db_name:
                 connected_dbs.append(db_connection)
-
     else:
-      
         connected_dbs = [db_connection for db_connection in duh.db_connections if hasattr(db_connection, "table_dict")]
-        #connected_dbs = [db_connection for db_connection in variable_handler.db_connections if hasattr(db_connection, "table_dict")]
 
     valid_tables = {}
     for db in connected_dbs:
@@ -63,11 +60,7 @@ def get_connected_db_table_names():
 
 
 def get_name_matching_db_tables(dbtable_name, db_name=None):
-    # matching_dbtables = [db_table for name, db_table in get_connected_db_tables().items() if name == dbtable_name]
-    matching_dbtables = []
-    for name, dbtable in get_connected_db_tables(db_name).items():
-        if name == dbtable_name:
-            matching_dbtables.append(dbtable)
+    matching_dbtables = [db_table for name, db_table in get_connected_db_tables(db_name).items() if name == dbtable_name]
 
     return matching_dbtables
 
