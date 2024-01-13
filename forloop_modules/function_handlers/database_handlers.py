@@ -5,7 +5,7 @@ import dbhydra.dbhydra_core as dh
 
 from deepdiff import DeepDiff
 from fastapi import HTTPException
-from typing import Literal, Union
+from typing import Literal, Union, Optional
 from tkinter.filedialog import askopenfile
 
 import forloop_modules.flog as flog
@@ -81,11 +81,8 @@ def get_connected_db_tables(db_name: str = None):
 def get_name_matching_db_tables(dbtable_name: str, db_name: Optional[str] = None):
     matching_dbtables = [db_table for name, db_table in get_connected_db_tables(db_name).items() if name == dbtable_name]
 
-def get_connected_db_table_names():
-    valid_tables = get_connected_db_tables()
-    valid_table_names = list(valid_tables.keys())
+    return matching_dbtables
 
-    return valid_table_names
 def get_db_table_from_db(table_name: str, db_name: str) -> Union[DbTable, None]:
     """
     Retrieve a database table by its name from a specified database.
@@ -117,6 +114,35 @@ def get_db_table_from_db(table_name: str, db_name: str) -> Union[DbTable, None]:
     
     return db_table
 
+def parse_float_db(db_instance: DBInstance, value):
+    if isinstance(db_instance, dh.MongoDb):
+        value = _parse_float_mongo(value)
+    else:
+        value = _parse_float_sql(value)
+
+    return value
+
+def _parse_float_mongo(value):
+    try:
+        value = float(value)
+    except (ValueError, TypeError):
+        pass
+
+    return value
+
+def _parse_float_sql(value):
+    try:
+        value = float(value)
+    except (ValueError, TypeError):
+        value = "'" + str(value) + "'"
+
+    return value
+
+def get_connected_db_table_names():
+    valid_tables = get_connected_db_tables()
+    valid_table_names = list(valid_tables.keys())
+
+    return valid_table_names
 
 class DBQueryHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -1106,35 +1132,6 @@ def _convert_deepdiff_dict_into_migration_list(table_name, deepdiff_dict) -> lis
     #                                                      "column_type": column_new_type}})
     #
     # return migration_list
-
-
-
-
-def parse_float_db(db_instance, value):
-    if type(db_instance) is dh.MongoDb:
-        value = parse_float_mongo(value)
-    else:
-        value = parse_float_sql(value)
-
-    return value
-
-
-def parse_float_mongo(value):
-    try:
-        value = float(value)
-    except (ValueError, TypeError):
-        pass
-
-    return value
-
-
-def parse_float_sql(value):
-    try:
-        value = float(value)
-    except (ValueError, TypeError):
-        value = "'" + str(value) + "'"
-
-    return value
 
 
 def get_condition_mongo(column_name, value, operator):
