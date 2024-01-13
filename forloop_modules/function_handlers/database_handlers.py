@@ -623,7 +623,7 @@ class DBDeleteHandler(AbstractFunctionHandler):
             title="Operator",
             name="where_operator",
             description="Condition operator.",
-            typ="Comboentry",
+            typ="Combobox",
             example=["=", "<", "<=", ">", ">=", "<>", "IN"]
         )
         self.docs.add_parameter_table_row(
@@ -692,12 +692,61 @@ class DBDeleteHandler(AbstractFunctionHandler):
         connect_to_db_and_run_operation("DELETE", db_instance, db_table, where_statement=where_statement)
 
 class DBUpdateHandler(AbstractFunctionHandler):
+    """
+    Execute database update on various databases. Supports one condition. For more advanced queries use DB Query.
+    """
     def __init__(self):
         self.icon_type = "DBUpdate"
         self.fn_name = "DB Update"
 
         self.type_category = ntcm.categories.database
         self.docs_category = DocsCategories.data_sources
+        self._init_docs()
+        
+    def _init_docs(self):
+        self.docs = Docs(description=self.__doc__)
+        self.docs.add_parameter_table_row(
+            title="Database",
+            name="db_name",
+            description="A name of the database containing the desired table.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Table name",
+            name="db_table_name",
+            description="Database table on which the query is executed.",
+            typ="Comboentry",
+            example=['employees', 'salaries_table']
+        )
+        self.docs.add_parameter_table_row(
+            title="(Set) Column",
+            name="set_column_name",
+            description="The column in which the value is updated.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Value",
+            name="set_value",
+            description="A value inserted to a given column in rows comforting a given condition"
+        )
+        self.docs.add_parameter_table_row(
+            title="(Where) Column",
+            name="where_column_name",
+            description="The column on which the condition is evaluated.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Operator",
+            name="where_operator",
+            description="Condition operator.",
+            typ="Combobox",
+            example=["=", "<", "<=", ">", ">=", "<>", "IN"]
+        )
+        self.docs.add_parameter_table_row(
+            title="Value",
+            name="where_value",
+            description="A value against which the condition is evaluated."
+        ) 
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         operators = ["=", "<", ">", ">=", "<=", "<>", " IN "]
@@ -771,7 +820,7 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
     def _get_mongo_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, 
                                      where_column_name, where_operator):
-        set_value = parse_float_sql(set_value)
+        set_value = _parse_float_sql(set_value)
 
         set_statement = {"$set": {set_column_name: set_value}}
 
