@@ -339,20 +339,27 @@ class DBInsertHandler(AbstractFunctionHandler):
 
 
         return fdl
+    
+    def execute(self, node_detail_form):
+        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
+        db_name = parse_comboentry_input(input_value=db_name)
+        
+        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        db_table_name = parse_comboentry_input(input_value=db_table_name)
+        
+        inserted_dataframe = node_detail_form.get_chosen_value_by_name("inserted_dataframe", variable_handler)
 
-    def _convert_data_variable_to_df(self, inserted_data, columns):
-        converted_inserted_dataframe = inserted_data
-        if isinstance(inserted_data, list):
-            if all(isinstance(el, list) for el in inserted_data): #list of lists
-                converted_inserted_dataframe = pd.DataFrame(inserted_data, columns=columns[1:])
-            else:
-                converted_inserted_dataframe = pd.DataFrame([inserted_data], columns=columns[1:])
+        self.direct_execute(db_name, db_table_name, inserted_dataframe)
 
-        elif isinstance(inserted_data, dict):
-            converted_inserted_dataframe = pd.DataFrame.from_dict(converted_inserted_dataframe)
-
-        return converted_inserted_dataframe
-
+        # used as data in pipeline_function - processing pipeline
+        """
+        filename=args[0]
+        df=pd.read_excel(filename)
+        print("DF",df)
+        with open("excel.pickle", 'wb') as pickle_file:
+            pickle.dump(df,pickle_file)
+        """
+        
     def direct_execute(self, db_name, dbtable_name, inserted_dataframe):
         if dbtable_name:
             matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
@@ -369,7 +376,6 @@ class DBInsertHandler(AbstractFunctionHandler):
                 try:
                     inserted_dataframe = self._convert_data_variable_to_df(inserted_dataframe, cols)
                 except ValueError:
-                    #glc.show_warning_popup_message('Wrong number of columns')
                     flog.error('Wrong number of columns',self)
                     return
 
@@ -392,26 +398,18 @@ class DBInsertHandler(AbstractFunctionHandler):
                 #     check if correct before uncommenting
                 #     variable_handler.last_active_dataframe_node_uid = node_detail_form.node_uid
 
+    def _convert_data_variable_to_df(self, inserted_data, columns):
+        converted_inserted_dataframe = inserted_data
+        if isinstance(inserted_data, list):
+            if all(isinstance(el, list) for el in inserted_data): #list of lists
+                converted_inserted_dataframe = pd.DataFrame(inserted_data, columns=columns[1:])
+            else:
+                converted_inserted_dataframe = pd.DataFrame([inserted_data], columns=columns[1:])
 
-    def execute(self, node_detail_form):
-        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
-        db_name = parse_comboentry_input(input_value=db_name)
-        
-        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
-        db_table_name = parse_comboentry_input(input_value=db_table_name)
-        
-        inserted_dataframe = node_detail_form.get_chosen_value_by_name("inserted_dataframe", variable_handler)
+        elif isinstance(inserted_data, dict):
+            converted_inserted_dataframe = pd.DataFrame.from_dict(converted_inserted_dataframe)
 
-        self.direct_execute(db_name, db_table_name, inserted_dataframe)
-
-        # used as data in pipeline_function - processing pipeline
-        """
-        filename=args[0]
-        df=pd.read_excel(filename)
-        print("DF",df)
-        with open("excel.pickle", 'wb') as pickle_file:
-            pickle.dump(df,pickle_file)
-        """
+        return converted_inserted_dataframe
 
 class DBDeleteHandler(AbstractFunctionHandler):
     def __init__(self):
