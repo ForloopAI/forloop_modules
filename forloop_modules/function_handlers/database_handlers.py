@@ -742,26 +742,7 @@ class RunMigrationFileHandler(AbstractFunctionHandler):
         migration_list = node_detail_form.get_chosen_value_by_name("migration_list", variable_handler)
 
         self.direct_execute(db_name, migration_list)
-
-    def _force_execute(self, args):
-        image = args[0]
-        item_detail_form = image.item_detail_form
-
-        db_name = item_detail_form.get_chosen_value_by_name('db_name', variable_handler)
-        migration_list = item_detail_form.get_chosen_value_by_name('migration_list', variable_handler)
-
-        self.direct_execute(db_name, migration_list)
-
-    def execute_with_params(self, params):
-
-        db_name = params["db_name"]
-        filename = params["filename"]
-        migration_list = params["migration_list"]
-
-        self.direct_execute(db_name, filename)
-
-
-
+        
     def direct_execute(self, db_name, migration_list):
 
         db_connection = duh.get_db_connection(db_name)
