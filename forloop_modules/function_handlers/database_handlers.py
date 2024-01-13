@@ -288,34 +288,29 @@ class DBSelectHandler(AbstractFunctionHandler):
         
         self.direct_execute(db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name)
 
-        fields = self.generate_shown_dataframe_option_field(new_var_name)
+        # FIXME: Deprecated - causes issues on cloud (API crash)
+        # fields = self.generate_shown_dataframe_option_field(new_var_name)
 
-        response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
-        if response.status_code in [200, 201]:
-            result = json.loads(response.content.decode('utf-8'))
-            node_uid = result["uid"]
+        # response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
+        # if response.status_code in [200, 201]:
+        #     result = json.loads(response.content.decode('utf-8'))
+        #     node_uid = result["uid"]
 
-            self.direct_execute(db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name)
+        #     self.direct_execute(db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name)
 
-            ncrb.update_last_active_dataframe_node_uid(node_uid)
-        else:
-            raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
+        #     ncrb.update_last_active_dataframe_node_uid(node_uid)
+        # else:
+        #     raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
         
-    def direct_execute(self, db_name, dbtable_name, selected_columns, column_name, operator, value, limit, new_var_name):
+    def direct_execute(self, db_name, dbtable_name, selected_columns, column_name, operator, value, limit, new_var_name):        
+        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
+        db_instance = db_table.db1
+        
         df_new = pd.DataFrame()
-
-        if dbtable_name:
-            matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
-
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-                db_instance = dbtable.db1
-
-                df_new = self._get_df(selected_columns, dbtable_name, db_instance, dbtable, column_name, operator,
-                                      value, limit)
-
-                df_new = validate_input_data_types(df_new)
-                variable_handler.new_variable(new_var_name, df_new)
+        df_new = self._get_df(selected_columns, dbtable_name, db_instance, db_table, column_name, operator,
+                                value, limit)
+        df_new = validate_input_data_types(df_new)
+        variable_handler.new_variable(new_var_name, df_new)
 
     def select(self, db_instance, dbtable, query, cols_to_be_selected):
         if type(db_instance) is dh.MongoDb:
