@@ -426,42 +426,35 @@ class DBInsertHandler(AbstractFunctionHandler):
         self.direct_execute(db_name, db_table_name, inserted_dataframe)
         
     def direct_execute(self, db_name, dbtable_name, inserted_dataframe):
-        if dbtable_name:
-            matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
+        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
+        db_instance = db_table.db1
 
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-                db_instance = dbtable.db1
+        if type(db_table) is dh.MongoTable:
+            cols = None
+        else:
+            cols = db_table.columns
 
-                if type(dbtable) is dh.MongoTable:
-                    cols = None
-                else:
-                    cols = dbtable.columns
+        try:
+            inserted_dataframe = self._convert_data_variable_to_df(inserted_dataframe, cols)
+        except ValueError:
+            flog.error('Wrong number of columns',self)
+            return
 
-                try:
-                    inserted_dataframe = self._convert_data_variable_to_df(inserted_dataframe, cols)
-                except ValueError:
-                    flog.error('Wrong number of columns',self)
-                    return
+        connect_to_db_and_run_operation("INSERT", db_instance, db_table, inserted_dataframe=inserted_dataframe)
 
-                connect_to_db_and_run_operation("INSERT", db_instance, dbtable, inserted_dataframe=inserted_dataframe)
+            # TEMPORARY DISABLED
+            # var_name = f"{dbtable.db_connection.database}.{dbtable.name}"
+            # update forloop variable if db table downloaded in platform
+            # if var_name in variable_handler.variables:
+            #     df = dh_table.select_to_df()
 
-
-
-
-                    # TEMPORARY DISABLED
-                    # var_name = f"{dbtable.db_connection.database}.{dbtable.name}"
-                    # update forloop variable if db table downloaded in platform
-                    # if var_name in variable_handler.variables:
-                    #     df = dh_table.select_to_df()
-
-                # TEMPORARY DISABLED
-                # if len(df) > 0:
-                #     variable_handler.new_variable(var_name, df)
-                #     #variable_handler.update_data_in_variable_explorer(glc)
-                #     glc.last_active_dataframe_icon = df_image  # needs to be after update node detail form (ask Tom) and after variable handler update
-                #     check if correct before uncommenting
-                #     variable_handler.last_active_dataframe_node_uid = node_detail_form.node_uid
+        # TEMPORARY DISABLED
+        # if len(df) > 0:
+        #     variable_handler.new_variable(var_name, df)
+        #     #variable_handler.update_data_in_variable_explorer(glc)
+        #     glc.last_active_dataframe_icon = df_image  # needs to be after update node detail form (ask Tom) and after variable handler update
+        #     check if correct before uncommenting
+        #     variable_handler.last_active_dataframe_node_uid = node_detail_form.node_uid
 
     def _convert_data_variable_to_df(self, inserted_data, columns):
         converted_inserted_dataframe = inserted_data
