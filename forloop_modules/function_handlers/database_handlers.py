@@ -16,6 +16,7 @@ from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDict
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.database_utilities_handler import duh
 from forloop_modules.globals.docs_categories import DocsCategories
+from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 from forloop_modules.function_handlers.auxilliary.data_types_validation import validate_input_data_types
 
@@ -262,12 +263,68 @@ class DBQueryHandler(AbstractFunctionHandler):
                         flog.error(f"DBTABLE EXECUTE ERROR {e}")
 
 class DBSelectHandler(AbstractFunctionHandler):
+    """
+    Execute database select on various databases. Supports one condition. For more advanced queries use DB Query.
+    """
     def __init__(self):
         self.icon_type = "DBSelect"
         self.fn_name = "DB Select"
 
         self.type_category = ntcm.categories.database
         self.docs_category = DocsCategories.data_sources
+        self._init_docs()
+        
+    def _init_docs(self):
+        self.docs = Docs(description=self.__doc__)
+        self.docs.add_parameter_table_row(
+            title="Database",
+            name="db_name",
+            description="A name of the database we want to extract data from.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="From",
+            name="db_table_name",
+            description="Database table on which the query is executed.",
+            typ="Comboentry",
+            example=['employees', 'salaries_table']
+        )
+        self.docs.add_parameter_table_row(
+            title="Select",
+            name="select",
+            description="Columns which should be returned by the query. Defaults to all columns as *.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Column",
+            name="where_column_name",
+            description="The column on which the condition is evaluated.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Operator",
+            name="where_operator",
+            description="Condition operator.",
+            typ="Comboentry",
+            example=["=", "<", "<=", ">", ">=", "<>", "IN"]
+        )
+        self.docs.add_parameter_table_row(
+            title="Value",
+            name="where_value",
+            description="A value against which the condition is evaluated."
+        )
+        self.docs.add_parameter_table_row(
+            title="Limit",
+            name="limit",
+            description="Number of records to return.",
+            typ="Integer"
+        )
+        self.docs.add_parameter_table_row(
+            title="New variable",
+            name="new_var_name",
+            description="A name for the new Dataframe variable.",
+            typ="String"
+        )
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         if options is not None:
