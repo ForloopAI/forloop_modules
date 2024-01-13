@@ -183,6 +183,9 @@ def get_connected_db_table_names():
     return valid_table_names
 
 class DBQueryHandler(AbstractFunctionHandler):
+    """
+    Execute a given database query on various databases.
+    """
     def __init__(self):
         self.icon_type = "DBQuery"
         self.fn_name = "DB Query"
@@ -190,6 +193,31 @@ class DBQueryHandler(AbstractFunctionHandler):
         self.type_category = ntcm.categories.database
         self.docs_category = DocsCategories.data_sources
 
+    def _init_docs(self):
+        self.docs = Docs(description=self.__doc__)
+        self.docs.add_parameter_table_row(
+            title="DB table name",
+            name="db_table_name",
+            description="Database table on which the query is executed.",
+            typ="Comboentry",
+            example=['employees', 'salaries_table']
+        )
+        self.docs.add_parameter_table_row(
+            title="Query",
+            name="query",
+            description="Database query string to be executed on the selected DB table.",
+            typ="String",
+            example=[
+                "SELECT * FROM users;", 
+                "SELECT first_name, last_name, email FROM customers WHERE city = 'New York';",
+                "INSERT INTO products (product_name, price, stock_quantity) VALUES ('Laptop', 999.99, 50);"
+                ]
+        )
+        self.docs.add_parameter_table_row(
+            title="New variable",
+            name="new_var_name",
+            description="If select query is executed the result will be stored into variable with this name."
+        ) 
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         db_tables = get_connected_db_table_names()
