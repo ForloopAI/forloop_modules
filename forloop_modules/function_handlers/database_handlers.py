@@ -1034,16 +1034,6 @@ class CopyDbDataHandler(AbstractFunctionHandler):
             df_to_copy = df_to_copy.drop(["id"], axis=1)
         return df_to_copy
 
-def get_db_table(table_name):
-    matching_dbtables = [db_table for name, db_table in get_connected_db_tables().items() if name == table_name]
-    if len(matching_dbtables) == 1:
-        dbtable = matching_dbtables[0]
-        return dbtable
-    else:
-        flog.error("Error")
-        
-        return
-
 def get_table_structure(dbtable=None):
     if dbtable is None:
         return None
