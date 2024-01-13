@@ -350,15 +350,6 @@ class DBInsertHandler(AbstractFunctionHandler):
         inserted_dataframe = node_detail_form.get_chosen_value_by_name("inserted_dataframe", variable_handler)
 
         self.direct_execute(db_name, db_table_name, inserted_dataframe)
-
-        # used as data in pipeline_function - processing pipeline
-        """
-        filename=args[0]
-        df=pd.read_excel(filename)
-        print("DF",df)
-        with open("excel.pickle", 'wb') as pickle_file:
-            pickle.dump(df,pickle_file)
-        """
         
     def direct_execute(self, db_name, dbtable_name, inserted_dataframe):
         if dbtable_name:
