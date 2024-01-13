@@ -436,33 +436,7 @@ class DBDeleteHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
-
-    def direct_execute(self, db_name,  dbtable_name, column_name, operator, value):
-        if dbtable_name:
-            matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
-
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-                db_instance = dbtable.db1
-
-                if type(db_instance) is dh.MongoDb:
-                    value = parse_float_mongo(value)
-                    where_statement = get_condition_mongo(column_name, value, operator)
-                else:
-                    value = parse_float_sql(value)
-                    where_statement = f"{column_name[0]}{operator}{value}"
-                    if where_statement == "*='*'": #delete all data from table -> column_name = ["*"], operator = "=", value = '*'
-                        where_statement = None
-
-                connect_to_db_and_run_operation("DELETE", db_instance, dbtable, where_statement=where_statement)
-
-
-                    # var_name = f"DB.{dbtable.name}"
-                    # if var_name in variable_handler.variables:
-                    #     df = pd.concat([variable_handler.variables[var_name].value, inserted_dataframe])
-                    #     variable_handler.new_variable(var_name, df)
-                    #     #variable_handler.update_data_in_variable_explorer(glc)
-
+    
     def execute(self, node_detail_form):
         db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
         db_name = parse_comboentry_input(input_value=db_name)
@@ -479,6 +453,32 @@ class DBDeleteHandler(AbstractFunctionHandler):
         value = node_detail_form.get_chosen_value_by_name("value", variable_handler)
 
         self.direct_execute(db_name, db_table_name, column_name, operator, value)
+
+    def direct_execute(self, db_name,  dbtable_name, column_name, operator, value):
+        if dbtable_name:
+            matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
+
+            if len(matching_dbtables) == 1:
+                dbtable = matching_dbtables[0]
+                db_instance = dbtable.db1
+
+                if type(db_instance) is dh.MongoDb:
+                    value = parse_float_mongo(value)
+                    where_statement = get_condition_mongo(column_name, value, operator)
+                else:
+                    value = parse_float_sql(value)
+                    where_statement = f"{column_name}{operator}{value}"
+                    if where_statement == "*='*'": #delete all data from table -> column_name = ["*"], operator = "=", value = '*'
+                        where_statement = None
+
+                connect_to_db_and_run_operation("DELETE", db_instance, dbtable, where_statement=where_statement)
+
+
+                    # var_name = f"DB.{dbtable.name}"
+                    # if var_name in variable_handler.variables:
+                    #     df = pd.concat([variable_handler.variables[var_name].value, inserted_dataframe])
+                    #     variable_handler.new_variable(var_name, df)
+                    #     #variable_handler.update_data_in_variable_explorer(glc)
 
 class DBUpdateHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -566,7 +566,7 @@ class DBUpdateHandler(AbstractFunctionHandler):
     def _get_mongo_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator):
         set_value = parse_float_sql(set_value)
 
-        set_statement = {"$set": {set_column_name[0]: set_value}}
+        set_statement = {"$set": {set_column_name: set_value}}
 
         where_statement = get_condition_mongo(where_column_name, where_value, where_operator)
 
@@ -574,10 +574,10 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
     def _get_sql_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator):
         set_value = parse_float_sql(set_value)
-        set_statement = f"{set_column_name[0]}={set_value}"
+        set_statement = f"{set_column_name}={set_value}"
 
         where_value = parse_float_sql(where_value)
-        where_statement = f"{where_column_name[0]}{where_operator}{where_value}"
+        where_statement = f"{where_column_name}{where_operator}{where_value}"
 
         return set_statement, where_statement
 
@@ -596,10 +596,11 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
         else:
             databases = []
 
+        databases_names = [database["database_name"] for database in databases]
+        
         fdl = FormDictList()
         fdl.label("Analyze DB Table")
         fdl.label("Database")
-        databases_names = [database["database_name"] for database in databases]
         fdl.comboentry(name="db_name", text="", options=databases_names, row=1)
         fdl.label("Table name")
         fdl.combobox(name="db_table_name", options=db_tables, multiselect_indices=None, default=" ", row=2)
@@ -630,7 +631,9 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
         self.direct_execute(table_name, new_var_name)
 
     def execute(self, node_detail_form):
-        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
+        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
+        db_name = parse_comboentry_input(input_value=db_name)
+        
         table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
@@ -721,9 +724,6 @@ class RunMigrationFileHandler(AbstractFunctionHandler):
         fdl.combobox(name="db_name", options=options, row=1)
         fdl.label("Migration list:")
         fdl.entry(name="migration_list", text="migration-1", input_types=["str", "list"], row=2)
-        # fdl.label("Migration file name:")
-        # fdl.entry(name="filename", text="migration-1", input_types=["str"], row=3)
-
         fdl.button(function=self.open_migration_file, function_args=node_detail_form, text="Load file", name="lookup_json_file")
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
@@ -1119,7 +1119,7 @@ def get_condition_mongo(column_name, value, operator):
         if operator == " IN ":
             value = ast.literal_eval(value)
 
-        condition = {column_name[0]: {dh.MONGO_OPERATOR_DICT[operator]: value}}
+        condition = {column_name: {dh.MONGO_OPERATOR_DICT[operator]: value}}
 
     return condition
 
@@ -1147,7 +1147,7 @@ def generate_sql_condition(cols_to_be_selected, dbtable_name, column_name, value
         query = f"SELECT {cols_to_be_selected} FROM {dbtable_name}"
 
     if column_name and operator and value:
-        where_statement = f"{column_name[0]}{operator}{value}"
+        where_statement = f"{column_name}{operator}{value}"
         query += f" WHERE {where_statement}"
     if limit:
         query += f" LIMIT {limit}"
