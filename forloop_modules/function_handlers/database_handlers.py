@@ -110,6 +110,47 @@ def get_db_table_from_db(table_name: str, db_name: str) -> Union[DbTable, None]:
     
     return db_table
 
+def generate_sql_condition(cols_to_be_selected, dbtable_name, column_name, value, operator, limit, dataset=None):
+    """
+    Generates an SQL query string with optional filtering and limit.
+
+    Args:
+    cols_to_be_selected (str): Comma-separated column names.
+    dbtable_name (str): Database table name.
+    column_name (str): Filter column name.
+    value (str, int, float): Value for comparison.
+    operator (str): SQL comparison operator (e.g., "=", "<>", ">", "<", ">=", "<=").
+    limit (int): Maximum number of rows returned.
+    dataset (str, optional): Dataset name for BigQuery tables.
+
+    Returns:
+    query (str): Generated SQL query string.
+    """
+
+    if dataset is not None:
+        query = f"SELECT {cols_to_be_selected} FROM {dataset}.{dbtable_name}"
+    else:
+        query = f"SELECT {cols_to_be_selected} FROM {dbtable_name}"
+
+    if column_name and operator and value:
+        where_statement = f"{column_name}{operator}{value}"
+        query += f" WHERE {where_statement}"
+    if limit:
+        query += f" LIMIT {limit}"
+    query += ";"
+
+    return query
+
+def get_condition_mongo(column_name, value, operator):
+    condition = {}
+    if column_name and value and operator:
+        if operator == " IN ":
+            value = ast.literal_eval(value)
+
+        condition = {column_name: {dh.MONGO_OPERATOR_DICT[operator]: value}}
+
+    return condition
+
 def parse_float_db(db_instance: DBInstance, value):
     if isinstance(db_instance, dh.MongoDb):
         value = _parse_float_mongo(value)
@@ -1079,49 +1120,6 @@ def _convert_deepdiff_dict_into_migration_list(table_name, deepdiff_dict) -> lis
     #                                                      "column_type": column_new_type}})
     #
     # return migration_list
-
-
-def get_condition_mongo(column_name, value, operator):
-    condition = {}
-    if column_name and value and operator:
-        if operator == " IN ":
-            value = ast.literal_eval(value)
-
-        condition = {column_name: {dh.MONGO_OPERATOR_DICT[operator]: value}}
-
-    return condition
-
-
-def generate_sql_condition(cols_to_be_selected, dbtable_name, column_name, value, operator, limit, dataset=None):
-    """
-    Generates an SQL query string with optional filtering and limit.
-
-    Args:
-    cols_to_be_selected (str): Comma-separated column names.
-    dbtable_name (str): Database table name.
-    column_name (str): Filter column name.
-    value (str, int, float): Value for comparison.
-    operator (str): SQL comparison operator (e.g., "=", "<>", ">", "<", ">=", "<=").
-    limit (int): Maximum number of rows returned.
-    dataset (str, optional): Dataset name for BigQuery tables.
-
-    Returns:
-    query (str): Generated SQL query string.
-    """
-
-    if dataset is not None:
-        query = f"SELECT {cols_to_be_selected} FROM {dataset}.{dbtable_name}"
-    else:
-        query = f"SELECT {cols_to_be_selected} FROM {dbtable_name}"
-
-    if column_name and operator and value:
-        where_statement = f"{column_name}{operator}{value}"
-        query += f" WHERE {where_statement}"
-    if limit:
-        query += f" LIMIT {limit}"
-    query += ";"
-
-    return query
 
 database_handlers_dict = {
     "DBSelect": DBSelectHandler(),
