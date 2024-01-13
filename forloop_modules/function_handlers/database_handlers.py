@@ -522,30 +522,19 @@ class DBDeleteHandler(AbstractFunctionHandler):
         self.direct_execute(db_name, db_table_name, column_name, operator, value)
 
     def direct_execute(self, db_name,  dbtable_name, column_name, operator, value):
-        if dbtable_name:
-            matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
+        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
+        db_instance = db_table.db1
+        
+        value = parse_float_db(db_instance=db_instance, value=value)
 
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-                db_instance = dbtable.db1
+        if type(db_instance) is dh.MongoDb:
+            where_statement = get_condition_mongo(column_name, value, operator)
+        else:
+            where_statement = f"{column_name}{operator}{value}"
+            if where_statement == "*='*'": #delete all data from table -> column_name = ["*"], operator = "=", value = '*'
+                where_statement = None
 
-                if type(db_instance) is dh.MongoDb:
-                    value = parse_float_mongo(value)
-                    where_statement = get_condition_mongo(column_name, value, operator)
-                else:
-                    value = parse_float_sql(value)
-                    where_statement = f"{column_name}{operator}{value}"
-                    if where_statement == "*='*'": #delete all data from table -> column_name = ["*"], operator = "=", value = '*'
-                        where_statement = None
-
-                connect_to_db_and_run_operation("DELETE", db_instance, dbtable, where_statement=where_statement)
-
-
-                    # var_name = f"DB.{dbtable.name}"
-                    # if var_name in variable_handler.variables:
-                    #     df = pd.concat([variable_handler.variables[var_name].value, inserted_dataframe])
-                    #     variable_handler.new_variable(var_name, df)
-                    #     #variable_handler.update_data_in_variable_explorer(glc)
+        connect_to_db_and_run_operation("DELETE", db_instance, db_table, where_statement=where_statement)
 
 class DBUpdateHandler(AbstractFunctionHandler):
     def __init__(self):
