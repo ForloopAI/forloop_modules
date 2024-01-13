@@ -6,12 +6,10 @@ import dbhydra.dbhydra_core as dh
 from deepdiff import DeepDiff
 from fastapi import HTTPException
 from tkinter.filedialog import askopenfile
-from typing import List, Tuple
 
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
 
-from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
