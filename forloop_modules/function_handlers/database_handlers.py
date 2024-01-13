@@ -19,10 +19,6 @@ from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 from forloop_modules.function_handlers.auxilliary.data_types_validation import validate_input_data_types
 
-# ###### PROBLEMATIC IMPORTS TODO: REFACTOR #######
-#from src.gui.gui_layout_context import glc
-# ###### PROBLEMATIC IMPORTS TODO: REFACTOR #######
-
 def parse_comboentry_input(input_value: list[str]):
     input_value = input_value[0] if isinstance(input_value, list) and len(input_value) > 0 else input_value
     
