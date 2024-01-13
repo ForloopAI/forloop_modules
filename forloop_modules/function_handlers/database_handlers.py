@@ -686,27 +686,7 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
-
-    def direct_execute(self,db_name, table_name, new_var_name, dbtable=None):
-
-        if not dbtable:
-            matching_dbtables = get_name_matching_db_tables(table_name, db_name)
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-            else:
-                return
-
-        column_type_pair_dict = dict(zip(dbtable.columns, dbtable.types))
-
-        variable_handler.new_variable(new_var_name, column_type_pair_dict)
-
-    def execute_with_params(self, params):
-
-        table_name = params["db_table_name"]
-        new_var_name = params["new_var_name"]
-        flog.info(f'execute table_name = {table_name}')
-        self.direct_execute(table_name, new_var_name)
-
+    
     def execute(self, node_detail_form):
         db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
         db_name = parse_comboentry_input(input_value=db_name)
@@ -715,6 +695,11 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
         self.direct_execute(db_name, table_name, new_var_name)
+
+    def direct_execute(self,db_name, table_name, new_var_name):
+        db_table = get_db_table_from_db(table_name=table_name, db_name=db_name)
+        column_type_pair_dict = dict(zip(db_table.columns, db_table.types))
+        variable_handler.new_variable(new_var_name, column_type_pair_dict)
 
 class CreateMigrationFileHandler(AbstractFunctionHandler):
     def __init__(self):
