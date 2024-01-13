@@ -78,18 +78,44 @@ def get_connected_db_tables(db_name: str = None):
 
     return valid_tables
 
+def get_name_matching_db_tables(dbtable_name: str, db_name: Optional[str] = None):
+    matching_dbtables = [db_table for name, db_table in get_connected_db_tables(db_name).items() if name == dbtable_name]
 
 def get_connected_db_table_names():
     valid_tables = get_connected_db_tables()
     valid_table_names = list(valid_tables.keys())
 
     return valid_table_names
+def get_db_table_from_db(table_name: str, db_name: str) -> Union[DbTable, None]:
+    """
+    Retrieve a database table by its name from a specified database.
 
+    Args:
+        table_name (str): The name of the database table to retrieve.
+        db_name (str): The name of the database containing the desired table.
 
-def get_name_matching_db_tables(dbtable_name, db_name=None):
-    matching_dbtables = [db_table for name, db_table in get_connected_db_tables(db_name).items() if name == dbtable_name]
+    Returns:
+        Union[DbTable, None]: The corresponding database table object if found, or None if not found.
 
-    return matching_dbtables
+    Raises:
+        ValueError: If the table_name is an empty string or contains only whitespace.
+        ValueError: If no database table with the given name is found in the specified database.
+        ValueError: If multiple database tables with the same name are found in the specified database.
+    """
+    
+    if not table_name or table_name.isspace():
+        raise ValueError(f"Table name can't be an empty string or space.")
+    
+    matching_dbtables = get_name_matching_db_tables(dbtable_name=table_name, db_name=db_name)
+    
+    if not matching_dbtables:
+        raise ValueError(f'No DB table named {table_name} found in database {db_name}.')
+    elif len(matching_dbtables) > 1:
+        raise ValueError(f'Mutliples DB tables named {table_name} found for database named {db_name}.')
+    
+    db_table = matching_dbtables[0]
+    
+    return db_table
 
 
 class DBQueryHandler(AbstractFunctionHandler):
