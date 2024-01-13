@@ -279,7 +279,7 @@ class DBSelectHandler(AbstractFunctionHandler):
         self.docs.add_parameter_table_row(
             title="Database",
             name="db_name",
-            description="A name of the database we want to extract data from.",
+            description="A name of the database containing the desired table.",
             typ="Comboentry"
         )
         self.docs.add_parameter_table_row(
@@ -480,12 +480,38 @@ class DBSelectHandler(AbstractFunctionHandler):
 
 
 class DBInsertHandler(AbstractFunctionHandler):
+    """
+    Execute database insert on various databases.
+    """
     def __init__(self):
         self.icon_type = "DBInsert"
         self.fn_name = "DB Insert"
 
         self.type_category = ntcm.categories.database
         self.docs_category = DocsCategories.data_sources
+        self._init_docs()
+        
+    def _init_docs(self):
+        self.docs = Docs(description=self.__doc__)
+        self.docs.add_parameter_table_row(
+            title="Database",
+            name="db_name",
+            description="A name of the database containing the desired table.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Table name",
+            name="db_table_name",
+            description="Database table on which the query is executed.",
+            typ="Comboentry",
+            example=['employees', 'salaries_table']
+        )
+        self.docs.add_parameter_table_row(
+            title="Inserted data",
+            name="inserted_dataframe",
+            description="A Dataframe which should be inserted to db table.",
+            typ="DataFrame"
+        )
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         db_tables = []
@@ -493,11 +519,12 @@ class DBInsertHandler(AbstractFunctionHandler):
             databases = options["databases"]
         else:
             databases = []
+            
+        databases_names = [database["database_name"] for database in databases]
 
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("Database")
-        databases_names = [database["database_name"] for database in databases]
         fdl.comboentry(name="db_name", text="", options=databases_names, row=1)
         fdl.label("Table name")
         fdl.comboentry(name="db_table_name", text="", options=db_tables, row=2)
