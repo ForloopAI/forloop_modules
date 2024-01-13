@@ -624,11 +624,12 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
         return set_statement, where_statement
 
-    def _get_sql_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator):
-        set_value = parse_float_sql(set_value)
+    def _get_sql_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, 
+                                   where_column_name, where_operator):
+        set_value = _parse_float_sql(set_value)
         set_statement = f"{set_column_name}={set_value}"
 
-        where_value = parse_float_sql(where_value)
+        where_value = _parse_float_sql(where_value)
         where_statement = f"{where_column_name}{where_operator}{where_value}"
 
         return set_statement, where_statement
