@@ -5,6 +5,7 @@ import dbhydra.dbhydra_core as dh
 
 from deepdiff import DeepDiff
 from fastapi import HTTPException
+from typing import Literal, Union
 from tkinter.filedialog import askopenfile
 
 import forloop_modules.flog as flog
@@ -26,6 +27,30 @@ def parse_comboentry_input(input_value: list[str]):
     input_value = input_value[0] if isinstance(input_value, list) and len(input_value) > 0 else input_value
     
     return input_value
+
+DbOperation = Literal["INSERT", "UPDATE", "DELETE"]
+DBInstance = Union[dh.MysqlDb, dh.SqlServerDb, dh.PostgresDb, dh.XlsxDB, dh.MongoDb, dh.BigQueryDb]
+DbTable = Union[dh.MysqlTable, dh.SqlServerTable, dh.PostgresTable, dh.XlsxTable, dh.MongoTable, dh.BigQueryTable]
+
+def connect_to_db_and_run_operation(operation: DbOperation, db_instance: DBInstance, dbtable: DbTable, **kwargs):
+    with db_instance.connect_to_db():
+        try:
+            if type(db_instance) is dh.MongoDb:
+                dbtable.update_collection()
+
+            if operation == "DELETE":
+                dbtable.delete(kwargs['where_statement'])
+
+            elif operation == "INSERT":
+                 dbtable.insert_from_df(kwargs['inserted_dataframe'])
+
+            elif operation == "UPDATE":
+                dbtable.update(kwargs['set_statement'], kwargs['where_statement'])
+
+        except AssertionError:
+            flog.error(f"Different number of imputed columns")
+        except Exception as e:
+            flog.error(f"{operation} ERROR: {e}")
 
 def get_connected_db_tables(db_name: str = None):
     """
@@ -846,10 +871,6 @@ class CopyDbStructureHandler(AbstractFunctionHandler):
     #         return analyzed_table
     #     elif isinstance(db_connection.db_instance, dh.PostgresDb):
 
-
-
-
-
 class CopyDbDataHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = 'CopyDbDataHandler'
@@ -954,16 +975,12 @@ class CopyDbDataHandler(AbstractFunctionHandler):
             destination_table.delete()
             destination_table.insert_from_df(df_to_copy, insert_id=insert_id)
 
-
     def _clear_mongo_dataframe_from_ids(self, df_to_copy):
         if "_id" in df_to_copy.columns:
             df_to_copy = df_to_copy.drop(["_id"], axis=1)
         if "id" in df_to_copy.columns:
             df_to_copy = df_to_copy.drop(["id"], axis=1)
         return df_to_copy
-
-
-
 
 def get_db_table(table_name):
     matching_dbtables = [db_table for name, db_table in get_connected_db_tables().items() if name == table_name]
@@ -1135,28 +1152,6 @@ def generate_sql_condition(cols_to_be_selected, dbtable_name, column_name, value
     query += ";"
 
     return query
-
-
-def connect_to_db_and_run_operation(operation, db_instance, dbtable, **kwargs):
-    with db_instance.connect_to_db():
-        try:
-            if type(db_instance) is dh.MongoDb:
-                dbtable.update_collection()
-
-            if operation == "DELETE":
-                dbtable.delete(kwargs['where_statement'])
-
-            elif operation == "INSERT":
-                 dbtable.insert_from_df(kwargs['inserted_dataframe'])
-
-            elif operation == "UPDATE":
-                dbtable.update(kwargs['set_statement'], kwargs['where_statement'])
-
-        except AssertionError:
-            flog.error(f"Different number of imputed columns")
-        except Exception as e:
-            flog.error(f"{operation} ERROR: {e}")
-
 
 database_handlers_dict = {
     "DBSelect": DBSelectHandler(),
