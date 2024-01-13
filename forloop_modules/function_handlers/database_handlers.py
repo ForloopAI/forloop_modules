@@ -528,26 +528,27 @@ class DBUpdateHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
+    
+    def execute(self, node_detail_form):
+        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
+        db_name = parse_comboentry_input(input_value=db_name)
+        
+        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        db_table_name = parse_comboentry_input(input_value=db_table_name)
+        
+        set_column_name = node_detail_form.get_chosen_value_by_name("set_column_name", variable_handler)
+        set_column_name = parse_comboentry_input(input_value=set_column_name)
+        
+        set_value = node_detail_form.get_chosen_value_by_name("set_value", variable_handler)
+        
+        where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name", variable_handler)
+        where_column_name = parse_comboentry_input(input_value=where_column_name)
+        
+        where_operator = node_detail_form.get_chosen_value_by_name("where_operator", variable_handler)
+        where_value = node_detail_form.get_chosen_value_by_name("where_value", variable_handler)
 
-    def _get_mongo_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator):
-        set_value = parse_float_sql(set_value)
-
-        set_statement = {"$set": {set_column_name[0]: set_value}}
-
-        where_statement = get_condition_mongo(where_column_name, where_value, where_operator)
-
-        return set_statement, where_statement
-
-    def _get_sql_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator):
-        set_value = parse_float_sql(set_value)
-        set_statement = f"{set_column_name[0]}={set_value}"
-
-        where_value = parse_float_sql(where_value)
-        where_statement = f"{where_column_name[0]}{where_operator}{where_value}"
-
-        return set_statement, where_statement
-
-
+        self.direct_execute(db_name, db_table_name, set_column_name, set_value, where_column_name, where_operator, where_value)
+        
     def direct_execute(self, db_name, dbtable_name, set_column_name, set_value, where_column_name, where_operator, where_value):
         if dbtable_name:
             matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
@@ -571,25 +572,23 @@ class DBUpdateHandler(AbstractFunctionHandler):
                     #     variable_handler.new_variable(var_name, df)
                     #     #variable_handler.update_data_in_variable_explorer(glc)
 
-    def execute(self, node_detail_form):
-        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
-        db_name = parse_comboentry_input(input_value=db_name)
-        
-        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
-        db_table_name = parse_comboentry_input(input_value=db_table_name)
-        
-        set_column_name = node_detail_form.get_chosen_value_by_name("set_column_name", variable_handler)
-        set_column_name = parse_comboentry_input(input_value=set_column_name)
-        
-        set_value = node_detail_form.get_chosen_value_by_name("set_value", variable_handler)
-        
-        where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name", variable_handler)
-        where_column_name = parse_comboentry_input(input_value=where_column_name)
-        
-        where_operator = node_detail_form.get_chosen_value_by_name("where_operator", variable_handler)
-        where_value = node_detail_form.get_chosen_value_by_name("where_value", variable_handler)
+    def _get_mongo_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator):
+        set_value = parse_float_sql(set_value)
 
-        self.direct_execute(db_name, db_table_name, set_column_name, set_value, where_column_name, where_operator, where_value)
+        set_statement = {"$set": {set_column_name[0]: set_value}}
+
+        where_statement = get_condition_mongo(where_column_name, where_value, where_operator)
+
+        return set_statement, where_statement
+
+    def _get_sql_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator):
+        set_value = parse_float_sql(set_value)
+        set_statement = f"{set_column_name[0]}={set_value}"
+
+        where_value = parse_float_sql(where_value)
+        where_statement = f"{where_column_name[0]}{where_operator}{where_value}"
+
+        return set_statement, where_statement
 
 class AnalyzeDbTableHandler(AbstractFunctionHandler):
     def __init__(self):
