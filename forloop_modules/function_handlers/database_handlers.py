@@ -587,12 +587,50 @@ class DBInsertHandler(AbstractFunctionHandler):
         return converted_inserted_dataframe
 
 class DBDeleteHandler(AbstractFunctionHandler):
+    """
+    Execute database delete on various databases. Supports one condition. For more advanced queries use DB Query.
+    """
     def __init__(self):
         self.icon_type = "DBDelete"
         self.fn_name = "DB Delete"
 
         self.type_category = ntcm.categories.database
         self.docs_category = DocsCategories.data_sources
+        self._init_docs()
+        
+    def _init_docs(self):
+        self.docs = Docs(description=self.__doc__)
+        self.docs.add_parameter_table_row(
+            title="Database",
+            name="db_name",
+            description="A name of the database containing the desired table.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="From",
+            name="db_table_name",
+            description="Database table on which the query is executed.",
+            typ="Comboentry",
+            example=['employees', 'salaries_table']
+        )
+        self.docs.add_parameter_table_row(
+            title="Column",
+            name="column_name",
+            description="The column on which the condition is evaluated.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Operator",
+            name="where_operator",
+            description="Condition operator.",
+            typ="Comboentry",
+            example=["=", "<", "<=", ">", ">=", "<>", "IN"]
+        )
+        self.docs.add_parameter_table_row(
+            title="Value",
+            name="value",
+            description="A value against which the condition is evaluated."
+        )
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         operators = ["=", "<", ">", ">=", "<=", "<>", " IN "]
