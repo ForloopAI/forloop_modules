@@ -1,4 +1,4 @@
-
+from typing import Optional
 
 class DatabaseUtilitiesHandler:    
     """
@@ -9,7 +9,7 @@ class DatabaseUtilitiesHandler:
   
     def __init__(self):
         self.db_connections = []
-        self.last_edited_database_uid = None
+        self.last_edited_database_uid: str = None
         self.last_active_database = None
         self.database_uid_db_connection_dict = {}
 
@@ -21,10 +21,13 @@ class DatabaseUtilitiesHandler:
 
     # DB Connections
     # TODO: IT IS POSSIBLE TO HAVE DUPLICATE DB NAMES
-    def new_database_connection(self, db_connection):
+    def new_database_connection(self, db_connection, database_uid: Optional[str] = None):
         # TODO: should check whether db connection is valid and raise exception if not -> Dominik: I dont agree
         #assert db_connection.is_valid_db_connection
         self.db_connections.append(db_connection)
+        
+        if database_uid is not None:
+            self.database_uid_db_connection_dict[database_uid] = db_connection
 
 
     def get_selected_db_connection(self, selected_db_name):
