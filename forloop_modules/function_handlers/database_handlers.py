@@ -597,29 +597,25 @@ class DBUpdateHandler(AbstractFunctionHandler):
         self.direct_execute(db_name, db_table_name, set_column_name, set_value, where_column_name, where_operator, where_value)
         
     def direct_execute(self, db_name, dbtable_name, set_column_name, set_value, where_column_name, where_operator, where_value):
-        if dbtable_name:
-            matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
-
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-                db_instance = dbtable.db1
+        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
+        db_instance = db_table.db1
 
 
-                if type(db_instance) is dh.MongoDb:
-                    set_statement,where_statement = self._get_mongo_update_statements(db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator)
+        if type(db_instance) is dh.MongoDb:
+            set_statement,where_statement = self._get_mongo_update_statements(db_instance, db_table, set_value, 
+                                                                              set_column_name, where_value, 
+                                                                              where_column_name, where_operator)
 
-                else:
-                    set_statement,where_statement = self._get_sql_update_statements(db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator)
+        else:
+            set_statement,where_statement = self._get_sql_update_statements(db_instance, db_table, set_value, 
+                                                                            set_column_name, where_value, where_column_name, 
+                                                                            where_operator)
 
-                connect_to_db_and_run_operation("UPDATE", db_instance, dbtable, set_statement=set_statement, where_statement=where_statement)
+        connect_to_db_and_run_operation("UPDATE", db_instance, db_table, set_statement=set_statement, 
+                                        where_statement=where_statement)
 
-                    # var_name = f"DB.{dbtable.name}"
-                    # if var_name in variable_handler.variables:
-                    #     df = pd.concat([variable_handler.variables[var_name].value, inserted_dataframe])
-                    #     variable_handler.new_variable(var_name, df)
-                    #     #variable_handler.update_data_in_variable_explorer(glc)
-
-    def _get_mongo_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator):
+    def _get_mongo_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, 
+                                     where_column_name, where_operator):
         set_value = parse_float_sql(set_value)
 
         set_statement = {"$set": {set_column_name: set_value}}
