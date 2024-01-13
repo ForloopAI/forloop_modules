@@ -193,9 +193,17 @@ class DBSelectHandler(AbstractFunctionHandler):
     
     def execute(self, node_detail_form):
         db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
+        db_name = parse_comboentry_input(input_value=db_name)
+        
         db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        db_table_name = parse_comboentry_input(input_value=db_table_name)
+        
         select = node_detail_form.get_chosen_value_by_name("select", variable_handler)
+        select = parse_comboentry_input(input_value=select)
+        
         where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name", variable_handler)
+        where_column_name = parse_comboentry_input(input_value=where_column_name)
+        
         where_operator = node_detail_form.get_chosen_value_by_name("where_operator", variable_handler)
         where_value = node_detail_form.get_chosen_value_by_name("where_value", variable_handler)
         limit = node_detail_form.get_chosen_value_by_name("limit", variable_handler)
@@ -217,8 +225,6 @@ class DBSelectHandler(AbstractFunctionHandler):
             raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
         
     def direct_execute(self, db_name, dbtable_name, selected_columns, column_name, operator, value, limit, new_var_name):
-        dbtable_name, selected_columns = self.parse_input(dbtable_name, selected_columns)
-
         df_new = pd.DataFrame()
 
         if dbtable_name:
@@ -233,19 +239,6 @@ class DBSelectHandler(AbstractFunctionHandler):
 
                 df_new = validate_input_data_types(df_new)
                 variable_handler.new_variable(new_var_name, df_new)
-
-    def parse_input(self, dbtable_name: List[str], select: List[str]) -> Tuple[str, str]:
-        if len(dbtable_name) > 0:
-            dbtable_name = dbtable_name[0]
-        else:
-            dbtable_name = ""
-
-        if len(select) > 0:
-            select = select[0]
-        else:
-            select = "*"
-
-        return dbtable_name, select
 
     def select(self, db_instance, dbtable, query, cols_to_be_selected):
         if type(db_instance) is dh.MongoDb:
@@ -349,9 +342,6 @@ class DBInsertHandler(AbstractFunctionHandler):
 
         return fdl
 
-    def parse_input(self, dbtable_name: str) -> str:
-        return dbtable_name[0] if len(dbtable_name) > 0 else ""
-
     def _convert_data_variable_to_df(self, inserted_data, columns):
         converted_inserted_dataframe = inserted_data
         if isinstance(inserted_data, list):
@@ -366,8 +356,6 @@ class DBInsertHandler(AbstractFunctionHandler):
         return converted_inserted_dataframe
 
     def direct_execute(self, db_name, dbtable_name, inserted_dataframe):
-        dbtable_name = self.parse_input(dbtable_name)
-
         if dbtable_name:
             matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
 
@@ -408,8 +396,12 @@ class DBInsertHandler(AbstractFunctionHandler):
 
 
     def execute(self, node_detail_form):
-        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
+        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
+        db_name = parse_comboentry_input(input_value=db_name)
+        
         db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        db_table_name = parse_comboentry_input(input_value=db_table_name)
+        
         inserted_dataframe = node_detail_form.get_chosen_value_by_name("inserted_dataframe", variable_handler)
 
         self.direct_execute(db_name, db_table_name, inserted_dataframe)
@@ -458,12 +450,7 @@ class DBDeleteHandler(AbstractFunctionHandler):
 
         return fdl
 
-    def parse_input(self, dbtable_name: str) -> str:
-        return dbtable_name[0] if len(dbtable_name) > 0 else ""
-
     def direct_execute(self, db_name,  dbtable_name, column_name, operator, value):
-        dbtable_name = self.parse_input(dbtable_name)
-
         if dbtable_name:
             matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
 
@@ -490,10 +477,18 @@ class DBDeleteHandler(AbstractFunctionHandler):
                     #     #variable_handler.update_data_in_variable_explorer(glc)
 
     def execute(self, node_detail_form):
-        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
+        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
+        db_name = parse_comboentry_input(input_value=db_name)
+        
         db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        db_table_name = parse_comboentry_input(input_value=db_table_name)
+        
         column_name = node_detail_form.get_chosen_value_by_name("column_name", variable_handler)
+        column_name = parse_comboentry_input(input_value=column_name)
+        
         operator = node_detail_form.get_chosen_value_by_name("operator", variable_handler)
+        operator = parse_comboentry_input(input_value=operator)
+        
         value = node_detail_form.get_chosen_value_by_name("value", variable_handler)
 
         self.direct_execute(db_name, db_table_name, column_name, operator, value)
@@ -538,9 +533,6 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
         return fdl
 
-    def parse_input(self, dbtable_name: str) -> str:
-        return dbtable_name[0] if len(dbtable_name) > 0 else ""
-
     def _get_mongo_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator):
         set_value = parse_float_sql(set_value)
 
@@ -561,8 +553,6 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
 
     def direct_execute(self, db_name, dbtable_name, set_column_name, set_value, where_column_name, where_operator, where_value):
-        dbtable_name = self.parse_input(dbtable_name)
-
         if dbtable_name:
             matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
 
@@ -586,11 +576,20 @@ class DBUpdateHandler(AbstractFunctionHandler):
                     #     #variable_handler.update_data_in_variable_explorer(glc)
 
     def execute(self, node_detail_form):
-        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
+        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
+        db_name = parse_comboentry_input(input_value=db_name)
+        
         db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        db_table_name = parse_comboentry_input(input_value=db_table_name)
+        
         set_column_name = node_detail_form.get_chosen_value_by_name("set_column_name", variable_handler)
+        set_column_name = parse_comboentry_input(input_value=set_column_name)
+        
         set_value = node_detail_form.get_chosen_value_by_name("set_value", variable_handler)
+        
         where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name", variable_handler)
+        where_column_name = parse_comboentry_input(input_value=where_column_name)
+        
         where_operator = node_detail_form.get_chosen_value_by_name("where_operator", variable_handler)
         where_value = node_detail_form.get_chosen_value_by_name("where_value", variable_handler)
 
