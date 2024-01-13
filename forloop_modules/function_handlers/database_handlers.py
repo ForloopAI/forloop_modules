@@ -181,46 +181,48 @@ class DBQueryHandler(AbstractFunctionHandler):
         self.direct_execute(db_table_name, query, new_var_name)
 
     def direct_execute(self, dbtable_name, query, new_var_name):
-        if dbtable_name:
-            matching_dbtables = get_name_matching_db_tables(dbtable_name)
+        if not dbtable_name:
+            return
+        
+        matching_dbtables = get_name_matching_db_tables(dbtable_name)
 
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-                db_instance = dbtable.db1
+        if len(matching_dbtables) == 1:
+            dbtable = matching_dbtables[0]
+            db_instance = dbtable.db1
 
-                with db_instance.connect_to_db():
-                    flog.info(f"Qeury: {query}")
-                    flog.info(f'FIRST Query word altered: {query.split(" ")[0].lower().strip()}')
-                    if query.split(" ")[0].lower().strip() == "select":
-                        # Hotfix for the df Image to show a proper label
-                        # TODO Daniel/Tomas: Refactor out
-                        new_var_name = variable_handler._set_up_unique_varname(new_var_name)
-                        fields = self.generate_shown_dataframe_option_field(new_var_name)   
-                        
-                        response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
-                        if response.status_code in [200, 201]:
-                            result = json.loads(response.content.decode('utf-8'))
-                            node_uid = result["uid"]
+            with db_instance.connect_to_db():
+                flog.info(f"Qeury: {query}")
+                flog.info(f'FIRST Query word altered: {query.split(" ")[0].lower().strip()}')
+                if query.split(" ")[0].lower().strip() == "select":
+                    # Hotfix for the df Image to show a proper label
+                    # TODO Daniel/Tomas: Refactor out
+                    new_var_name = variable_handler._set_up_unique_varname(new_var_name)
+                    fields = self.generate_shown_dataframe_option_field(new_var_name)   
+                    
+                    response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
+                    if response.status_code in [200, 201]:
+                        result = json.loads(response.content.decode('utf-8'))
+                        node_uid = result["uid"]
 
-                            try:
-                                rows = dbtable.select(query)
-                            except Exception as e:
-                                flog.error(f"DBTABLE SELECT ERROR {e}")
-
-                            df_new = pd.DataFrame(rows,columns=dbtable.columns)
-                            flog.info(f"DF: {df_new}")
-
-                            df_new = validate_input_data_types(df_new)
-                            variable_handler.new_variable(new_var_name, df_new)
-
-                            ncrb.update_last_active_dataframe_node_uid(node_uid)
-                        else:
-                            raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
-                    else:
                         try:
-                            dbtable.db1.execute(query)
+                            rows = dbtable.select(query)
                         except Exception as e:
-                            flog.error(f"DBTABLE EXECUTE ERROR {e}")
+                            flog.error(f"DBTABLE SELECT ERROR {e}")
+
+                        df_new = pd.DataFrame(rows,columns=dbtable.columns)
+                        flog.info(f"DF: {df_new}")
+
+                        df_new = validate_input_data_types(df_new)
+                        variable_handler.new_variable(new_var_name, df_new)
+
+                        ncrb.update_last_active_dataframe_node_uid(node_uid)
+                    else:
+                        raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
+                else:
+                    try:
+                        dbtable.db1.execute(query)
+                    except Exception as e:
+                        flog.error(f"DBTABLE EXECUTE ERROR {e}")
 
 class DBSelectHandler(AbstractFunctionHandler):
     def __init__(self):
