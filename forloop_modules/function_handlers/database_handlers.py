@@ -532,7 +532,6 @@ class DBInsertHandler(AbstractFunctionHandler):
         fdl.entry(name="inserted_dataframe", text="", input_types=["list", "dict", "DataFrame"], row=3)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
-
         return fdl
     
     def execute(self, node_detail_form):
@@ -550,15 +549,12 @@ class DBInsertHandler(AbstractFunctionHandler):
         db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
         db_instance = db_table.db1
 
-        if type(db_table) is dh.MongoTable:
-            cols = None
-        else:
-            cols = db_table.columns
+        columns = None if isinstance(db_table, dh.MongoTable) else db_table.columns
 
         try:
-            inserted_dataframe = self._convert_data_variable_to_df(inserted_dataframe, cols)
+            inserted_dataframe = self._convert_data_variable_to_df(inserted_dataframe, columns)
         except ValueError:
-            flog.error('Wrong number of columns',self)
+            flog.error('Wrong number of columns', self)
             return
 
         connect_to_db_and_run_operation("INSERT", db_instance, db_table, inserted_dataframe=inserted_dataframe)
