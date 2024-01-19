@@ -9,7 +9,7 @@ STANDARD_ICONS = [
 ]
 
 PIPELINE_CLEANING_ICONS = [
-    "NewDataFrame", "DropColumn", "RenameColumn", "CastColumnType", "ConstantColumn", "SelectColumns",
+    "NewDataFrame", "DropColumn", "RenameColumn", "CastColumnType", "ExplodeColumn", "ConstantColumn", "SelectColumns",
     "RemoveEmptyRows", "RemoveDuplicates", "KNNImputation", "Imputation", "Outliers", "Replace", "StripColumn",
     "Search", "FilterString", "ApplyMapping", "SplitString", "Sort", "ColumnWiseShift", "DifferenceData",
     "Concatenate", "Join", "AggregateGroupedData", "MathOperation", "FindJoinColumn", "RoundToHigherFrequency",

@@ -1,3 +1,5 @@
+import ast
+
 import pandas as pd
 import numpy as np
 import dbhydra.dbhydra_core as dh
@@ -654,7 +656,7 @@ class CastColumnTypeHandler(AbstractFunctionHandler):
 
     def _init_docs(self):
         parameter_description = """The CastColumnType Node requires 2 parameters (other than input dataframe and new 
-        dataframe name), a *column* whose name is to be changed and the *new column type*."""
+        dataframe name), a *column* whose data type is to be changed and the *new column type*."""
 
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
 
@@ -796,6 +798,136 @@ class CastColumnTypeHandler(AbstractFunctionHandler):
         imports = []
         return imports
 
+
+class ExplodeColumnHandler(AbstractFunctionHandler):
+    """ExplodeColumn Node flattens (explodes) dict-like values in column to new columns """
+
+    def __init__(self):
+        super().__init__()
+        self.icon_type = 'ExplodeColumn'
+        self.fn_name = 'Explode Column'
+
+        self.type_category = ntcm.categories.cleaning
+        self.docs_category = DocsCategories.cleaning
+        self._init_docs()
+
+    def _init_docs(self):
+        parameter_description = """The ExplodeColumn Node requires 1 parameter (other than input dataframe and new 
+        dataframe name), a *column* which should be exploded."""
+
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+
+        self.docs.add_parameter_table_row(
+            title="Dataframe",
+            name="df_entry",
+            description="Dataframe variable rectangle.",
+            typ="Dataframe"
+        )
+
+        self.docs.add_parameter_table_row(
+            title="Column",
+            name="col_name",
+            description="The column to be exploded. The name of the column can be either written or selected from the combobox."
+        )
+
+        self.docs.add_parameter_table_row(
+            title="New variable name",
+            name="new_var_name",
+            description="A name for the new Dataframe variable",
+            typ="String",
+            example="'exploded_column_df'"
+        )
+
+    def make_form_dict_list(self, *args, options: Optional[dict] = None, node_detail_form=None) -> FormDictList:
+        options = {} if options is None else options
+        columns = options.get('columns', [])
+
+        fdl = FormDictList(docs=self.docs)
+
+        fdl.label("Explode Column")
+
+        fdl.label("Dataframe")
+        fdl.entry(name="df_entry", text="", input_types=["DataFrame"], required=True, row=1)
+
+        fdl.label("Column")
+        # TODO: add support for multiple columns
+        fdl.comboentry(name="col_name", text="", options=columns, row=2)
+
+        fdl.label("New variable")
+        fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=4)
+
+        fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+
+        return fdl
+
+    def execute(self, node_detail_form):
+        df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
+        col_name = node_detail_form.get_chosen_value_by_name("col_name", variable_handler)
+        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
+
+        new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
+
+        self.direct_execute(df_entry, col_name, new_var_name)
+
+        ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
+
+    def execute_with_params(self, params):
+        df_entry = params["df_entry"]
+        col_name = params["col_name"]
+        new_var_name = params["new_var_name"]
+
+        self.direct_execute(df_entry, col_name, new_var_name)
+
+    def parse_input(self, old_col_name: List[str]) -> str:
+        return old_col_name[0] if len(old_col_name) > 0 else ""
+
+    def direct_execute(self, df_entry: pd.DataFrame, col_name: List[str], new_var_name: str, ):
+        col_name: str = self.parse_input(col_name)
+
+        inp = Input()
+        inp.assign("df_entry", df_entry)
+        inp.assign("col_name", col_name)
+
+        try:
+            df_new = self.input_execute(inp)
+        except KeyError:
+            df_new = inp("df_entry").copy()
+            flog.warning(f'Column name {col_name} is not present in DataFrame')
+        except AttributeError as e:
+            df_new = pd.DataFrame()
+            flog.error(f"{e}")
+        except Exception as e:
+            flog.error(f"Undefined error {e} occurred")
+            raise SoftPipelineError(f"Can not explode column {col_name}: {e}")
+
+        variable_handler.new_variable(new_var_name, df_new)
+
+    def input_execute(self, inp):
+        col_name = inp("col_name")
+
+        df_new: pd.DataFrame = inp("df_entry").copy()
+
+        cols_to_explode = [col_name]
+
+        for col in cols_to_explode:
+            df_new[col] = df_new[col].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+            df_tmp = pd.json_normalize(df_new[col]).add_prefix(f'{col}.')
+            df_new = pd.concat([df_new, df_tmp], axis=1).drop(columns=col)
+
+        return df_new
+
+    def export_code(self, node_detail_form):
+        node_detail_form.node_params["col_name"]["value"] = self.parse_input(
+            node_detail_form.node_params["col_name"]["value"]
+        )
+
+        code = self.export_code_with_node_params(node_detail_form.node_params)
+
+        return code
+
+    def export_imports(self, *args):
+        imports = []
+        return imports
 
 class RemoveEmptyRowsHandler(AbstractFunctionHandler):
     """
@@ -4424,6 +4556,7 @@ cleaning_handlers_dict = {
     'DropColumn': DropColumnHandler(),
     'RenameColumn': RenameColumnHandler(),
     'CastColumnType': CastColumnTypeHandler(),
+    'ExplodeColumn': ExplodeColumnHandler(),
     'ConstantColumn': ConstantColumnHandler(),
     'SelectColumns': SelectColumnsHandler(),
     'RemoveEmptyRows': RemoveEmptyRowsHandler(),
