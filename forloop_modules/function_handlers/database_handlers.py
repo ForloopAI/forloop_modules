@@ -1,12 +1,12 @@
-from deepdiff import DeepDiff
-from tkinter.filedialog import askopenfile
-from typing import List, Tuple
-import json
-
 import ast
+import json
 import pandas as pd
 import dbhydra.dbhydra_core as dh
+
+from deepdiff import DeepDiff
 from fastapi import HTTPException
+from typing import Literal, Union, Optional
+from tkinter.filedialog import askopenfile
 
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
@@ -16,16 +16,40 @@ from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDict
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.database_utilities_handler import duh
 from forloop_modules.globals.docs_categories import DocsCategories
-
+from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 from forloop_modules.function_handlers.auxilliary.data_types_validation import validate_input_data_types
 
-# ###### PROBLEMATIC IMPORTS TODO: REFACTOR #######
-#from src.gui.gui_layout_context import glc
-# ###### PROBLEMATIC IMPORTS TODO: REFACTOR #######
+def parse_comboentry_input(input_value: list[str]):
+    input_value = input_value[0] if isinstance(input_value, list) and len(input_value) > 0 else input_value
+    
+    return input_value
 
+DbOperation = Literal["INSERT", "UPDATE", "DELETE"]
+DBInstance = Union[dh.MysqlDb, dh.SqlServerDb, dh.PostgresDb, dh.XlsxDB, dh.MongoDb, dh.BigQueryDb]
+DbTable = Union[dh.MysqlTable, dh.SqlServerTable, dh.PostgresTable, dh.XlsxTable, dh.MongoTable, dh.BigQueryTable]
 
-def get_connected_db_tables(db_name:str=None):
+def connect_to_db_and_run_operation(operation: DbOperation, db_instance: DBInstance, dbtable: DbTable, **kwargs):
+    with db_instance.connect_to_db():
+        try:
+            if type(db_instance) is dh.MongoDb:
+                dbtable.update_collection()
+
+            if operation == "DELETE":
+                dbtable.delete(kwargs['where_statement'])
+
+            elif operation == "INSERT":
+                 dbtable.insert_from_df(kwargs['inserted_dataframe'])
+
+            elif operation == "UPDATE":
+                dbtable.update(kwargs['set_statement'], kwargs['where_statement'])
+
+        except AssertionError:
+            flog.error(f"Different number of imputed columns")
+        except Exception as e:
+            flog.error(f"{operation} ERROR: {e}")
+
+def get_connected_db_tables(db_name: str = None):
     """
     Retrieves all valid tables from the specified database or all databases if no database name is given.
 
@@ -42,11 +66,8 @@ def get_connected_db_tables(db_name:str=None):
         for db_connection in duh.db_connections:
             if hasattr(db_connection, "table_dict") and db_connection.database == db_name:
                 connected_dbs.append(db_connection)
-
     else:
-      
         connected_dbs = [db_connection for db_connection in duh.db_connections if hasattr(db_connection, "table_dict")]
-        #connected_dbs = [db_connection for db_connection in variable_handler.db_connections if hasattr(db_connection, "table_dict")]
 
     valid_tables = {}
     for db in connected_dbs:
@@ -54,6 +75,106 @@ def get_connected_db_tables(db_name:str=None):
 
     return valid_tables
 
+def get_name_matching_db_tables(dbtable_name: str, db_name: Optional[str] = None):
+    matching_dbtables = [db_table for name, db_table in get_connected_db_tables(db_name).items() if name == dbtable_name]
+
+    return matching_dbtables
+
+def get_db_table_from_db(table_name: str, db_name: str) -> Union[DbTable, None]:
+    """
+    Retrieve a database table by its name from a specified database.
+
+    Args:
+        table_name (str): The name of the database table to retrieve.
+        db_name (str): The name of the database containing the desired table.
+
+    Returns:
+        Union[DbTable, None]: The corresponding database table object if found, or None if not found.
+
+    Raises:
+        ValueError: If the table_name is an empty string or contains only whitespace.
+        ValueError: If no database table with the given name is found in the specified database.
+        ValueError: If multiple database tables with the same name are found in the specified database.
+    """
+    
+    if not table_name or table_name.isspace():
+        raise ValueError(f"Table name can't be an empty string or space.")
+    
+    matching_dbtables = get_name_matching_db_tables(dbtable_name=table_name, db_name=db_name)
+    
+    if not matching_dbtables:
+        raise ValueError(f'No DB table named {table_name} found in database {db_name}.')
+    elif len(matching_dbtables) > 1:
+        raise ValueError(f'Mutliples DB tables named {table_name} found for database named {db_name}.')
+    
+    db_table = matching_dbtables[0]
+    
+    return db_table
+
+def generate_sql_condition(cols_to_be_selected, dbtable_name, column_name, value, operator, limit, dataset=None):
+    """
+    Generates an SQL query string with optional filtering and limit.
+
+    Args:
+    cols_to_be_selected (str): Comma-separated column names.
+    dbtable_name (str): Database table name.
+    column_name (str): Filter column name.
+    value (str, int, float): Value for comparison.
+    operator (str): SQL comparison operator (e.g., "=", "<>", ">", "<", ">=", "<=").
+    limit (int): Maximum number of rows returned.
+    dataset (str, optional): Dataset name for BigQuery tables.
+
+    Returns:
+    query (str): Generated SQL query string.
+    """
+
+    if dataset is not None:
+        query = f"SELECT {cols_to_be_selected} FROM {dataset}.{dbtable_name}"
+    else:
+        query = f"SELECT {cols_to_be_selected} FROM {dbtable_name}"
+
+    if column_name and operator and value:
+        where_statement = f"{column_name}{operator}{value}"
+        query += f" WHERE {where_statement}"
+    if limit:
+        query += f" LIMIT {limit}"
+    query += ";"
+
+    return query
+
+def get_condition_mongo(column_name, value, operator):
+    condition = {}
+    if column_name and value and operator:
+        if operator == " IN ":
+            value = ast.literal_eval(value)
+
+        condition = {column_name: {dh.MONGO_OPERATOR_DICT[operator]: value}}
+
+    return condition
+
+def parse_float_db(db_instance: DBInstance, value):
+    if isinstance(db_instance, dh.MongoDb):
+        value = _parse_float_mongo(value)
+    else:
+        value = _parse_float_sql(value)
+
+    return value
+
+def _parse_float_mongo(value):
+    try:
+        value = float(value)
+    except (ValueError, TypeError):
+        pass
+
+    return value
+
+def _parse_float_sql(value):
+    try:
+        value = float(value)
+    except (ValueError, TypeError):
+        value = "'" + str(value) + "'"
+
+    return value
 
 def get_connected_db_table_names():
     valid_tables = get_connected_db_tables()
@@ -61,18 +182,10 @@ def get_connected_db_table_names():
 
     return valid_table_names
 
-
-def get_name_matching_db_tables(dbtable_name, db_name=None):
-    # matching_dbtables = [db_table for name, db_table in get_connected_db_tables().items() if name == dbtable_name]
-    matching_dbtables = []
-    for name, dbtable in get_connected_db_tables(db_name).items():
-        if name == dbtable_name:
-            matching_dbtables.append(dbtable)
-
-    return matching_dbtables
-
-
 class DBQueryHandler(AbstractFunctionHandler):
+    """
+    Execute a given database query on various databases.
+    """
     def __init__(self):
         self.icon_type = "DBQuery"
         self.fn_name = "DB Query"
@@ -80,6 +193,31 @@ class DBQueryHandler(AbstractFunctionHandler):
         self.type_category = ntcm.categories.database
         self.docs_category = DocsCategories.data_sources
 
+    def _init_docs(self):
+        self.docs = Docs(description=self.__doc__)
+        self.docs.add_parameter_table_row(
+            title="DB table name",
+            name="db_table_name",
+            description="Database table on which the query is executed.",
+            typ="Comboentry",
+            example=['employees', 'salaries_table']
+        )
+        self.docs.add_parameter_table_row(
+            title="Query",
+            name="query",
+            description="Database query string to be executed on the selected DB table.",
+            typ="String",
+            example=[
+                "SELECT * FROM users;", 
+                "SELECT first_name, last_name, email FROM customers WHERE city = 'New York';",
+                "INSERT INTO products (product_name, price, stock_quantity) VALUES ('Laptop', 999.99, 50);"
+                ]
+        )
+        self.docs.add_parameter_table_row(
+            title="New variable",
+            name="new_var_name",
+            description="If select query is executed the result will be stored into variable with this name."
+        ) 
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         db_tables = get_connected_db_table_names()
@@ -96,63 +234,11 @@ class DBQueryHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
-
-    def debug(self, dbtable_name, query, new_var_name):
-        flog.debug("DB Query")
-        flog.debug(f"DB Table Name = {dbtable_name}")
-        flog.debug(f"QUERY = {query}")
-        flog.debug(f"NEW VAR NAME = {new_var_name}")
-
-    def parse_input(self, dbtable_name: str) -> str:
-        return dbtable_name[0] if len(dbtable_name) > 0 else ""
-
-    def direct_execute(self, dbtable_name, query, new_var_name):
-        self.debug(dbtable_name, query, new_var_name)
-        dbtable_name = self.parse_input(dbtable_name)
-
-        if dbtable_name:
-            matching_dbtables = get_name_matching_db_tables(dbtable_name)
-
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-                db_instance = dbtable.db1
-
-                with db_instance.connect_to_db():
-                    flog.info(f"Qeury: {query}")
-                    flog.info(f'FIRST Query word altered: {query.split(" ")[0].lower().strip()}')
-                    if query.split(" ")[0].lower().strip() == "select":
-                        # Hotfix for the df Image to show a proper label
-                        # TODO Daniel/Tomas: Refactor out
-                        new_var_name = variable_handler._set_up_unique_varname(new_var_name)
-                        fields = self.generate_shown_dataframe_option_field(new_var_name)   
-                        
-                        response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
-                        if response.status_code in [200, 201]:
-                            result = json.loads(response.content.decode('utf-8'))
-                            node_uid = result["uid"]
-
-                            try:
-                                rows = dbtable.select(query)
-                            except Exception as e:
-                                flog.error(f"DBTABLE SELECT ERROR {e}")
-
-                            df_new = pd.DataFrame(rows,columns=dbtable.columns)
-                            flog.info(f"DF: {df_new}")
-
-                            df_new = validate_input_data_types(df_new)
-                            variable_handler.new_variable(new_var_name, df_new)
-
-                            ncrb.update_last_active_dataframe_node_uid(node_uid)
-                        else:
-                            raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
-                    else:
-                        try:
-                            dbtable.db1.execute(query)
-                        except Exception as e:
-                            flog.error(f"DBTABLE EXECUTE ERROR {e}")
-
+    
     def execute(self, node_detail_form):
         db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        db_table_name = parse_comboentry_input(input_value=db_table_name)
+        
         query = node_detail_form.get_chosen_value_by_name("query", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
@@ -160,33 +246,121 @@ class DBQueryHandler(AbstractFunctionHandler):
 
         self.direct_execute(db_table_name, query, new_var_name)
 
-    def export_code(self, node_detail_form):
-        db_table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("db_table_name")
-        query = node_detail_form.get_variable_name_or_input_value_by_element_name("query")
-        new_var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_name", is_input_variable_name=True)
+    def direct_execute(self, dbtable_name, query, new_var_name):
+        if not dbtable_name:
+            return
+        
+        matching_dbtables = get_name_matching_db_tables(dbtable_name)
 
-        code = ""
+        if len(matching_dbtables) == 1:
+            dbtable = matching_dbtables[0]
+            db_instance = dbtable.db1
 
-        return code
+            with db_instance.connect_to_db():
+                flog.info(f"Qeury: {query}")
+                flog.info(f'FIRST Query word altered: {query.split(" ")[0].lower().strip()}')
+                if query.split(" ")[0].lower().strip() == "select":
+                    # Hotfix for the df Image to show a proper label
+                    # TODO Daniel/Tomas: Refactor out
+                    new_var_name = variable_handler._set_up_unique_varname(new_var_name)
+                    fields = self.generate_shown_dataframe_option_field(new_var_name)   
+                    
+                    response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
+                    if response.status_code in [200, 201]:
+                        result = json.loads(response.content.decode('utf-8'))
+                        node_uid = result["uid"]
 
-    def export_imports(self, *args):
-        imports = []
-        return imports
+                        try:
+                            rows = dbtable.select(query)
+                        except Exception as e:
+                            flog.error(f"DBTABLE SELECT ERROR {e}")
 
+                        df_new = pd.DataFrame(rows,columns=dbtable.columns)
+                        flog.info(f"DF: {df_new}")
+
+                        df_new = validate_input_data_types(df_new)
+                        variable_handler.new_variable(new_var_name, df_new)
+
+                        ncrb.update_last_active_dataframe_node_uid(node_uid)
+                    else:
+                        raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
+                else:
+                    try:
+                        dbtable.db1.execute(query)
+                    except Exception as e:
+                        flog.error(f"DBTABLE EXECUTE ERROR {e}")
 
 class DBSelectHandler(AbstractFunctionHandler):
+    """
+    Execute database select on various databases. Supports one condition. For more advanced queries use DB Query.
+    """
     def __init__(self):
         self.icon_type = "DBSelect"
         self.fn_name = "DB Select"
 
         self.type_category = ntcm.categories.database
         self.docs_category = DocsCategories.data_sources
+        self._init_docs()
+        
+    def _init_docs(self):
+        self.docs = Docs(description=self.__doc__)
+        self.docs.add_parameter_table_row(
+            title="Database",
+            name="db_name",
+            description="A name of the database containing the desired table.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="From",
+            name="db_table_name",
+            description="Database table on which the query is executed.",
+            typ="Comboentry",
+            example=['employees', 'salaries_table']
+        )
+        self.docs.add_parameter_table_row(
+            title="Select",
+            name="select",
+            description="Columns which should be returned by the query. Defaults to all columns as *.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Column",
+            name="where_column_name",
+            description="The column on which the condition is evaluated.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Operator",
+            name="where_operator",
+            description="Condition operator.",
+            typ="Comboentry",
+            example=["=", "<", "<=", ">", ">=", "<>", "IN"]
+        )
+        self.docs.add_parameter_table_row(
+            title="Value",
+            name="where_value",
+            description="A value against which the condition is evaluated."
+        )
+        self.docs.add_parameter_table_row(
+            title="Limit",
+            name="limit",
+            description="Number of records to return.",
+            typ="Integer"
+        )
+        self.docs.add_parameter_table_row(
+            title="New variable",
+            name="new_var_name",
+            description="A name for the new Dataframe variable.",
+            typ="String"
+        )
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         if options is not None:
             databases = options["databases"]
         else:
             databases = []
+            
+        database_names = [database["database_name"] for database in databases]
 
         operators = ["=", "<", ">", ">=", "<=", "<>", " IN "]
         db_tables = []
@@ -196,12 +370,11 @@ class DBSelectHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         fdl.label("DB Select")
         fdl.label("Database")
-        databases_names = [database["database_name"] for database in databases]
-        fdl.comboentry(name="db_name", text="", options=databases_names, row=1)
+        fdl.comboentry(name="db_name", text="", options=database_names, row=1)
         fdl.label("From")
         fdl.comboentry(name="db_table_name", text="", options=db_tables, row=2)
         fdl.label("Select")
-        fdl.comboentry(name="select", text="*", options=[], row=3)
+        fdl.comboentry(name="select", text="*", options=["*"], row=3)
         fdl.label("Where")
         fdl.label("Column")
         fdl.comboentry(name="where_column_name", text="", options=[], row=5)
@@ -216,30 +389,50 @@ class DBSelectHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
+    
+    def execute(self, node_detail_form):
+        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
+        db_name = parse_comboentry_input(input_value=db_name)
+        
+        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        db_table_name = parse_comboentry_input(input_value=db_table_name)
+        
+        select = node_detail_form.get_chosen_value_by_name("select", variable_handler)
+        select = parse_comboentry_input(input_value=select)
+        
+        where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name", variable_handler)
+        where_column_name = parse_comboentry_input(input_value=where_column_name)
+        
+        where_operator = node_detail_form.get_chosen_value_by_name("where_operator", variable_handler)
+        where_value = node_detail_form.get_chosen_value_by_name("where_value", variable_handler)
+        limit = node_detail_form.get_chosen_value_by_name("limit", variable_handler)
+        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
+        
+        self.direct_execute(db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name)
 
+        # FIXME: Deprecated - causes issues on cloud (API crash)
+        # fields = self.generate_shown_dataframe_option_field(new_var_name)
 
-    def debug(self, dbtable_name, select, column_name, operator, value, limit, new_var_name):
-        flog.debug("DB Select")
-        flog.debug(f"DB Table Name = {dbtable_name}")
-        flog.debug(f"SELECT = {select}")
-        flog.debug(f"where_column_name = {column_name}")
-        flog.debug(f"where_operator = {operator}")
-        flog.debug(f"where_value = {value}")
-        flog.debug(f"LIMIT = {limit}")
-        flog.debug(f"NEW VAR NAME = {new_var_name}")
+        # response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
+        # if response.status_code in [200, 201]:
+        #     result = json.loads(response.content.decode('utf-8'))
+        #     node_uid = result["uid"]
 
-    def parse_input(self, dbtable_name: List[str], select: List[str]) -> Tuple[str, str]:
-        if len(dbtable_name) > 0:
-            dbtable_name = dbtable_name[0]
-        else:
-            dbtable_name = ""
+        #     self.direct_execute(db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name)
 
-        if len(select) > 0:
-            select = select[0]
-        else:
-            select = "*"
-
-        return dbtable_name, select
+        #     ncrb.update_last_active_dataframe_node_uid(node_uid)
+        # else:
+        #     raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
+        
+    def direct_execute(self, db_name, dbtable_name, selected_columns, column_name, operator, value, limit, new_var_name):        
+        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
+        db_instance = db_table.db1
+        
+        df_new = pd.DataFrame()
+        df_new = self._get_df(selected_columns, dbtable_name, db_instance, db_table, column_name, operator,
+                                value, limit)
+        df_new = validate_input_data_types(df_new)
+        variable_handler.new_variable(new_var_name, df_new)
 
     def select(self, db_instance, dbtable, query, cols_to_be_selected):
         if type(db_instance) is dh.MongoDb:
@@ -313,110 +506,40 @@ class DBSelectHandler(AbstractFunctionHandler):
     #     else:
     #         return pd.DataFrame(columns=dbtable.columns)
 
-    def direct_execute(self, db_name, dbtable_name, selected_columns, column_name, operator, value, limit, new_var_name):
-        self.debug(dbtable_name, selected_columns, column_name, operator, value, limit, new_var_name)
-        dbtable_name, selected_columns = self.parse_input(dbtable_name, selected_columns)
-
-        df_new = pd.DataFrame()
-
-        if dbtable_name:
-            matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
-
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-                db_instance = dbtable.db1
-
-                df_new = self._get_df(selected_columns, dbtable_name, db_instance, dbtable, column_name, operator,
-                                      value, limit)
-
-                df_new = validate_input_data_types(df_new)
-                variable_handler.new_variable(new_var_name, df_new)
-                #variable_handler.update_data_in_variable_explorer(glc)
-
-    def execute_with_params(self, params):
-        db_table_name = params["db_table_name"]
-        select = params["select"]
-        where_column_name = params["where_column_name"]
-        where_operator = params["where_operator"]
-        where_value = params["where_value"]
-        limit = params["limit"]
-        new_var_name = params["new_var_name"]
-
-        self.direct_execute(db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name)
-
-    def execute(self, node_detail_form):
-        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
-        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
-        select = node_detail_form.get_chosen_value_by_name("select", variable_handler)
-        where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name", variable_handler)
-        where_operator = node_detail_form.get_chosen_value_by_name("where_operator", variable_handler)
-        where_value = node_detail_form.get_chosen_value_by_name("where_value", variable_handler)
-        limit = node_detail_form.get_chosen_value_by_name("limit", variable_handler)
-        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
-
-        new_var_name = variable_handler._set_up_unique_varname(new_var_name)
-        fields = self.generate_shown_dataframe_option_field(new_var_name)
-
-        response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
-        if response.status_code in [200, 201]:
-            result = json.loads(response.content.decode('utf-8'))
-            node_uid = result["uid"]
-
-            self.direct_execute(db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name)
-
-            ncrb.update_last_active_dataframe_node_uid(node_uid)
-        else:
-            raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
-
-    def export_code(self, node_detail_form):
-        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name")
-        select = node_detail_form.get_chosen_value_by_name("select")
-        where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name")
-        where_operator = node_detail_form.get_chosen_value_by_name("where_operator")
-        where_value = node_detail_form.get_variable_name_or_input_value_by_element_name("where_value")
-        limit = node_detail_form.get_variable_name_or_input_value_by_element_name("limit")
-        new_var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_name", is_input_variable_name=True)
-
-        code = """
-        df = glc.tables.elements[0].df
-
-
-        matching_dbtables = [x for x in glc.dbtables if x.name == {db_table_name}]
-
-        if len(matching_dbtables) == 1:
-            dbtable = matching_dbtables[0]
-            print(dbtable,dbtable.name)
-            db_instance=dbtable.db_connection.db_instance
-            db_instance.connect_remotely() #TODO
-            dh_table = dbtable.db_connection.table_dict[dbtable.name]
-            #print(dh_table.columns)
-            #print(data_transformation.transformed_df.columns)
-            #print(len(dh_table.columns))
-            #print(len(data_transformation.transformed_df.columns))
-            #print(len(data_transformation.transformed_df.iloc[0,2:]))
-            #print(len(pd.DataFrame(data_transformation.transformed_df.iloc[0,2:])))
-            index=0
-            print(df.columns,len(df.columns))
-            print(dh_table.columns,len(dh_table.columns))
-            print(df.iloc[index,0:].to_frame().T)
-            dh_table.insert_from_df(df.iloc[index,0:].to_frame().T)
-            db_instance.close_connection()
-        """
-
-        return code.format(db_table_name='"' + db_table_name + '"')
-
-    def export_imports(self, *args):
-        imports = ["from gui_layout_context import glc"]
-        return imports
-
 
 class DBInsertHandler(AbstractFunctionHandler):
+    """
+    Execute database insert on various databases.
+    """
     def __init__(self):
         self.icon_type = "DBInsert"
         self.fn_name = "DB Insert"
 
         self.type_category = ntcm.categories.database
         self.docs_category = DocsCategories.data_sources
+        self._init_docs()
+        
+    def _init_docs(self):
+        self.docs = Docs(description=self.__doc__)
+        self.docs.add_parameter_table_row(
+            title="Database",
+            name="db_name",
+            description="A name of the database containing the desired table.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Table name",
+            name="db_table_name",
+            description="Database table on which the query is executed.",
+            typ="Comboentry",
+            example=['employees', 'salaries_table']
+        )
+        self.docs.add_parameter_table_row(
+            title="Inserted data",
+            name="inserted_dataframe",
+            description="A Dataframe which should be inserted to db table.",
+            typ="DataFrame"
+        )
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         db_tables = []
@@ -424,11 +547,12 @@ class DBInsertHandler(AbstractFunctionHandler):
             databases = options["databases"]
         else:
             databases = []
+            
+        databases_names = [database["database_name"] for database in databases]
 
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("Database")
-        databases_names = [database["database_name"] for database in databases]
         fdl.comboentry(name="db_name", text="", options=databases_names, row=1)
         fdl.label("Table name")
         fdl.comboentry(name="db_table_name", text="", options=db_tables, row=2)
@@ -436,16 +560,46 @@ class DBInsertHandler(AbstractFunctionHandler):
         fdl.entry(name="inserted_dataframe", text="", input_types=["list", "dict", "DataFrame"], row=3)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
-
         return fdl
+    
+    def execute(self, node_detail_form):
+        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
+        db_name = parse_comboentry_input(input_value=db_name)
+        
+        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        db_table_name = parse_comboentry_input(input_value=db_table_name)
+        
+        inserted_dataframe = node_detail_form.get_chosen_value_by_name("inserted_dataframe", variable_handler)
 
-    def debug(self, dbtable_name, inserted_dataframe):
-        flog.debug("DB Insert")
-        flog.debug(f"DB Table Name = {dbtable_name}")
-        flog.debug(f"DF = {inserted_dataframe}")
+        self.direct_execute(db_name, db_table_name, inserted_dataframe)
+        
+    def direct_execute(self, db_name, dbtable_name, inserted_dataframe):
+        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
+        db_instance = db_table.db1
 
-    def parse_input(self, dbtable_name: str) -> str:
-        return dbtable_name[0] if len(dbtable_name) > 0 else ""
+        columns = None if isinstance(db_table, dh.MongoTable) else db_table.columns
+
+        try:
+            inserted_dataframe = self._convert_data_variable_to_df(inserted_dataframe, columns)
+        except ValueError:
+            flog.error('Wrong number of columns', self)
+            return
+
+        connect_to_db_and_run_operation("INSERT", db_instance, db_table, inserted_dataframe=inserted_dataframe)
+
+            # TEMPORARY DISABLED
+            # var_name = f"{dbtable.db_connection.database}.{dbtable.name}"
+            # update forloop variable if db table downloaded in platform
+            # if var_name in variable_handler.variables:
+            #     df = dh_table.select_to_df()
+
+        # TEMPORARY DISABLED
+        # if len(df) > 0:
+        #     variable_handler.new_variable(var_name, df)
+        #     #variable_handler.update_data_in_variable_explorer(glc)
+        #     glc.last_active_dataframe_icon = df_image  # needs to be after update node detail form (ask Tom) and after variable handler update
+        #     check if correct before uncommenting
+        #     variable_handler.last_active_dataframe_node_uid = node_detail_form.node_uid
 
     def _convert_data_variable_to_df(self, inserted_data, columns):
         converted_inserted_dataframe = inserted_data
@@ -460,111 +614,51 @@ class DBInsertHandler(AbstractFunctionHandler):
 
         return converted_inserted_dataframe
 
-    def direct_execute(self, db_name, dbtable_name, inserted_dataframe):
-
-
-        self.debug(dbtable_name, inserted_dataframe)
-        dbtable_name = self.parse_input(dbtable_name)
-
-        if dbtable_name:
-            matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
-
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-                db_instance = dbtable.db1
-
-                if type(dbtable) is dh.MongoTable:
-                    cols = None
-                else:
-                    cols = dbtable.columns
-
-                try:
-                    inserted_dataframe = self._convert_data_variable_to_df(inserted_dataframe, cols)
-                except ValueError:
-                    #glc.show_warning_popup_message('Wrong number of columns')
-                    flog.error('Wrong number of columns',self)
-                    return
-
-                connect_to_db_and_run_operation("INSERT", db_instance, dbtable, inserted_dataframe=inserted_dataframe)
-
-
-
-
-                    # TEMPORARY DISABLED
-                    # var_name = f"{dbtable.db_connection.database}.{dbtable.name}"
-                    # update forloop variable if db table downloaded in platform
-                    # if var_name in variable_handler.variables:
-                    #     df = dh_table.select_to_df()
-
-                # TEMPORARY DISABLED
-                # if len(df) > 0:
-                #     variable_handler.new_variable(var_name, df)
-                #     #variable_handler.update_data_in_variable_explorer(glc)
-                #     glc.last_active_dataframe_icon = df_image  # needs to be after update node detail form (ask Tom) and after variable handler update
-                #     check if correct before uncommenting
-                #     variable_handler.last_active_dataframe_node_uid = node_detail_form.node_uid
-
-
-    def execute(self, node_detail_form):
-        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
-        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
-        inserted_dataframe = node_detail_form.get_chosen_value_by_name("inserted_dataframe", variable_handler)
-
-        self.direct_execute(db_name, db_table_name, inserted_dataframe)
-
-        # used as data in pipeline_function - processing pipeline
-        """
-        filename=args[0]
-        df=pd.read_excel(filename)
-        print("DF",df)
-        with open("excel.pickle", 'wb') as pickle_file:
-            pickle.dump(df,pickle_file)
-        """
-
-    def export_code(self, node_detail_form):
-        db_table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("db_table_name")
-        inserted_dataframe = node_detail_form.get_variable_name_or_input_value_by_element_name("inserted_dataframe")
-
-        code = """
-        df = glc.tables.elements[0].df
-
-
-        matching_dbtables = [x for x in glc.dbtables if x.name == {dbtable_name}]
-
-        if len(matching_dbtables) == 1:
-            dbtable = matching_dbtables[0]
-            print(dbtable,dbtable.name)
-            db_instance=dbtable.db_connection.db_instance
-            db_instance.connect_remotely() #TODO
-            dh_table = dbtable.db_connection.table_dict[dbtable.name]
-            #print(dh_table.columns)
-            #print(data_transformation.transformed_df.columns)
-            #print(len(dh_table.columns))
-            #print(len(data_transformation.transformed_df.columns))
-            #print(len(data_transformation.transformed_df.iloc[0,2:]))
-            #print(len(pd.DataFrame(data_transformation.transformed_df.iloc[0,2:])))
-            index=0
-            print(df.columns,len(df.columns))
-            print(dh_table.columns,len(dh_table.columns))
-            print(df.iloc[index,0:].to_frame().T)
-            dh_table.insert_from_df(df.iloc[index,0:].to_frame().T)
-            db_instance.close_connection()
-        """
-
-        return code.format(dbtable_name='"' + db_table_name + '"')
-
-    def export_imports(self, *args):
-        imports = ["from gui_layout_context import glc"]
-        return imports
-
-
 class DBDeleteHandler(AbstractFunctionHandler):
+    """
+    Execute database delete on various databases. Supports one condition. For more advanced queries use DB Query.
+    """
     def __init__(self):
         self.icon_type = "DBDelete"
         self.fn_name = "DB Delete"
 
         self.type_category = ntcm.categories.database
         self.docs_category = DocsCategories.data_sources
+        self._init_docs()
+        
+    def _init_docs(self):
+        self.docs = Docs(description=self.__doc__)
+        self.docs.add_parameter_table_row(
+            title="Database",
+            name="db_name",
+            description="A name of the database containing the desired table.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="From",
+            name="db_table_name",
+            description="Database table on which the query is executed.",
+            typ="Comboentry",
+            example=['employees', 'salaries_table']
+        )
+        self.docs.add_parameter_table_row(
+            title="Column",
+            name="column_name",
+            description="The column on which the condition is evaluated.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Operator",
+            name="where_operator",
+            description="Condition operator.",
+            typ="Combobox",
+            example=["=", "<", "<=", ">", ">=", "<>", "IN"]
+        )
+        self.docs.add_parameter_table_row(
+            title="Value",
+            name="value",
+            description="A value against which the condition is evaluated."
+        )
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         operators = ["=", "<", ">", ">=", "<=", "<>", " IN "]
@@ -592,74 +686,95 @@ class DBDeleteHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
-
-    def debug(self, dbtable_name, column_name, operator, value):
-        flog.debug("DB Delete")
-        flog.debug(f"DB Table Name = {dbtable_name}")
-        flog.debug(f"column_name = {column_name}")
-        flog.debug(f"operator = {operator}")
-        flog.debug(f"value = {value}")
-
-    def parse_input(self, dbtable_name: str) -> str:
-        return dbtable_name[0] if len(dbtable_name) > 0 else ""
-
-
-    def direct_execute(self, db_name,  dbtable_name, column_name, operator, value):
-
-        self.debug(dbtable_name, column_name, operator, value)
-        dbtable_name = self.parse_input(dbtable_name)
-
-        if dbtable_name:
-            matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
-
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-                db_instance = dbtable.db1
-
-                if type(db_instance) is dh.MongoDb:
-                    value = parse_float_mongo(value)
-                    where_statement = get_condition_mongo(column_name, value, operator)
-                else:
-                    value = parse_float_sql(value)
-                    where_statement = f"{column_name[0]}{operator}{value}"
-                    if where_statement == "*='*'": #delete all data from table -> column_name = ["*"], operator = "=", value = '*'
-                        where_statement = None
-
-                connect_to_db_and_run_operation("DELETE", db_instance, dbtable, where_statement=where_statement)
-
-
-                    # var_name = f"DB.{dbtable.name}"
-                    # if var_name in variable_handler.variables:
-                    #     df = pd.concat([variable_handler.variables[var_name].value, inserted_dataframe])
-                    #     variable_handler.new_variable(var_name, df)
-                    #     #variable_handler.update_data_in_variable_explorer(glc)
-
+    
     def execute(self, node_detail_form):
-        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
+        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
+        db_name = parse_comboentry_input(input_value=db_name)
+        
         db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        db_table_name = parse_comboentry_input(input_value=db_table_name)
+        
         column_name = node_detail_form.get_chosen_value_by_name("column_name", variable_handler)
+        column_name = parse_comboentry_input(input_value=column_name)
+        
         operator = node_detail_form.get_chosen_value_by_name("operator", variable_handler)
+        operator = parse_comboentry_input(input_value=operator)
+        
         value = node_detail_form.get_chosen_value_by_name("value", variable_handler)
 
         self.direct_execute(db_name, db_table_name, column_name, operator, value)
 
-    def export_code(self, node_detail_form):
-        db_table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("db_table_name")
-        column_name = node_detail_form.get_variable_name_or_input_value_by_element_name("column_name")
-        operator = node_detail_form.get_variable_name_or_input_value_by_element_name("operator")
-        value = node_detail_form.get_variable_name_or_input_value_by_element_name("value")
+    def direct_execute(self, db_name,  dbtable_name, column_name, operator, value):
+        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
+        db_instance = db_table.db1
+        
+        value = parse_float_db(db_instance=db_instance, value=value)
 
-    def export_imports(self, *args):
-        pass
+        if type(db_instance) is dh.MongoDb:
+            where_statement = get_condition_mongo(column_name, value, operator)
+        else:
+            where_statement = f"{column_name}{operator}{value}"
+            if where_statement == "*='*'": #delete all data from table -> column_name = ["*"], operator = "=", value = '*'
+                where_statement = None
 
+        connect_to_db_and_run_operation("DELETE", db_instance, db_table, where_statement=where_statement)
 
 class DBUpdateHandler(AbstractFunctionHandler):
+    """
+    Execute database update on various databases. Supports one condition. For more advanced queries use DB Query.
+    """
     def __init__(self):
         self.icon_type = "DBUpdate"
         self.fn_name = "DB Update"
 
         self.type_category = ntcm.categories.database
         self.docs_category = DocsCategories.data_sources
+        self._init_docs()
+        
+    def _init_docs(self):
+        self.docs = Docs(description=self.__doc__)
+        self.docs.add_parameter_table_row(
+            title="Database",
+            name="db_name",
+            description="A name of the database containing the desired table.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Table name",
+            name="db_table_name",
+            description="Database table on which the query is executed.",
+            typ="Comboentry",
+            example=['employees', 'salaries_table']
+        )
+        self.docs.add_parameter_table_row(
+            title="(Set) Column",
+            name="set_column_name",
+            description="The column in which the value is updated.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Value",
+            name="set_value",
+            description="A value inserted to a given column in rows comforting a given condition"
+        )
+        self.docs.add_parameter_table_row(
+            title="(Where) Column",
+            name="where_column_name",
+            description="The column on which the condition is evaluated.",
+            typ="Comboentry"
+        )
+        self.docs.add_parameter_table_row(
+            title="Operator",
+            name="where_operator",
+            description="Condition operator.",
+            typ="Combobox",
+            example=["=", "<", "<=", ">", ">=", "<>", "IN"]
+        )
+        self.docs.add_parameter_table_row(
+            title="Value",
+            name="where_value",
+            description="A value against which the condition is evaluated."
+        ) 
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         operators = ["=", "<", ">", ">=", "<=", "<>", " IN "]
@@ -692,86 +807,64 @@ class DBUpdateHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
+    
+    def execute(self, node_detail_form):
+        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
+        db_name = parse_comboentry_input(input_value=db_name)
+        
+        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        db_table_name = parse_comboentry_input(input_value=db_table_name)
+        
+        set_column_name = node_detail_form.get_chosen_value_by_name("set_column_name", variable_handler)
+        set_column_name = parse_comboentry_input(input_value=set_column_name)
+        
+        set_value = node_detail_form.get_chosen_value_by_name("set_value", variable_handler)
+        
+        where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name", variable_handler)
+        where_column_name = parse_comboentry_input(input_value=where_column_name)
+        
+        where_operator = node_detail_form.get_chosen_value_by_name("where_operator", variable_handler)
+        where_value = node_detail_form.get_chosen_value_by_name("where_value", variable_handler)
 
-    def debug(self, dbtable_name, set_column_name, set_value, where_column_name, where_operator, where_value):
-        flog.debug("DB Update")
-        flog.debug(f"DB Table Name = {dbtable_name}")
-        flog.debug(f"set_column_name = {set_column_name}")
-        flog.debug(f"set_value = {set_value}")
-        flog.debug(f"where_column_name = {where_column_name}")
-        flog.debug(f"where_operator = {where_operator}")
-        flog.debug(f"where_value = {where_value}")
+        self.direct_execute(db_name, db_table_name, set_column_name, set_value, where_column_name, where_operator, where_value)
+        
+    def direct_execute(self, db_name, dbtable_name, set_column_name, set_value, where_column_name, where_operator, where_value):
+        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
+        db_instance = db_table.db1
 
-    def parse_input(self, dbtable_name: str) -> str:
-        return dbtable_name[0] if len(dbtable_name) > 0 else ""
 
-    def _get_mongo_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator):
-        set_value = parse_float_sql(set_value)
+        if type(db_instance) is dh.MongoDb:
+            set_statement,where_statement = self._get_mongo_update_statements(db_instance, db_table, set_value, 
+                                                                              set_column_name, where_value, 
+                                                                              where_column_name, where_operator)
 
-        set_statement = {"$set": {set_column_name[0]: set_value}}
+        else:
+            set_statement,where_statement = self._get_sql_update_statements(db_instance, db_table, set_value, 
+                                                                            set_column_name, where_value, where_column_name, 
+                                                                            where_operator)
+
+        connect_to_db_and_run_operation("UPDATE", db_instance, db_table, set_statement=set_statement, 
+                                        where_statement=where_statement)
+
+    def _get_mongo_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, 
+                                     where_column_name, where_operator):
+        set_value = _parse_float_sql(set_value)
+
+        set_statement = {"$set": {set_column_name: set_value}}
 
         where_statement = get_condition_mongo(where_column_name, where_value, where_operator)
 
         return set_statement, where_statement
 
-    def _get_sql_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator):
-        set_value = parse_float_sql(set_value)
-        set_statement = f"{set_column_name[0]}={set_value}"
+    def _get_sql_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, 
+                                   where_column_name, where_operator):
+        set_value = _parse_float_sql(set_value)
+        set_statement = f"{set_column_name}={set_value}"
 
-        where_value = parse_float_sql(where_value)
-        where_statement = f"{where_column_name[0]}{where_operator}{where_value}"
+        where_value = _parse_float_sql(where_value)
+        where_statement = f"{where_column_name}{where_operator}{where_value}"
 
         return set_statement, where_statement
-
-
-    def direct_execute(self, db_name, dbtable_name, set_column_name, set_value, where_column_name, where_operator, where_value):
-        self.debug(dbtable_name, set_column_name, set_value, where_column_name, where_operator, where_value)
-        dbtable_name = self.parse_input(dbtable_name)
-
-        if dbtable_name:
-            matching_dbtables = get_name_matching_db_tables(dbtable_name, db_name)
-
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-                db_instance = dbtable.db1
-
-
-                if type(db_instance) is dh.MongoDb:
-                    set_statement,where_statement = self._get_mongo_update_statements(db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator)
-
-                else:
-                    set_statement,where_statement = self._get_sql_update_statements(db_instance, dbtable, set_value, set_column_name, where_value, where_column_name, where_operator)
-
-                connect_to_db_and_run_operation("UPDATE", db_instance, dbtable, set_statement=set_statement, where_statement=where_statement)
-
-                    # var_name = f"DB.{dbtable.name}"
-                    # if var_name in variable_handler.variables:
-                    #     df = pd.concat([variable_handler.variables[var_name].value, inserted_dataframe])
-                    #     variable_handler.new_variable(var_name, df)
-                    #     #variable_handler.update_data_in_variable_explorer(glc)
-
-    def execute(self, node_detail_form):
-        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
-        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
-        set_column_name = node_detail_form.get_chosen_value_by_name("set_column_name", variable_handler)
-        set_value = node_detail_form.get_chosen_value_by_name("set_value", variable_handler)
-        where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name", variable_handler)
-        where_operator = node_detail_form.get_chosen_value_by_name("where_operator", variable_handler)
-        where_value = node_detail_form.get_chosen_value_by_name("where_value", variable_handler)
-
-        self.direct_execute(db_name, db_table_name, set_column_name, set_value, where_column_name, where_operator, where_value)
-
-    def export_code(self, node_detail_form):
-        db_table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("db_table_name")
-        set_column_name = node_detail_form.get_variable_name_or_input_value_by_element_name("set_column_name")
-        set_value = node_detail_form.get_variable_name_or_input_value_by_element_name("set_value")
-        where_column_name = node_detail_form.get_variable_name_or_input_value_by_element_name("where_column_name")
-        where_operator = node_detail_form.get_variable_name_or_input_value_by_element_name("where_operator")
-        where_value = node_detail_form.get_variable_name_or_input_value_by_element_name("where_value")
-
-    def export_imports(self, *args):
-        pass
-
 
 class AnalyzeDbTableHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -788,10 +881,11 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
         else:
             databases = []
 
+        databases_names = [database["database_name"] for database in databases]
+        
         fdl = FormDictList()
         fdl.label("Analyze DB Table")
         fdl.label("Database")
-        databases_names = [database["database_name"] for database in databases]
         fdl.comboentry(name="db_name", text="", options=databases_names, row=1)
         fdl.label("Table name")
         fdl.combobox(name="db_table_name", options=db_tables, multiselect_indices=None, default=" ", row=2)
@@ -800,53 +894,20 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
-
-    def direct_execute(self,db_name, table_name, new_var_name, dbtable=None):
-
-        if not dbtable:
-            matching_dbtables = get_name_matching_db_tables(table_name, db_name)
-            if len(matching_dbtables) == 1:
-                dbtable = matching_dbtables[0]
-            else:
-                return
-
-        column_type_pair_dict = dict(zip(dbtable.columns, dbtable.types))
-
-        variable_handler.new_variable(new_var_name, column_type_pair_dict)
-        #variable_handler.update_data_in_variable_explorer(glc)
-
-    def execute_with_params(self, params):
-
-        table_name = params["db_table_name"]
-        new_var_name = params["new_var_name"]
-        flog.info(f'execute table_name = {table_name}')
-        self.direct_execute(table_name, new_var_name)
-
+    
     def execute(self, node_detail_form):
-        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)[0]
+        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)
+        db_name = parse_comboentry_input(input_value=db_name)
+        
         table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
         self.direct_execute(db_name, table_name, new_var_name)
 
-    def export_code(self, node_detail_form):
-        table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("db_table_name")
-        new_var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_name", is_input_variable_name=True)
-
-        code = """
-        """
-
-        return code
-
-    def export_imports(self, *args):
-        imports = []
-        return imports
-
-    def make_flpl_node_dict(self, line_dict: dict) -> dict:
-        node = {"type": "UseKey",
-                "params": {"code_label": {"variable": None, "value": None}}}  # TODO: finish the node var
-        return node
-
+    def direct_execute(self,db_name, table_name, new_var_name):
+        db_table = get_db_table_from_db(table_name=table_name, db_name=db_name)
+        column_type_pair_dict = dict(zip(db_table.columns, db_table.types))
+        variable_handler.new_variable(new_var_name, column_type_pair_dict)
 
 class CreateMigrationFileHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -917,24 +978,6 @@ class CreateMigrationFileHandler(AbstractFunctionHandler):
             migrator.migration_list = migration_list
             migrator.migration_list_to_json(filename)
 
-
-
-    def export_code(self, node_detail_form):
-        table_name = node_detail_form.get_variable_name_or_input_value_by_element_name("table_name")
-        old_structure_dict = node_detail_form.get_variable_name_or_input_value_by_element_name("old_structure_dict")
-        new_structure_dict = node_detail_form.get_variable_name_or_input_value_by_element_name("new_structure_dict")
-        filename = node_detail_form.get_variable_name_or_input_value_by_element_name("filename")
-        save_to_file = node_detail_form.get_variable_name_or_input_value_by_element_name("save_to_file")
-
-        code = ""
-
-        return code
-
-    def export_imports(self, *args):
-        imports = []
-        return imports
-
-
 class RunMigrationFileHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = 'RunMigrationFile'
@@ -951,9 +994,6 @@ class RunMigrationFileHandler(AbstractFunctionHandler):
         fdl.combobox(name="db_name", options=options, row=1)
         fdl.label("Migration list:")
         fdl.entry(name="migration_list", text="migration-1", input_types=["str", "list"], row=2)
-        # fdl.label("Migration file name:")
-        # fdl.entry(name="filename", text="migration-1", input_types=["str"], row=3)
-
         fdl.button(function=self.open_migration_file, function_args=node_detail_form, text="Load file", name="lookup_json_file")
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
@@ -972,26 +1012,7 @@ class RunMigrationFileHandler(AbstractFunctionHandler):
         migration_list = node_detail_form.get_chosen_value_by_name("migration_list", variable_handler)
 
         self.direct_execute(db_name, migration_list)
-
-    def _force_execute(self, args):
-        image = args[0]
-        item_detail_form = image.item_detail_form
-
-        db_name = item_detail_form.get_chosen_value_by_name('db_name', variable_handler)
-        migration_list = item_detail_form.get_chosen_value_by_name('migration_list', variable_handler)
-
-        self.direct_execute(db_name, migration_list)
-
-    def execute_with_params(self, params):
-
-        db_name = params["db_name"]
-        filename = params["filename"]
-        migration_list = params["migration_list"]
-
-        self.direct_execute(db_name, filename)
-
-
-
+        
     def direct_execute(self, db_name, migration_list):
 
         db_connection = duh.get_db_connection(db_name)
@@ -1009,20 +1030,6 @@ class RunMigrationFileHandler(AbstractFunctionHandler):
             db_instance.migrator.migrate_from_json(migration_list)
 
         db_instance.close_connection()
-
-
-    def export_code(self, node_detail_form):
-        db_name = node_detail_form.get_variable_name_or_input_value_by_element_name("db_name")
-        migration_list = node_detail_form.get_variable_name_or_input_value_by_element_name("migration_list")
-
-        code = """
-        """
-
-        return code
-
-    def export_imports(self, *args):
-        imports = []
-        return imports
 
 class CopyDbStructureHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -1066,16 +1073,12 @@ class CopyDbStructureHandler(AbstractFunctionHandler):
         db_connection_destination.test_database_connection()
 
         if db_connection_origin is None or db_connection_destination is None:
-            #glc.show_warning_popup_message("Db connection not found")
             flog.error("Db connection not found",self)
             return
 
         if isinstance(db_connection_destination.db_instance, dh.MongoDb):
-            #glc.show_warning_popup_message("Cannot copy structure to Mongo")
             flog.error("Db connection not found",self)
             return
-
-
 
         origin_tables = list(db_connection_origin.table_dict.keys())
         destination_tables = list(db_connection_destination.table_dict.keys())
@@ -1112,10 +1115,6 @@ class CopyDbStructureHandler(AbstractFunctionHandler):
     #     if isinstance(db_connection.db_instance, dh.Mysqldb):
     #         return analyzed_table
     #     elif isinstance(db_connection.db_instance, dh.PostgresDb):
-
-
-
-
 
 class CopyDbDataHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -1159,7 +1158,6 @@ class CopyDbDataHandler(AbstractFunctionHandler):
         db_connection_destination.test_database_connection()
 
         if db_connection_origin is None or db_connection_destination is None:
-            #glc.show_warning_popup_message("Db connection not found")
             flog.error("Db connection not found",self)
             return
 
@@ -1176,7 +1174,6 @@ class CopyDbDataHandler(AbstractFunctionHandler):
         destination_tables = set(db_connection_destination.table_dict.keys())
 
         if not origin_tables.issubset(destination_tables):
-            #glc.show_warning_popup_message("Error")
             flog.error("Error",self)
             
             return
@@ -1189,7 +1186,6 @@ class CopyDbDataHandler(AbstractFunctionHandler):
             destination_table_structure = dict(zip(destination_table.columns, destination_table.types))
 
             if origin_table_structure != destination_table_structure:
-                #glc.show_warning_popup_message(f"Wrong structure for table {table_name}, please migrate structure first")
                 flog.error(f"Wrong structure for table {table_name}, please migrate structure first",self)
                 
                 continue
@@ -1200,8 +1196,6 @@ class CopyDbDataHandler(AbstractFunctionHandler):
             #TODO: discuss what to do with duplicate ids (maybe on DUPLICATE KEY UPDATE? )
 
             destination_table.insert_from_df(df_to_copy, insert_id=True)
-
-
 
     def _copy_mongo_data(self, db_connection_origin, db_connection_destination):
 
@@ -1226,27 +1220,12 @@ class CopyDbDataHandler(AbstractFunctionHandler):
             destination_table.delete()
             destination_table.insert_from_df(df_to_copy, insert_id=insert_id)
 
-
     def _clear_mongo_dataframe_from_ids(self, df_to_copy):
         if "_id" in df_to_copy.columns:
             df_to_copy = df_to_copy.drop(["_id"], axis=1)
         if "id" in df_to_copy.columns:
             df_to_copy = df_to_copy.drop(["id"], axis=1)
         return df_to_copy
-
-
-
-
-def get_db_table(table_name):
-    matching_dbtables = [db_table for name, db_table in get_connected_db_tables().items() if name == table_name]
-    if len(matching_dbtables) == 1:
-        dbtable = matching_dbtables[0]
-        return dbtable
-    else:
-        #glc.show_warning_popup_message("Error")
-        flog.error("Error")
-        
-        return
 
 def get_table_structure(dbtable=None):
     if dbtable is None:
@@ -1336,100 +1315,6 @@ def _convert_deepdiff_dict_into_migration_list(table_name, deepdiff_dict) -> lis
     #                                                      "column_type": column_new_type}})
     #
     # return migration_list
-
-
-
-
-def parse_float_db(db_instance, value):
-    if type(db_instance) is dh.MongoDb:
-        value = parse_float_mongo(value)
-    else:
-        value = parse_float_sql(value)
-
-    return value
-
-
-def parse_float_mongo(value):
-    try:
-        value = float(value)
-    except (ValueError, TypeError):
-        pass
-
-    return value
-
-
-def parse_float_sql(value):
-    try:
-        value = float(value)
-    except (ValueError, TypeError):
-        value = "'" + str(value) + "'"
-
-    return value
-
-
-def get_condition_mongo(column_name, value, operator):
-    condition = {}
-    if column_name and value and operator:
-        if operator == " IN ":
-            value = ast.literal_eval(value)
-
-        condition = {column_name[0]: {dh.MONGO_OPERATOR_DICT[operator]: value}}
-
-    return condition
-
-
-def generate_sql_condition(cols_to_be_selected, dbtable_name, column_name, value, operator, limit, dataset=None):
-    """
-    Generates an SQL query string with optional filtering and limit.
-
-    Args:
-    cols_to_be_selected (str): Comma-separated column names.
-    dbtable_name (str): Database table name.
-    column_name (str): Filter column name.
-    value (str, int, float): Value for comparison.
-    operator (str): SQL comparison operator (e.g., "=", "<>", ">", "<", ">=", "<=").
-    limit (int): Maximum number of rows returned.
-    dataset (str, optional): Dataset name for BigQuery tables.
-
-    Returns:
-    query (str): Generated SQL query string.
-    """
-
-    if dataset is not None:
-        query = f"SELECT {cols_to_be_selected} FROM {dataset}.{dbtable_name}"
-    else:
-        query = f"SELECT {cols_to_be_selected} FROM {dbtable_name}"
-
-    if column_name and operator and value:
-        where_statement = f"{column_name[0]}{operator}{value}"
-        query += f" WHERE {where_statement}"
-    if limit:
-        query += f" LIMIT {limit}"
-    query += ";"
-
-    return query
-
-
-def connect_to_db_and_run_operation(operation, db_instance, dbtable, **kwargs):
-    with db_instance.connect_to_db():
-        try:
-            if type(db_instance) is dh.MongoDb:
-                dbtable.update_collection()
-
-            if operation == "DELETE":
-                dbtable.delete(kwargs['where_statement'])
-
-            elif operation == "INSERT":
-                 dbtable.insert_from_df(kwargs['inserted_dataframe'])
-
-            elif operation == "UPDATE":
-                dbtable.update(kwargs['set_statement'], kwargs['where_statement'])
-
-        except AssertionError:
-            flog.error(f"Different number of imputed columns")
-        except Exception as e:
-            flog.error(f"{operation} ERROR: {e}")
-
 
 database_handlers_dict = {
     "DBSelect": DBSelectHandler(),
