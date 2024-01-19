@@ -121,12 +121,61 @@ class DeleteUidObject(BaseModel):
 #     project_uid: str = ""
 #     last_active_pipeline_uid: Optional[str] = None
 
+class JobSortableColumnsEnum(str, Enum):
+    STATUS = "status"
+    CREATED_AT = "created_at"
+    STARTED_AT = "started_at"
+    COMPLETED_AT = "completed_at"
+    PIPELINE_UID = "pipeline_uid"
+
+
+class JobStatusEnum(str, Enum):
+    QUEUED = "QUEUED"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    PAUSED = "PAUSED"
+    CANCELLING = "CANCELLING"  # Job in the process of being canceled, but not yet canceled
+    CANCELED = "CANCELED"
+
 
 class PipelineJobStats(BaseModel):
     webpage_count: int
     webpage_avg_cycle_time: float
     node_count: int
     node_avg_cycle_time: float
+
+
+class APINodeJob(BaseModel):
+    uid: str
+    status: JobStatusEnum
+    created_at: UTCDatetime
+    completed_at: Optional[UTCDatetime] = None
+    message: Optional[str] = None
+    pipeline_uid: str  # TODO: Remove when PrototypeJobs are implemented
+    pipeline_job_uid: Optional[str] = None # TODO: Change to required when PrototypeJobs are implemented
+
+
+class APIOperationJob(BaseModel):
+    uid: str
+    status: JobStatusEnum
+    created_at: UTCDatetime
+    completed_at: Optional[UTCDatetime] = None
+    message: Optional[str] = None
+    prototype_job_uid: str
+
+
+class APIPipelineJob(BaseModel):
+    uid: str
+    machine_uid: Optional[str] = None
+    status: JobStatusEnum
+    created_at: UTCDatetime
+    started_at: Optional[UTCDatetime] = None
+    completed_at: Optional[UTCDatetime] = None
+    message: Optional[str] = None
+    pipeline_uid: str
+    jobs: list[APINodeJob] = Field(default_factory=list)
+    stats: Optional[PipelineJobStats] = None
 
 
 class TriggerFrequencyEnum(str, Enum):
