@@ -104,7 +104,7 @@ class ScrapingUtilitiesHandler:
         }
 
         # For now DocrawlClient should follow singleton pattern, meaning it should be initialised only once and here
-        self.webscraping_client = DocrawlClient(kv_redis=kv_redis, kv_redis_keys=kv_redis_keys)
+        self.webscraping_client = DocrawlClient(kv_redis=kv_redis, kv_redis_keys=kv_redis_keys, number_of_spawn_browsers=1)
         try:
             config = configparser.ConfigParser()
             config.read(Path(__file__).parent.parent.parent.absolute() / 'config' / 'scraping_conf.ini')
@@ -287,11 +287,12 @@ class ScrapingUtilitiesHandler:
             "’": "'",
             "‘": "'",
         }
+        if xpath is not None:
+            xpath_transformed = [apostrophes_transform[x] if x in apostrophes_transform.keys() else x for x in list(xpath)]
     
-        xpath_transformed = [apostrophes_transform[x] if x in apostrophes_transform.keys() else x for x in list(xpath)]
-    
-        checked_xpath = ''.join(xpath_transformed)
-    
+            checked_xpath = ''.join(xpath_transformed)
+        else:
+            checked_xpath = None
         return checked_xpath
 
     def take_and_load_screenshot(self):
@@ -605,11 +606,12 @@ class ScrapingUtilitiesHandler:
 
         xpath = self.detect_cookies_xpath_preparation()
     
+        self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png'))) #needs to run before the scanner so there is enough time for the parallel thread
         self.webscraping_client.scan_web_page(incl_tables=True, incl_bullets=True, incl_texts=True,
                                        incl_headlines=True, incl_links=True, incl_images=True,
-                                       incl_buttons=True, by_xpath=None, cookies_xpath=xpath)
+                                       incl_buttons=True, by_xpath=None, cookies_xpath=xpath) #Duration: ~3s
     
-        webpage_elements = self.update_webpage_elements(refresh_browser_view_elements=False)
+        webpage_elements = self.update_webpage_elements(refresh_browser_view_elements=False) #Duration: ~ 0s
 
         cookies_elements, rest_elements = [], []
 
@@ -626,8 +628,8 @@ class ScrapingUtilitiesHandler:
 
             # Close cookies popup
             self.webscraping_client.click_xpath(button_xpath)
+            self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png'))) #TODO: The scanning finishes before the screenshot thread - need to either 1) refresh screenshot multiple times in FE (optimal), or 2) run this not in thread when cookies detected
 
-        self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png')))
 
         # [::-1] needed to ensure that FE rectangles are not overlapped (bigger elements do not cover smaller)
         return rest_elements[::-1]
@@ -653,13 +655,23 @@ class ScrapingUtilitiesHandler:
 
     def extract_element_data(self, element: dict, extract_text_from_link: bool = False):
         element_type = element['type']
-
-        if element_type in [ElementType.LINK, ElementType.BUTTON]:
-            element_data = element['data']['text'] if extract_text_from_link else element['data']['attributes'].get('href')
-        elif element_type == ElementType.IMAGE:
-            element_data = element['data']['attributes'].get('src')
+        
+        if type(element["data"])==str:
+            #old approach but still might be used when find similar items not called - requires edits on Frontend
+            flog.warning('Deprecation warning: Extracted element is not in correct format, it should be dictionary with "tag_name", "text" and "attributes" key', class_instance=self)
+            element_data = element['data']
         else:
-            element_data = element['data']['text']
+            #in future this is preferred            
+            assert "text" in element["data"].keys()
+            assert "attributes" in element["data"].keys()
+            assert "tag_name" in element["data"].keys()
+            
+            if element_type in [ElementType.LINK, ElementType.BUTTON]:
+                element_data = element['data']['text'] if extract_text_from_link else element['data']['attributes'].get('href')
+            elif element_type == ElementType.IMAGE:
+                element_data = element['data']['attributes'].get('src')
+            else:
+                element_data = element['data']['text']
 
         return element_data
     
