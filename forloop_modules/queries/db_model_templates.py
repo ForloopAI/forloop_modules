@@ -256,7 +256,7 @@ class APIVariableToBeAssignedToFile(BaseModel):
     
 
 class APILoadScriptViaNode(BaseModel):
-    node_uid: str = ""
+    node_uid: str = "0"
     project_uid: str = "0"
 
 class APIScript(BaseModel):

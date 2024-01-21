@@ -10,9 +10,11 @@ import forloop_modules.queries.node_context_requests_backend as ncrb
 from forloop_modules.globals.active_entity_tracker import aet
 
 class ScriptNotFoundError(Exception):
+    """Raised when no script is found for a given `project_uid`."""
     pass
 
 class AmbiguousRequestError(Exception):
+    """Raised when multiple scripts with a same name are found for a given `project_uid`."""
     pass
 
 def create_new_script(script_name: str = "untitled", text: str = ""):
