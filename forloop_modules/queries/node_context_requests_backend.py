@@ -14,7 +14,7 @@ import forloop_modules.flog as flog
 
 from forloop_modules.globals.active_entity_tracker import aet
 
-from forloop_modules.queries.db_model_templates import APIProject, APITrigger, APIDataset, APIDbTable, APIScript, APIFile, APIDatabase, APIPipeline, APIEdge, APIVariable, APIPopup
+from forloop_modules.queries.db_model_templates import APIProject, APITrigger, APIDataset, APIDbTable, APIScript, APIFile, APIDatabase, APIPipeline, APIEdge, APIVariable, APIPopup, APIInitialVariable
 
 if sys.platform == "darwin":  # MAC OS
     config_path = 'config/server_config_remote.ini'
@@ -39,7 +39,8 @@ resources = {
     "variables": ["get_all", "get", "new", "delete"],
     "popups": ["get_all", "get", "delete"],
     "nodes": ["get_all", "get", "delete"],# "get", "new", "delete", "update"],
-    "pipelines": ["get_all", "get", "new", "delete", "update"]
+    "pipelines": ["get_all", "get", "new", "delete", "update"],
+    "initial_variables": ["get_all", "get", "new", "delete"]
 }
 
 
@@ -55,6 +56,7 @@ db_api_body_template ={"projects":APIProject,
                 "edges": APIEdge,
                 "variables": APIVariable,
                 "popups": APIPopup,
+                "initial_variables": APIInitialVariable
                 }
 
 #! Auxiliary function - sets project_uid and pipeline_uid into factory functions' payloads
@@ -617,6 +619,51 @@ def update_variable_by_uid(variable_uid: str, name: str, value: Any, is_result: 
 #     flog.info(f'Updated Variable response: {response.text}')
 
 #     return response
+
+
+##### INITIAL VARIABLES #####
+
+
+def get_initial_variable_by_name(uid: str):
+    pipeline_uid = aet.active_pipeline_uid
+    url = f'{BASE_API}/initial_variables?name={uid}&pipeline_uid={pipeline_uid}'
+
+    response = requests.get(url)
+    response.raise_for_status()
+    return response
+
+
+def delete_initial_variable_by_uid(uid):
+    response = requests.delete(f'{BASE_API}/initial_variables/{uid}')
+    response.raise_for_status()
+    return response
+
+
+def delete_all_initial_variables():
+    pipeline_uid = aet.active_pipeline_uid
+    response = requests.delete(f'{BASE_API}/pipelines/{pipeline_uid}/initial_variables')
+    response.raise_for_status()
+    return response
+
+
+def update_initial_variable_by_uid(
+    uid: str, name: str, value: Any, type=None, size: Optional[int] = None
+):
+    project_uid = aet.project_uid
+    pipeline_uid = aet.active_pipeline_uid
+
+    if type is None:
+        for std_type in [str, int, list, dict, float, bool]:
+            if isinstance(value, std_type):
+                type = std_type.__name__
+
+    payload = {
+        "name": name, "value": value, "type": type, "size": size, "project_uid": project_uid,
+        "pipeline_uid": pipeline_uid
+    }
+    response = requests.put(f"{BASE_API}/initial_variables/{uid}", json=payload)
+    response.raise_for_status()
+    return response
 
 
 ############# Dbtables ###############
