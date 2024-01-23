@@ -426,6 +426,7 @@ class InitialVariableModel(BaseModel):
     uid: str = "0"
     name: str = ""
     value: Any = "" # strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None (anything evaluatable by ast.literal_eval)
+    is_result: bool = False  # TODO: Remove when PrototypeJobs are implemented
     type: Optional[str] = None # Type can be enforced or autoinferred
     size: Optional[int] = None
     pipeline_uid: str = "0"

@@ -647,7 +647,7 @@ def delete_all_initial_variables():
 
 
 def update_initial_variable_by_uid(
-    uid: str, name: str, value: Any, type=None, size: Optional[int] = None
+    variable_uid: str, name: str, value: Any, is_result: bool, type=None, size: Optional[int] = None  # TODO: Remove when PrototypeJobs are implemented
 ):
     project_uid = aet.project_uid
     pipeline_uid = aet.active_pipeline_uid
@@ -659,9 +659,9 @@ def update_initial_variable_by_uid(
 
     payload = {
         "name": name, "value": value, "type": type, "size": size, "project_uid": project_uid,
-        "pipeline_uid": pipeline_uid
+        "pipeline_uid": pipeline_uid, "is_result": is_result  # TODO: Remove when PrototypeJobs are implemented
     }
-    response = requests.put(f"{BASE_API}/initial_variables/{uid}", json=payload)
+    response = requests.put(f"{BASE_API}/initial_variables/{variable_uid}", json=payload)
     response.raise_for_status()
     return response
 
