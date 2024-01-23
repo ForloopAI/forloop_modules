@@ -10,7 +10,7 @@ import pandas as pd
 import ast 
 import inspect
 
-from typing import Dict, Set, Any
+from typing import Dict, Set, Any, Literal
 from dataclasses import dataclass, field
 
 import forloop_modules.flog as flog
@@ -22,6 +22,7 @@ from forloop_modules.utils.pickle_serializer import load_data_dict_from_pickle_f
 from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.redis.redis_connection import kv_redis
 from forloop_modules.utils.definitions import JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES_AS_STRINGS, REDIS_STORED_TYPES, REDIS_STORED_TYPES_AS_STRINGS
+from forloop_modules.utils.various import is_value_serializable, is_value_redis_compatible
 #import src.forloop_code_eval as fce
 import forloop_modules.queries.node_context_requests_backend as ncrb
 
@@ -45,7 +46,7 @@ class DataFrameWizardScanAnalysis:
     id_columns: Set[str] = field(default_factory=set)
     result: Dict = field(default_factory=dict)
 
-    
+
 class LocalVariableHandler:
     def __init__(self):
         self.is_refresh_needed = False  # When VariableHandler gets set with a button, this is toggled to True - Frontend then can react to state changes
@@ -57,12 +58,35 @@ class LocalVariableHandler:
         self.variables_to_be_created_in_subpipeline = []
         self.variables={}
         self.variable_uid_variable_dict={} #ANALOGY of dicts in GLC, new implementation - contains nodes in API -> reflecting status of server nodes via API
-        
+
+        self._handler_mode: Literal["initial_variable", "variable"] = "initial_variable"
+
+    def get_variable_redis_name(self, name: str) -> str:
+        if self.handler_mode == "initial_variable":
+            return f"stored_initial_variable_{name}"
+        elif self.handler_mode == "variable":
+            return f"stored_variable_{name}"
+        else:
+            raise ValueError(f"Variable mode {self.handler_mode} is not supported.")
+
     @property
     def is_empty(self):
         return len(self.variables) == 0
 
-     
+    @property
+    def handler_mode(self):
+        return self._handler_mode
+
+    @handler_mode.setter
+    def handler_mode(self, value: Any) -> None:
+        raise AttributeError("Use `change_variable_mode` method to change the mode of LocalVariableHandler.")
+
+    def change_mode(self, mode: Literal["initial_variable", "variable"]) -> None:
+        """Change state specifying on which type of variable is the handler currently operating."""
+        if mode not in ["variable", "initial_variable"]:
+            raise ValueError(f"Variable mode `{mode}` is not supported.")
+        self._handler_mode = mode
+
     def _set_up_unique_varname(self, name: str) -> str:
         i = 2
 
@@ -153,7 +177,6 @@ class LocalVariableHandler:
 
         return value
 
-        
     def new_variable(self, name, value, additional_params: dict = None, project_uid=None):
         if additional_params is None:
             additional_params = {}
@@ -171,51 +194,43 @@ class LocalVariableHandler:
         else:
             variable=self.create_variable(name, value, additional_params)
             is_new_variable=True
-        
-            
-        return variable, is_new_variable
-    
-    def is_value_serializable(self, value):
-        is_value_serializable = True if type(value) in JSON_SERIALIZABLE_TYPES else False
 
-        return is_value_serializable
-    
-    def is_value_redis_compatible(self, value):
-        is_redis_compatible = type(value) in REDIS_STORED_TYPES or inspect.isfunction(value) or inspect.isclass(value)
-        
-        return is_redis_compatible
- 
+        return variable, is_new_variable
+
     def create_variable(self, name, value, additional_params: dict = None, project_uid=None):
         #self.variable_uid_project_uid_dict[variable.uid]=project_uid #is used in API call
         if additional_params is None:
             additional_params = {}
-        
+
+        if self.handler_mode == "initial_variable":
+            ncrb_fn = ncrb.new_initial_variable
+        elif self.handler_mode == "variable":
+            ncrb_fn = ncrb.new_variable
+
         #serialization for objects
         # TODO: FFS FIXME:
-        value_serializable = self.is_value_serializable(value)
-        
-        if value_serializable:
-            response = ncrb.new_variable(name, value)
+        if is_value_serializable(value):
+            response = ncrb_fn(name, value)
         else:
-            if self.is_value_redis_compatible(value):
-                kv_redis.set("stored_variable_" + name, value, additional_params)
+            if is_value_redis_compatible(value):
+                kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
             else:
                 data_dict={}
                 data_dict[name]=value
                 folder=".//file_transfer"
                 save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
             #TODO: FILE TRANSFER MISSING
-            response = ncrb.new_variable(name, "", type=type(value).__name__)
-            
-        result = response.content.decode('utf-8')
-            
+            response = ncrb_fn(name, "", type=type(value).__name__)
+
+        response.raise_for_status()
+        result = response.json()
         return result
-    
+
     def create_local_variable(self, uid: str, name, value, is_result: bool, type=None):
         if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
             value=ast.literal_eval(str(value))
         elif type in REDIS_STORED_TYPES_AS_STRINGS:
-            value = kv_redis.get("stored_variable_" + name)
+            value = kv_redis.get(self.get_variable_redis_name(name))
 
             if isinstance(value, pd.DataFrame):
                 value = self.process_dataframe_variable_on_initialization(name, value)
@@ -223,36 +238,52 @@ class LocalVariableHandler:
         variable=LocalVariable(uid, name, value, is_result) #Create new 
         self.variables[name]=variable
         return(variable)
-        
-    
+
     def update_variable(self, name, value, additional_params: dict = None, project_uid=None):
         if additional_params is None:
             additional_params = {}
         #ncrb.update_variable_by_uid(variable_uid, name, value)(name, value)
-        
+
+        if self.handler_mode == "initial_variable":
+            ncrb_get_by_name_fn = ncrb.get_initial_variable_by_name
+            ncrb_update_by_uid_fn = ncrb.update_initial_variable_by_uid
+        elif self.handler_mode == "variable":
+            ncrb_get_by_name_fn = ncrb.get_variable_by_name
+            ncrb_update_by_uid_fn = ncrb.update_variable_by_uid
+
         #TODO - replace by "update_variable_by_name"
-        
-        response = ncrb.get_variable_by_name(name)
-        result = json.loads(response.content)
+        response = ncrb_get_by_name_fn(name)
+        response.raise_for_status()
+        result = response.json()
         if "uid" in result:
             # HOTFIX TOMAS
             variable_uid=result["uid"]
-            value_serializable = self.is_value_serializable(value)
-            
-            if value_serializable:
-                response = ncrb.update_variable_by_uid(variable_uid, name, value, result["is_result"])
+            ncrb_update_by_uid_kwargs = {
+                "variable_uid": variable_uid,
+                "name": name,
+                "value": value,
+            }
+            if self.handler_mode == "variable":
+                ncrb_update_by_uid_kwargs.update(is_result=result["is_result"])
             else:
-                if self.is_value_redis_compatible(value):
-                    kv_redis.set("stored_variable_" + name, value, additional_params)
+                ncrb_update_by_uid_kwargs.update(is_result=result["is_result"])  # TODO: Remove when PrototypeJobs are implemented
+
+            if is_value_serializable(value):
+                response = ncrb_update_by_uid_fn(**ncrb_update_by_uid_kwargs)
+            else:
+                ncrb_update_by_uid_kwargs.update(value="")
+
+                if is_value_redis_compatible(value):
+                    kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
                 else:
                     data_dict={}
                     data_dict[name]=value
                     folder=".//file_transfer"
                     save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
-                response = ncrb.update_variable_by_uid(variable_uid, name, "", is_result=result["is_result"], type=type(value).__name__)
-            
-            result = response.content.decode('utf-8')
-            
+                response = ncrb_update_by_uid_fn(type=type(value).__name__, **ncrb_update_by_uid_kwargs)
+
+            result = response.json()
+
         return result
         
         #else:
@@ -267,29 +298,35 @@ class LocalVariableHandler:
         if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
             value=ast.literal_eval(str(value))
         elif type in REDIS_STORED_TYPES_AS_STRINGS:
-            value = kv_redis.get("stored_variable_" + name)
+            value = kv_redis.get(self.get_variable_redis_name(name))
         
         variable=self.variables[name]
         self.variables[name].value=value #Update
         self.variables[name].is_result = is_result #Update
 
         return(variable)
-        
+
     def delete_variable(self, var_name: str):
         if self.last_active_df_variable is not None and var_name == self.last_active_df_variable.name:
             self.last_active_df_variable = None
-            
-        response=ncrb.get_variable_by_name(var_name)
-        results=json.loads(response.content)
+
+        if self.handler_mode == "initial_variable":
+            ncrb_get_by_name_fn = ncrb.get_initial_variable_by_name
+            ncrb_delete_by_uid = ncrb.delete_initial_variable_by_uid
+        elif self.handler_mode == "variable":
+            ncrb_get_by_name_fn = ncrb.get_variable_by_name
+            ncrb_delete_by_uid = ncrb.delete_variable_by_uid
+
+        response = ncrb_get_by_name_fn(var_name)
+        response.raise_for_status()
+        results = response.json()
         variable_uid=results["uid"]
-        response=ncrb.delete_variable_by_uid(variable_uid)
+        response=ncrb_delete_by_uid(variable_uid)
         self.delete_local_variable(var_name)
-        
-        
+
     def delete_local_variable(self, var_name:str):
         self.variables.pop(var_name)
-    
-    
+
     @property
     def last_active_dataframe_node_uid(self):
         return self._last_active_dataframe_node_uid
