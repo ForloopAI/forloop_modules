@@ -564,6 +564,7 @@ def delete_variable_by_uid(variable_uid):
     url = f'{BASE_API}/variables/{variable_uid}'
 
     response = requests.delete(url)
+    response.raise_for_status()
     flog.info(f'DELETE Variable response: {response.text}')
 
     return response
@@ -651,6 +652,7 @@ def update_initial_variable_by_uid(
 ):
     project_uid = aet.project_uid
     pipeline_uid = aet.active_pipeline_uid
+    pipeline_job_uid = aet.pipeline_job_uid
 
     if type is None:
         for std_type in [str, int, list, dict, float, bool]:
@@ -659,7 +661,7 @@ def update_initial_variable_by_uid(
 
     payload = {
         "name": name, "value": value, "type": type, "size": size, "project_uid": project_uid,
-        "pipeline_uid": pipeline_uid, "is_result": is_result  # TODO: Remove when PrototypeJobs are implemented
+        "pipeline_uid": pipeline_uid, "pipeline_job_uid": pipeline_job_uid, "is_result": is_result  # TODO: Remove when PrototypeJobs are implemented
     }
     response = requests.put(f"{BASE_API}/initial_variables/{variable_uid}", json=payload)
     response.raise_for_status()

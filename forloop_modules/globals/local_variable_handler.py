@@ -17,6 +17,7 @@ import forloop_modules.flog as flog
 
 #from src.df_column_category_predictor import classify_df_column_categories, DataFrameColumnCategoryAnalysis
 
+from forloop_modules.redis.config.config import redis_config
 from forloop_modules.utils.pickle_serializer import save_data_dict_to_pickle_folder
 from forloop_modules.utils.pickle_serializer import load_data_dict_from_pickle_folder
 from forloop_modules.globals.active_entity_tracker import aet
@@ -63,9 +64,9 @@ class LocalVariableHandler:
 
     def get_variable_redis_name(self, name: str) -> str:
         if self.handler_mode == "initial_variable":
-            return f"stored_initial_variable_{name}"
+            return redis_config.INITIAL_VARIABLE_KEY + name
         elif self.handler_mode == "variable":
-            return f"stored_variable_{name}"
+            return redis_config.VARIABLE_KEY + name
         else:
             raise ValueError(f"Variable mode {self.handler_mode} is not supported.")
 
@@ -106,32 +107,26 @@ class LocalVariableHandler:
         names = list(self.variables.keys())
         checker = name in names
         return checker
-     
-    def get_variable_by_name(self, name):
+
+    def get_local_variable_by_name(self, name):
         """new function because of serialization"""
-        variable = self.variables.get(name)
-        #TODO: Get request from API
-    
-        if variable is None:
+        local_variable = self.variables.get(name)
+        if local_variable is None:
             flog.warning(f"A variable '{name}' was not found in LocalVariableHandler.")
             return
-  
-        #serialization for objects
-        if variable.typ in REDIS_STORED_TYPES_AS_STRINGS:
-            value = kv_redis.get("stored_variable_" + variable.name)
-            value.attrs["name"] = variable.name
 
-            response = ncrb.get_variable_by_name(variable.name)
-            result = json.loads(response.content)
-            uid = result["uid"]
-            is_result = result["is_result"]
-            
-            variable = LocalVariable(uid, variable.name, value, is_result)
-            return(variable)
+        #serialization for objects
+        if local_variable.typ in REDIS_STORED_TYPES_AS_STRINGS:
+            value = kv_redis.get(self.get_variable_redis_name(name))
+            value.attrs["name"] = local_variable.name
+
+            variable = self.get_variable_by_name(name)
+            local_variable = LocalVariable(variable["uid"], variable["name"], value, variable["is_result"])  # TODO: Remove when PrototypeJobs are implemented
+            return local_variable
         else:
-            return(variable)
+            return local_variable
         
-    def get_int_to_str_col_name_mapping(self, df: pd.DataFrame) -> Dict[int, str]:
+    def get_int_to_str_col_name_mapping(self, df: pd.DataFrame) -> dict[int, str]:
         """
         find columns whose name type is int and create mapping between their int name and its string form
         :param df:
@@ -180,14 +175,14 @@ class LocalVariableHandler:
     def new_variable(self, name, value, additional_params: dict = None, project_uid=None):
         if additional_params is None:
             additional_params = {}
-        
+
         if project_uid is None:
             project_uid=aet.project_uid
         name = self._set_up_unique_varname(name)
 
         if isinstance(value, pd.DataFrame):
             value = self.process_dataframe_variable_on_initialization(name, value)
-        
+
         if name in self.variables.keys():
             variable = self.update_variable(name, value, additional_params)
             is_new_variable=False
@@ -211,17 +206,16 @@ class LocalVariableHandler:
         # TODO: FFS FIXME:
         if is_value_serializable(value):
             response = ncrb_fn(name, value)
+        elif is_value_redis_compatible(value):
+            kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
         else:
-            if is_value_redis_compatible(value):
-                kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
-            else:
-                data_dict={}
-                data_dict[name]=value
-                folder=".//file_transfer"
-                save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
-            #TODO: FILE TRANSFER MISSING
-            response = ncrb_fn(name, "", type=type(value).__name__)
+            data_dict={}
+            data_dict[name]=value
+            folder=".//file_transfer"
+            save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
+        #TODO: FILE TRANSFER MISSING
 
+        response = ncrb_fn(name, "", type=type(value).__name__)
         response.raise_for_status()
         result = response.json()
         return result
@@ -235,43 +229,37 @@ class LocalVariableHandler:
             if isinstance(value, pd.DataFrame):
                 value = self.process_dataframe_variable_on_initialization(name, value)
 
-        variable=LocalVariable(uid, name, value, is_result) #Create new 
+        variable=LocalVariable(uid, name, value, is_result) # TODO: Remove when PrototypeJobs are implemented
         self.variables[name]=variable
         return(variable)
 
     def update_variable(self, name, value, additional_params: dict = None, project_uid=None):
         if additional_params is None:
             additional_params = {}
-        #ncrb.update_variable_by_uid(variable_uid, name, value)(name, value)
 
         if self.handler_mode == "initial_variable":
-            ncrb_get_by_name_fn = ncrb.get_initial_variable_by_name
-            ncrb_update_by_uid_fn = ncrb.update_initial_variable_by_uid
+            ncrb_fn = ncrb.update_initial_variable_by_uid
         elif self.handler_mode == "variable":
-            ncrb_get_by_name_fn = ncrb.get_variable_by_name
-            ncrb_update_by_uid_fn = ncrb.update_variable_by_uid
+            ncrb_fn = ncrb.update_variable_by_uid
 
-        #TODO - replace by "update_variable_by_name"
-        response = ncrb_get_by_name_fn(name)
-        response.raise_for_status()
-        result = response.json()
-        if "uid" in result:
-            # HOTFIX TOMAS
-            variable_uid=result["uid"]
-            ncrb_update_by_uid_kwargs = {
-                "variable_uid": variable_uid,
+        variable = None
+        try: # Function to run even if no variable is found
+            variable = self.get_variable_by_name(name)
+        except Exception:
+            flog.warning(f"Variable '{name}' was not found in LocalVariableHandler.")
+
+        if variable is not None:
+            ncrb_fn_kwargs = {
+                "variable_uid": variable["uid"],
                 "name": name,
                 "value": value,
+                "is_result": variable["is_result"]  # TODO: Remove when PrototypeJobs are implemented
             }
-            if self.handler_mode == "variable":
-                ncrb_update_by_uid_kwargs.update(is_result=result["is_result"])
-            else:
-                ncrb_update_by_uid_kwargs.update(is_result=result["is_result"])  # TODO: Remove when PrototypeJobs are implemented
 
             if is_value_serializable(value):
-                response = ncrb_update_by_uid_fn(**ncrb_update_by_uid_kwargs)
+                response = ncrb_fn(**ncrb_fn_kwargs)
             else:
-                ncrb_update_by_uid_kwargs.update(value="")
+                ncrb_fn_kwargs.update(value="")
 
                 if is_value_redis_compatible(value):
                     kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
@@ -280,7 +268,7 @@ class LocalVariableHandler:
                     data_dict[name]=value
                     folder=".//file_transfer"
                     save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
-                response = ncrb_update_by_uid_fn(type=type(value).__name__, **ncrb_update_by_uid_kwargs)
+                response = ncrb_fn(type=type(value).__name__, **ncrb_fn_kwargs)
 
             result = response.json()
 
@@ -302,7 +290,7 @@ class LocalVariableHandler:
         
         variable=self.variables[name]
         self.variables[name].value=value #Update
-        self.variables[name].is_result = is_result #Update
+        self.variables[name].is_result = is_result  # TODO: Remove when PrototypeJobs are implemented
 
         return(variable)
 
@@ -311,21 +299,27 @@ class LocalVariableHandler:
             self.last_active_df_variable = None
 
         if self.handler_mode == "initial_variable":
-            ncrb_get_by_name_fn = ncrb.get_initial_variable_by_name
             ncrb_delete_by_uid = ncrb.delete_initial_variable_by_uid
         elif self.handler_mode == "variable":
-            ncrb_get_by_name_fn = ncrb.get_variable_by_name
             ncrb_delete_by_uid = ncrb.delete_variable_by_uid
 
-        response = ncrb_get_by_name_fn(var_name)
-        response.raise_for_status()
-        results = response.json()
-        variable_uid=results["uid"]
-        response=ncrb_delete_by_uid(variable_uid)
+        variable = self.get_variable_by_name(var_name)
+        ncrb_delete_by_uid(variable["uid"])
         self.delete_local_variable(var_name)
 
     def delete_local_variable(self, var_name:str):
         self.variables.pop(var_name)
+
+    def get_variable_by_name(self, name: str) -> dict:
+        """Get Variable/InitialVariable uid based on its name and the pipeline it's assigned to."""
+        if self.handler_mode == "initial_variable":
+            ncrb_get_by_name_fn = ncrb.get_initial_variable_by_name
+        elif self.handler_mode == "variable":
+            ncrb_get_by_name_fn = ncrb.get_variable_by_name
+
+        response = ncrb_get_by_name_fn(name)
+        response.raise_for_status()
+        return response.json()
 
     @property
     def last_active_dataframe_node_uid(self):
