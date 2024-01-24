@@ -844,6 +844,13 @@ def pipeline_refresh_running_blocks(pipeline_uid:str):
 
     return response
 
+def activate_pipeline(pipeline_uid: str, project_uid: str):
+    url = f'{BASE_API}/projects/{project_uid}/pipelines/{pipeline_uid}/activate'
+
+    response = requests.post(url)
+    response.raise_for_status()
+    return response
+
 
 ############ Popups ###################
 """In this file all functions should have response-like return value"""
