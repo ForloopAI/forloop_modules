@@ -537,7 +537,16 @@ class APIProject(BaseModel):
     project_key: str
     last_active_pipeline_uid: Optional[str] = None
 
+class APIUserFlowStep(BaseModel):
+    user_uid: str
+    step_identifier: str
+    step_data: str
+    timestamp: datetime.datetime
+
     
+
+
+
 # class APITrigger(BaseModel):
 #     name: str=""
 #     machine_uid:str=""
