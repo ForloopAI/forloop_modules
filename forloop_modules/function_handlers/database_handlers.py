@@ -904,8 +904,8 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
 
         self.direct_execute(db_name, table_name, new_var_name)
 
-    def direct_execute(self,db_name, table_name, new_var_name):
-        db_table = get_db_table_from_db(table_name=table_name, db_name=db_name)
+    def direct_execute(self,db_name, db_table_name, new_var_name):
+        db_table = get_db_table_from_db(table_name=db_table_name, db_name=db_name)
         column_type_pair_dict = dict(zip(db_table.columns, db_table.types))
         variable_handler.new_variable(new_var_name, column_type_pair_dict)
 
