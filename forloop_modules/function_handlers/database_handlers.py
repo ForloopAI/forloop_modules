@@ -424,13 +424,13 @@ class DBSelectHandler(AbstractFunctionHandler):
         # else:
         #     raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
         
-    def direct_execute(self, db_name, dbtable_name, selected_columns, column_name, operator, value, limit, new_var_name):        
-        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
+    def direct_execute(self, db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name):        
+        db_table = get_db_table_from_db(table_name=db_table_name, db_name=db_name)
         db_instance = db_table.db1
         
         df_new = pd.DataFrame()
-        df_new = self._get_df(selected_columns, dbtable_name, db_instance, db_table, column_name, operator,
-                                value, limit)
+        df_new = self._get_df(select, db_table_name, db_instance, db_table, where_column_name, where_operator,
+                                where_value, limit)
         df_new = validate_input_data_types(df_new)
         variable_handler.new_variable(new_var_name, df_new)
 
