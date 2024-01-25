@@ -704,8 +704,8 @@ class DBDeleteHandler(AbstractFunctionHandler):
 
         self.direct_execute(db_name, db_table_name, column_name, operator, value)
 
-    def direct_execute(self, db_name,  dbtable_name, column_name, operator, value):
-        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
+    def direct_execute(self, db_name,  db_table_name, column_name, operator, value):
+        db_table = get_db_table_from_db(table_name=db_table_name, db_name=db_name)
         db_instance = db_table.db1
         
         value = parse_float_db(db_instance=db_instance, value=value)
