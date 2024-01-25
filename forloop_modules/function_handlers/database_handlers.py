@@ -246,11 +246,11 @@ class DBQueryHandler(AbstractFunctionHandler):
 
         self.direct_execute(db_table_name, query, new_var_name)
 
-    def direct_execute(self, dbtable_name, query, new_var_name):
-        if not dbtable_name:
+    def direct_execute(self, db_table_name, query, new_var_name):
+        if not db_table_name:
             return
         
-        matching_dbtables = get_name_matching_db_tables(dbtable_name)
+        matching_dbtables = get_name_matching_db_tables(db_table_name)
 
         if len(matching_dbtables) == 1:
             dbtable = matching_dbtables[0]
