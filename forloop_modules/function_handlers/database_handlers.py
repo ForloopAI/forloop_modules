@@ -573,8 +573,8 @@ class DBInsertHandler(AbstractFunctionHandler):
 
         self.direct_execute(db_name, db_table_name, inserted_dataframe)
         
-    def direct_execute(self, db_name, dbtable_name, inserted_dataframe):
-        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
+    def direct_execute(self, db_name, db_table_name, inserted_dataframe):
+        db_table = get_db_table_from_db(table_name=db_table_name, db_name=db_name)
         db_instance = db_table.db1
 
         columns = None if isinstance(db_table, dh.MongoTable) else db_table.columns
