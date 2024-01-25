@@ -217,6 +217,10 @@ class LocalVariableHandler:
             response = ncrb_fn(name=name, value="", type=type(value).__name__)
 
         result = response.json()
+        self.create_local_variable(
+            result["uid"], result["name"], result["value"], result["is_result"],
+            result["type"]
+        )  # TODO: Remove when PrototypeJobs are implemented
         return result
 
     def create_local_variable(self, uid: str, name, value, is_result: bool, type=None):  # TODO: Change when PrototypeJobs are implemented
@@ -270,8 +274,11 @@ class LocalVariableHandler:
                 response = ncrb_fn(type=type(value).__name__, **ncrb_fn_kwargs)
 
             result = response.json()
-
+            self.update_local_variable(
+                result["name"], result["value"], result["is_result"], result["type"]
+            )  # TODO: Remove when PrototypeJobs are implemented
             return result
+
         
         #else:
         #    self.variables.pop(name)
