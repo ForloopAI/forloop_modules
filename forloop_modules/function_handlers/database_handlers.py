@@ -828,8 +828,8 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
         self.direct_execute(db_name, db_table_name, set_column_name, set_value, where_column_name, where_operator, where_value)
         
-    def direct_execute(self, db_name, dbtable_name, set_column_name, set_value, where_column_name, where_operator, where_value):
-        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
+    def direct_execute(self, db_name, db_table_name, set_column_name, set_value, where_column_name, where_operator, where_value):
+        db_table = get_db_table_from_db(table_name=db_table_name, db_name=db_name)
         db_instance = db_table.db1
 
 
