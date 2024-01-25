@@ -652,7 +652,7 @@ def update_initial_variable_by_uid(
 ):
     project_uid = aet.project_uid
     pipeline_uid = aet.active_pipeline_uid
-    pipeline_job_uid = aet.pipeline_job_uid
+    pipeline_job_uid = aet.active_pipeline_job_uid
 
     if type is None:
         for std_type in [str, int, list, dict, float, bool]:

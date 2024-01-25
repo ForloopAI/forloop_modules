@@ -176,8 +176,6 @@ class LocalVariableHandler:
         if additional_params is None:
             additional_params = {}
 
-        if project_uid is None:
-            project_uid=aet.project_uid
         name = self._set_up_unique_varname(name)
 
         if isinstance(value, pd.DataFrame):
@@ -220,7 +218,7 @@ class LocalVariableHandler:
         result = response.json()
         return result
 
-    def create_local_variable(self, uid: str, name, value, is_result: bool, type=None):
+    def create_local_variable(self, uid: str, name, value, is_result: bool, type=None):  # TODO: Change when PrototypeJobs are implemented
         if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
             value=ast.literal_eval(str(value))
         elif type in REDIS_STORED_TYPES_AS_STRINGS:
@@ -272,7 +270,7 @@ class LocalVariableHandler:
 
             result = response.json()
 
-        return result
+            return result
         
         #else:
         #    self.variables.pop(name)
