@@ -203,18 +203,19 @@ class LocalVariableHandler:
         #serialization for objects
         # TODO: FFS FIXME:
         if is_value_serializable(value):
-            response = ncrb_fn(name, value)
-        elif is_value_redis_compatible(value):
-            kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
+            response = ncrb_fn(name=name, value=value)
         else:
-            data_dict={}
-            data_dict[name]=value
-            folder=".//file_transfer"
-            save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
-        #TODO: FILE TRANSFER MISSING
+            if is_value_redis_compatible(value):
+                kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
+            else:
+                data_dict={}
+                data_dict[name]=value
+                folder=".//file_transfer"
+                save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
+            #TODO: FILE TRANSFER MISSING
 
-        response = ncrb_fn(name, "", type=type(value).__name__)
-        response.raise_for_status()
+            response = ncrb_fn(name=name, value="", type=type(value).__name__)
+
         result = response.json()
         return result
 
