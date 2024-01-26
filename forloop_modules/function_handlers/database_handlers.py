@@ -36,6 +36,17 @@ def get_all_databases_in_project():
     project_databases = [database for database in databases if database["project_uid"] == aet.project_uid]
     
     return project_databases
+
+def filter_database_by_name_from_all_project_databases(project_databases: list[dict], db_name: str):
+    selected_databases = [project_db for project_db in project_databases if project_db["database_name"] == db_name]
+        
+    if len(selected_databases) > 1:
+        raise ValueError(f'Multiple DBs named {db_name} found in the current project.')
+    
+    selected_db = selected_databases[0] if selected_databases else None
+    
+    return selected_db
+
 DbOperation = Literal["INSERT", "UPDATE", "DELETE"]
 DBInstance = Union[dh.MysqlDb, dh.SqlServerDb, dh.PostgresDb, dh.XlsxDB, dh.MongoDb, dh.BigQueryDb]
 DbTable = Union[dh.MysqlTable, dh.SqlServerTable, dh.PostgresTable, dh.XlsxTable, dh.MongoTable, dh.BigQueryTable]
