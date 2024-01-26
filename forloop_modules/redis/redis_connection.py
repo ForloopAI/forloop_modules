@@ -1,6 +1,3 @@
-import rsa
-import base64
-
 from typing import Union
 
 import keepvariable.keepvariable_core as kv
@@ -124,18 +121,8 @@ else:
         raise InitializationError(
             f"Discrepancy between '{redis_config.JOB_KEY}:{redis_config.JOB_INDEX_NAME}' initialization and validation rules. Could not initialize"
         )
-        
-def retrieve_project_base64_db_private_key_from_redis(kv_redis: kv.KeepVariableRedisServer, project_uid: str):
-    redis_key = f'{redis_config.PRIVATE_ENCRYPTION_KEY_KEY}_{project_uid}'
-    private_key_base64 = kv_redis.get(redis_key)
-    
-    return private_key_base64
 
-def store_project_base64_db_private_key_to_redis(kv_redis: kv.KeepVariableRedisServer, private_key: rsa.PrivateKey, 
-                                                 project_uid: str):
+def create_redis_key_for_project_db_private_key(project_uid: str):
     redis_key = f'{redis_config.PRIVATE_ENCRYPTION_KEY_KEY}_{project_uid}'
-    private_key_bytes = rsa.PrivateKey.save_pkcs1(private_key)
-            
-    # Base64 encoding required as it can be stored in Redis without issues
-    private_key_base64 = base64.b64encode(private_key_bytes).decode('utf-8')
-    kv_redis.set(redis_key, private_key_base64)
+    
+    return redis_key
