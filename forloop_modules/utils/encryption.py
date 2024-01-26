@@ -18,3 +18,11 @@ def convert_base64_private_key_to_rsa_private_key(private_key_base64: bytes):
     private_key = rsa.PrivateKey.load_pkcs1(keyfile=private_key_bytes)
     
     return private_key
+
+def convert_rsa_private_to_base64_private_key(private_key: rsa.PrivateKey):
+    private_key_bytes = rsa.PrivateKey.save_pkcs1(private_key)
+            
+    # Base64 encoding required as it can be stored in Redis without issues
+    private_key_base64 = base64.b64encode(private_key_bytes).decode('utf-8')
+    
+    return private_key_base64
