@@ -482,15 +482,6 @@ class DBSelectHandler(AbstractFunctionHandler):
                                         where_value, limit)
                 df_new = validate_input_data_types(df_new)
                 variable_handler.new_variable(new_var_name, df_new)
-              
-        # db_table = get_db_table_from_db(table_name=db_table_name, db_name=db_name)
-        # db_instance = db_table.db1
-        
-        # df_new = pd.DataFrame()
-        # df_new = self._get_df(select, db_table_name, db_instance, db_table, where_column_name, where_operator,
-        #                         where_value, limit)
-        # df_new = validate_input_data_types(df_new)
-        # variable_handler.new_variable(new_var_name, df_new)
 
     def select(self, db_instance, dbtable, query, cols_to_be_selected):
         if type(db_instance) is dh.MongoDb:
