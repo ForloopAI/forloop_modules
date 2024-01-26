@@ -1,7 +1,5 @@
 import ast
 import json
-import rsa
-import base64
 import pandas as pd
 import dbhydra.dbhydra_core as dh
 
@@ -13,7 +11,6 @@ from tkinter.filedialog import askopenfile
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
 import forloop_modules.globals.db_connection as dbc
-import forloop_modules.redis.redis_connection as rc
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
@@ -25,6 +22,7 @@ from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 from forloop_modules.function_handlers.auxilliary.data_types_validation import validate_input_data_types
 from forloop_modules.utils.encryption import decrypt_text, convert_base64_private_key_to_rsa_private_key
+from forloop_modules.redis.redis_connection import kv_redis, create_redis_key_for_project_db_private_key
 
 def parse_comboentry_input(input_value: list[str]):
     input_value = input_value[0] if isinstance(input_value, list) and len(input_value) > 0 else input_value
