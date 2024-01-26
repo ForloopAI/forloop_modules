@@ -15,6 +15,7 @@ from forloop_modules.function_handlers.auxilliary.node_type_categories_manager i
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.database_utilities_handler import duh
+from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
@@ -25,6 +26,16 @@ def parse_comboentry_input(input_value: list[str]):
     
     return input_value
 
+def get_all_databases_in_project():
+    response = ncrb.get_all_databases()
+        
+    if response.status_code != 200:
+        raise Exception(f'Error {response.status_code}: {response.reason}.')
+    
+    databases = response.json().get("result", {}).get("databases")
+    project_databases = [database for database in databases if database["project_uid"] == aet.project_uid]
+    
+    return project_databases
 DbOperation = Literal["INSERT", "UPDATE", "DELETE"]
 DBInstance = Union[dh.MysqlDb, dh.SqlServerDb, dh.PostgresDb, dh.XlsxDB, dh.MongoDb, dh.BigQueryDb]
 DbTable = Union[dh.MysqlTable, dh.SqlServerTable, dh.PostgresTable, dh.XlsxTable, dh.MongoTable, dh.BigQueryTable]
