@@ -457,10 +457,8 @@ class DBSelectHandler(AbstractFunctionHandler):
             # User selects from stored DBs so this shouldn't happen. If this is raised, these is an issue in code probably.
             raise Exception(f'{self.icon_type}: No DB named {db_name} found in project DBs.')
         
-        private_keys_dict = rc.kv_redis.get(rc.redis_config.PRIVATE_ENCRYPTION_KEY_KEY) or {}
-        private_key_base64 = private_keys_dict.get(aet.project_uid) if private_keys_dict is not None else None
-        private_key_base64 = rc.retrieve_project_base64_db_private_key_from_redis(kv_redis=rc.kv_redis, 
-                                                                                  project_uid=aet.project_uid)
+        redis_key = create_redis_key_for_project_db_private_key(project_uid=aet.project_uid)
+        private_key_base64 = kv_redis.get(redis_key)
         
         if private_key_base64 is not None:
             private_key = convert_base64_private_key_to_rsa_private_key(private_key_base64=private_key_base64)
