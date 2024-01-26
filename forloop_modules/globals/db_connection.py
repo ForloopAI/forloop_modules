@@ -1,5 +1,5 @@
 import dbhydra.dbhydra_core as dh
-import src.flog as flog
+import forloop_modules.flog as flog
 
 from pydantic import BaseModel
 from typing import Literal, Union, Optional
@@ -122,4 +122,11 @@ class DbConnection:
         for table_name, table in self.table_dict.items():
             if table_name == db_table_name:
                 return table
+            
+def create_db_details_from_database_dict(db_dict: dict):
+    db_details = DbDetails(DB_SERVER=db_dict["server"], DB_PASSWORD=db_dict["password"], DB_PORT=db_dict["port"],
+                           DB_USERNAME=db_dict["username"], DB_DATABASE=db_dict["database_name"], LOCALLY=False,
+                           DIALECT=db_dict["dialect"])
+    
+    return db_details
     
