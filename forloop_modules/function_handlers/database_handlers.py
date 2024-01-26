@@ -24,6 +24,7 @@ from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 from forloop_modules.function_handlers.auxilliary.data_types_validation import validate_input_data_types
+from forloop_modules.utils.encryption import decrypt_text, convert_base64_private_key_to_rsa_private_key
 
 def parse_comboentry_input(input_value: list[str]):
     input_value = input_value[0] if isinstance(input_value, list) and len(input_value) > 0 else input_value
@@ -454,20 +455,20 @@ class DBSelectHandler(AbstractFunctionHandler):
         project_databases = get_all_databases_in_project()
         db_dict = filter_database_by_name_from_all_project_databases(project_databases=project_databases, db_name=db_name)
         
-        # TODO: DECRYPT WITH A KEY FROM REDIS HERE!!!
         if db_dict is None:
             # User selects from stored DBs so this shouldn't happen. If this is raised, these is an issue in code probably.
             raise Exception(f'{self.icon_type}: No DB named {db_name} found in project DBs.')
         
         private_keys_dict = rc.kv_redis.get(rc.redis_config.PRIVATE_ENCRYPTION_KEY_KEY) or {}
         private_key_base64 = private_keys_dict.get(aet.project_uid) if private_keys_dict is not None else None
+        private_key_base64 = rc.retrieve_project_base64_db_private_key_from_redis(kv_redis=rc.kv_redis, 
+                                                                                  project_uid=aet.project_uid)
         
         if private_key_base64 is not None:
-            private_key_bytes = base64.b64decode(private_key_base64)
-            private_key = rsa.PrivateKey.load_pkcs1(keyfile=private_key_bytes)
+            private_key = convert_base64_private_key_to_rsa_private_key(private_key_base64=private_key_base64)
             
-            encrypted_password_bytes = bytes.fromhex(db_dict["password"])
-            decrypted_password = rsa.decrypt(encrypted_password_bytes, private_key).decode()
+            encrypted_password = db_dict["password"]
+            decrypted_password = decrypt_text(text=encrypted_password, private_key=private_key)
             
             db_dict["password"] = decrypted_password
             
