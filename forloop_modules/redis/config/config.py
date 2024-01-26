@@ -24,6 +24,9 @@ class RedisConfig(BaseSettings):
     JOB_INDEX_NAME: str = "index"
     JOB_LOCK_NAME: str = "jobs:lock"
     JOB_PRIMARY_KEY: str = "jobs:pk"
+    
+    # Complete nonsense name --> to avoid accidental selection as a variable
+    PRIVATE_ENCRYPTION_KEY_KEY: str = "ForLoop_unicorn_2025_key_for_key_1998_CraZy_FRog"
 
 @lru_cache
 def get_redis_config() -> RedisConfig:
