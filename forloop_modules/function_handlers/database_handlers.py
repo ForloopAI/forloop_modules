@@ -623,18 +623,43 @@ class DBInsertHandler(AbstractFunctionHandler):
         self.direct_execute(db_name, db_table_name, inserted_dataframe)
         
     def direct_execute(self, db_name, db_table_name, inserted_dataframe):
-        db_table = get_db_table_from_db(table_name=db_table_name, db_name=db_name)
-        db_instance = db_table.db1
+        project_databases = get_all_databases_in_project()
+        db_dict = filter_database_by_name_from_all_project_databases(project_databases=project_databases, db_name=db_name)
+        
+        if db_dict is None:
+            # User selects from stored DBs so this shouldn't happen. If this is raised, these is an issue in code probably.
+            raise Exception(f'{self.icon_type}: No DB named {db_name} found in project DBs.')
+        
+        redis_key = create_redis_key_for_project_db_private_key(project_uid=aet.project_uid)
+        private_key_base64 = kv_redis.get(redis_key)
+        
+        if private_key_base64 is not None:
+            private_key = convert_base64_private_key_to_rsa_private_key(private_key_base64=private_key_base64)
+            
+            encrypted_password = db_dict["password"]
+            decrypted_password = decrypt_text(text=encrypted_password, private_key=private_key)
+            
+            db_dict["password"] = decrypted_password
+            
+            db_details = dbc.create_db_details_from_database_dict(db_dict=db_dict)
+            db_connection = dbc.DbConnection(db_details=db_details)
+            is_connected = db_connection.test_database_connection()
+        
+            if is_connected:
+                db_instance = db_connection.db_instance
+                db_table = db_connection.get_db_table(db_table_name)
+                if db_table is None:
+                    return
+                
+                columns = None if isinstance(db_table, dh.MongoTable) else db_table.columns
 
-        columns = None if isinstance(db_table, dh.MongoTable) else db_table.columns
+                try:
+                    inserted_dataframe = self._convert_data_variable_to_df(inserted_dataframe, columns)
+                except ValueError:
+                    flog.error('Wrong number of columns', self)
+                    return
 
-        try:
-            inserted_dataframe = self._convert_data_variable_to_df(inserted_dataframe, columns)
-        except ValueError:
-            flog.error('Wrong number of columns', self)
-            return
-
-        connect_to_db_and_run_operation("INSERT", db_instance, db_table, inserted_dataframe=inserted_dataframe)
+                connect_to_db_and_run_operation("INSERT", db_instance, db_table, inserted_dataframe=inserted_dataframe)
 
             # TEMPORARY DISABLED
             # var_name = f"{dbtable.db_connection.database}.{dbtable.name}"
