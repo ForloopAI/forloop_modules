@@ -1,5 +1,7 @@
 import ast
 import json
+import rsa
+import base64
 import pandas as pd
 import dbhydra.dbhydra_core as dh
 
@@ -10,6 +12,7 @@ from tkinter.filedialog import askopenfile
 
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
+import forloop_modules.globals.db_connection as dbc
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
@@ -20,6 +23,7 @@ from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 from forloop_modules.function_handlers.auxilliary.data_types_validation import validate_input_data_types
+from forloop_modules.redis.redis_connection import kv_redis, redis_config
 
 def parse_comboentry_input(input_value: list[str]):
     input_value = input_value[0] if isinstance(input_value, list) and len(input_value) > 0 else input_value
@@ -446,15 +450,50 @@ class DBSelectHandler(AbstractFunctionHandler):
         # else:
         #     raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
         
-    def direct_execute(self, db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name):        
-        db_table = get_db_table_from_db(table_name=db_table_name, db_name=db_name)
-        db_instance = db_table.db1
+    def direct_execute(self, db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name):  
+        project_databases = get_all_databases_in_project()
+        db_dict = filter_database_by_name_from_all_project_databases(project_databases=project_databases, db_name=db_name)
         
-        df_new = pd.DataFrame()
-        df_new = self._get_df(select, db_table_name, db_instance, db_table, where_column_name, where_operator,
-                                where_value, limit)
-        df_new = validate_input_data_types(df_new)
-        variable_handler.new_variable(new_var_name, df_new)
+        # TODO: DECRYPT WITH A KEY FROM REDIS HERE!!!
+        if db_dict is None:
+            # User selects from stored DBs so this shouldn't happen. If this is raised, these is an issue in code probably.
+            raise Exception(f'{self.icon_type}: No DB named {db_name} found in project DBs.')
+        
+        private_keys_dict = kv_redis.get(redis_config.PRIVATE_ENCRYPTION_KEY_KEY) or {}
+        private_key_base64 = private_keys_dict.get(aet.project_uid) if private_keys_dict is not None else None
+        
+        if private_key_base64 is not None:
+            private_key_bytes = base64.b64decode(private_key_base64)
+            private_key = rsa.PrivateKey.load_pkcs1(keyfile=private_key_bytes)
+            
+            encrypted_password_bytes = bytes.fromhex(db_dict["password"])
+            decrypted_password = rsa.decrypt(encrypted_password_bytes, private_key).decode()
+            
+            db_dict["password"] = decrypted_password
+            
+            db_details = dbc.create_db_details_from_database_dict(db_dict=db_dict)
+            db_connection = dbc.DbConnection(db_details=db_details)
+            is_connected = db_connection.test_database_connection()
+        
+            if is_connected:
+                db_table = db_connection.get_db_table(db_table_name)
+                if db_table is None:
+                    return
+                
+                df_new = pd.DataFrame()
+                df_new = self._get_df(select, db_table_name, db_connection.db_instance, db_table, where_column_name, where_operator,
+                                        where_value, limit)
+                df_new = validate_input_data_types(df_new)
+                variable_handler.new_variable(new_var_name, df_new)
+              
+        # db_table = get_db_table_from_db(table_name=db_table_name, db_name=db_name)
+        # db_instance = db_table.db1
+        
+        # df_new = pd.DataFrame()
+        # df_new = self._get_df(select, db_table_name, db_instance, db_table, where_column_name, where_operator,
+        #                         where_value, limit)
+        # df_new = validate_input_data_types(df_new)
+        # variable_handler.new_variable(new_var_name, df_new)
 
     def select(self, db_instance, dbtable, query, cols_to_be_selected):
         if type(db_instance) is dh.MongoDb:
