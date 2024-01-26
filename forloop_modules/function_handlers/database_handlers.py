@@ -13,6 +13,7 @@ from tkinter.filedialog import askopenfile
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
 import forloop_modules.globals.db_connection as dbc
+import forloop_modules.redis.redis_connection as rc
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
@@ -23,7 +24,6 @@ from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 from forloop_modules.function_handlers.auxilliary.data_types_validation import validate_input_data_types
-from forloop_modules.redis.redis_connection import kv_redis, redis_config
 
 def parse_comboentry_input(input_value: list[str]):
     input_value = input_value[0] if isinstance(input_value, list) and len(input_value) > 0 else input_value
@@ -459,7 +459,7 @@ class DBSelectHandler(AbstractFunctionHandler):
             # User selects from stored DBs so this shouldn't happen. If this is raised, these is an issue in code probably.
             raise Exception(f'{self.icon_type}: No DB named {db_name} found in project DBs.')
         
-        private_keys_dict = kv_redis.get(redis_config.PRIVATE_ENCRYPTION_KEY_KEY) or {}
+        private_keys_dict = rc.kv_redis.get(rc.redis_config.PRIVATE_ENCRYPTION_KEY_KEY) or {}
         private_key_base64 = private_keys_dict.get(aet.project_uid) if private_keys_dict is not None else None
         
         if private_key_base64 is not None:
