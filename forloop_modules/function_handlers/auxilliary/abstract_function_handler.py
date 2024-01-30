@@ -33,6 +33,7 @@ class AbstractFunctionHandler(abc.ABC):
 
     def __init__(self):
         self.is_cloud_compatible: bool = True
+        self.is_disabled: bool = False
         self.code_import_patterns = []
 
     @abc.abstractmethod
