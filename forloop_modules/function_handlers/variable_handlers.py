@@ -1135,6 +1135,7 @@ class PrintVariableHandler:
     """
 
     def __init__(self):
+        self.is_disabled = True # FIXME: No FE prepared for the user --> for the user it seems broken
         self.icon_type = "PrintVariable"
         self.fn_name = "Print Variable"
 
