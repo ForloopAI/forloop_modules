@@ -46,6 +46,18 @@ def initialize_last_or_new_pipeline(project_uid: str):
 
     return response
 
+#{"user":{"email":"dominik@forloop.ai","auth0_subject_id":"google-oauth2|117904919065527607983","given_name":"Dominik","family_name":"Vach","picture_url":"https://lh3.googleusercontent.com/a/ACg8ocJesTb0ftxmvNbTJHwFf3nfYojgdq4eTslDZ8ewPxbC_A=s96-c"},"session":{"auth0_session_id":"lCkKE8qIUgjxSU3J9q6lZntc2ZUDat6T","version":null,"platform_type":"cloud","ip":null,"mac_address":null,"hostname":null}}
+def refresh_user_and_session_heartbeat(email: str):
+    """Duplicate in ncrb due to circular imports, remove from here once auth not used in ncrb"""
+    payload = {"user":{"email":email,"auth0_subject_id":None,"given_name":None,"family_name":None,"picture_url":None},"session":{"auth0_session_id":None,"version":None,"platform_type":"desktop","ip":None,"mac_address":None,"hostname":None}}
+    url = f'{BASE_API}/refresh_user_and_session_heartbeat'
+
+    response = requests.post(url, json = payload)
+    flog.info(f'Response: {response.text}')
+
+    return response
+
+
 #####! Duplicate functions end #####
 
 
@@ -60,6 +72,8 @@ class ActiveEntityTracker:
     """
     def __init__(self):
         self.project_uid: str = None #Todo: rename to active
+        self.active_user_uid: str = None
+        self.active_session_uid: str = None
         self.active_pipeline_uid: str = None
         self.active_script_uid: str = None
         self.home_folder = None     # To be refactored to another location (should be stores as user metadata) - refactored to AET for now
@@ -83,6 +97,11 @@ class ActiveEntityTracker:
         self.project_uid = json.loads(project_response.content.decode('utf-8'))["uid"]
         pipeline_response = initialize_last_or_new_pipeline(self.project_uid)
         self.active_pipeline_uid= json.loads(pipeline_response.content.decode('utf-8'))["uid"]
+        user_response = refresh_user_and_session_heartbeat(email)
+        self.active_user_uid = json.loads(user_response.content.decode('utf-8'))["uid"]
+        
+        
+        
 
     def set_project_and_pipeline_uid(
         self, project_uid: Optional[str] = None, pipeline_uid: Optional[str] = None
