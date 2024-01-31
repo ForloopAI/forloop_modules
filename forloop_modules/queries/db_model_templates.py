@@ -2,7 +2,7 @@ import datetime
 from enum import Enum
 from typing import Annotated, Any, Dict, Generic, List, Literal, Optional, TypeVar, Union
 
-from pydantic import AfterValidator, BaseModel, Field, PlainSerializer
+from pydantic import AfterValidator, BaseModel, Field, PlainSerializer, model_validator
 from pydantic.functional_validators import field_validator
 
 
@@ -284,6 +284,68 @@ class APIScript(BaseModel):
 #     start_datetime_utc: str = ""  # this needs to be str
 #     last_datetime_utc: str = ""  # this needs to be str
 #     total_time: int = 0
+
+
+class APIFindSimilarItems(BaseModel):
+    xpaths: list[str]
+
+
+class APIPrepareIcons(BaseModel):
+    pass
+
+
+class APIScanWebPage(BaseModel):
+    incl_tables: Optional[bool] = None
+    incl_bullets: Optional[bool] = None
+    incl_texts: Optional[bool] = None
+    incl_headlines: Optional[bool] = None
+    incl_links: Optional[bool] = None
+    incl_images: Optional[bool] = None
+    incl_buttons: Optional[bool] = None
+    by_xpath: Optional[str] = None
+
+
+class APIScanWebPageWithAI(BaseModel):
+    elements: list[dict]
+    objective: str
+
+
+class BrowserActionEnum(str, Enum):
+    FIND_SIMILAR_ITEMS = "FindSimilarItems"
+    PREPARE_ICONS = "PrepareIcons"
+    SCAN_WEBPAGE = "ScanWebPage"
+    SCAN_WEBPAGE_WITH_AI = "ScanWebPageWithAI"
+    REFRESH_BROWSER_VIEW = "RefreshBrowserView"
+
+
+class BrowserInputs(BaseModel):
+    action: BrowserActionEnum
+    find_similar_items: Optional[APIFindSimilarItems] = None
+    prepare_icons: Optional[APIPrepareIcons] = None
+    scan_webpage: Optional[APIScanWebPage] = None
+    scan_webpage_with_ai: Optional[APIScanWebPageWithAI] = None
+
+    @model_validator(mode="after")
+    @classmethod
+    def _check_schema_for_corresponding_action_inputs(
+        cls, browser_inputs: "BrowserInputs"
+    ) -> "BrowserInputs":
+        """Check that corresponding input schema is provided for the chosen action."""
+
+        # `BrowserActionEnum` names are mapping to lowercase `BrowserInputs` model attributes
+        # For some actions, no input schema is expected
+        actions_without_inputs = [BrowserActionEnum.REFRESH_BROWSER_VIEW]
+        action_enum = browser_inputs.action
+        action_input = getattr(browser_inputs, action_enum.name.lower(), None)
+
+        if action_enum in actions_without_inputs:
+            return browser_inputs
+
+        if not action_input:
+            raise ValueError(
+                f"{action_enum.value} is chosen but `{action_enum.name.lower()}` schema is not provided"
+            )
+        return browser_inputs
 
 
 class APIScanWebpage(BaseModel):
