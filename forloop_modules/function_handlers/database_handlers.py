@@ -10,20 +10,45 @@ from tkinter.filedialog import askopenfile
 
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
+import forloop_modules.globals.db_connection as dbc
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.database_utilities_handler import duh
+from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 from forloop_modules.function_handlers.auxilliary.data_types_validation import validate_input_data_types
+from forloop_modules.utils.encryption import decrypt_text, convert_base64_private_key_to_rsa_private_key
+from forloop_modules.redis.redis_connection import kv_redis, create_redis_key_for_project_db_private_key
 
 def parse_comboentry_input(input_value: list[str]):
     input_value = input_value[0] if isinstance(input_value, list) and len(input_value) > 0 else input_value
     
     return input_value
+
+def get_all_databases_in_project():
+    response = ncrb.get_all_databases()
+        
+    if response.status_code != 200:
+        raise Exception(f'Error {response.status_code}: {response.reason}.')
+    
+    databases = response.json().get("result", {}).get("databases")
+    project_databases = [database for database in databases if database["project_uid"] == aet.project_uid]
+    
+    return project_databases
+
+def filter_database_by_name_from_all_project_databases(project_databases: list[dict], db_name: str):
+    selected_databases = [project_db for project_db in project_databases if project_db["database_name"] == db_name]
+        
+    if len(selected_databases) > 1:
+        raise ValueError(f'Multiple DBs named {db_name} found in the current project.')
+    
+    selected_db = selected_databases[0] if selected_databases else None
+    
+    return selected_db
 
 DbOperation = Literal["INSERT", "UPDATE", "DELETE"]
 DBInstance = Union[dh.MysqlDb, dh.SqlServerDb, dh.PostgresDb, dh.XlsxDB, dh.MongoDb, dh.BigQueryDb]
@@ -246,11 +271,11 @@ class DBQueryHandler(AbstractFunctionHandler):
 
         self.direct_execute(db_table_name, query, new_var_name)
 
-    def direct_execute(self, dbtable_name, query, new_var_name):
-        if not dbtable_name:
+    def direct_execute(self, db_table_name, query, new_var_name):
+        if not db_table_name:
             return
         
-        matching_dbtables = get_name_matching_db_tables(dbtable_name)
+        matching_dbtables = get_name_matching_db_tables(db_table_name)
 
         if len(matching_dbtables) == 1:
             dbtable = matching_dbtables[0]
@@ -424,15 +449,39 @@ class DBSelectHandler(AbstractFunctionHandler):
         # else:
         #     raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
         
-    def direct_execute(self, db_name, dbtable_name, selected_columns, column_name, operator, value, limit, new_var_name):        
-        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
-        db_instance = db_table.db1
+    def direct_execute(self, db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name):  
+        project_databases = get_all_databases_in_project()
+        db_dict = filter_database_by_name_from_all_project_databases(project_databases=project_databases, db_name=db_name)
         
-        df_new = pd.DataFrame()
-        df_new = self._get_df(selected_columns, dbtable_name, db_instance, db_table, column_name, operator,
-                                value, limit)
-        df_new = validate_input_data_types(df_new)
-        variable_handler.new_variable(new_var_name, df_new)
+        if db_dict is None:
+            # User selects from stored DBs so this shouldn't happen. If this is raised, these is an issue in code probably.
+            raise Exception(f'{self.icon_type}: No DB named {db_name} found in project DBs.')
+        
+        redis_key = create_redis_key_for_project_db_private_key(project_uid=aet.project_uid)
+        private_key_base64 = kv_redis.get(redis_key)
+        
+        if private_key_base64 is not None:
+            private_key = convert_base64_private_key_to_rsa_private_key(private_key_base64=private_key_base64)
+            
+            encrypted_password = db_dict["password"]
+            decrypted_password = decrypt_text(text=encrypted_password, private_key=private_key)
+            
+            db_dict["password"] = decrypted_password
+            
+            db_details = dbc.create_db_details_from_database_dict(db_dict=db_dict)
+            db_connection = dbc.DbConnection(db_details=db_details)
+            is_connected = db_connection.test_database_connection()
+        
+            if is_connected:
+                db_table = db_connection.get_db_table(db_table_name)
+                if db_table is None:
+                    return
+                
+                df_new = pd.DataFrame()
+                df_new = self._get_df(select, db_table_name, db_connection.db_instance, db_table, where_column_name, where_operator,
+                                        where_value, limit)
+                df_new = validate_input_data_types(df_new)
+                variable_handler.new_variable(new_var_name, df_new)
 
     def select(self, db_instance, dbtable, query, cols_to_be_selected):
         if type(db_instance) is dh.MongoDb:
@@ -573,19 +622,44 @@ class DBInsertHandler(AbstractFunctionHandler):
 
         self.direct_execute(db_name, db_table_name, inserted_dataframe)
         
-    def direct_execute(self, db_name, dbtable_name, inserted_dataframe):
-        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
-        db_instance = db_table.db1
+    def direct_execute(self, db_name, db_table_name, inserted_dataframe):
+        project_databases = get_all_databases_in_project()
+        db_dict = filter_database_by_name_from_all_project_databases(project_databases=project_databases, db_name=db_name)
+        
+        if db_dict is None:
+            # User selects from stored DBs so this shouldn't happen. If this is raised, these is an issue in code probably.
+            raise Exception(f'{self.icon_type}: No DB named {db_name} found in project DBs.')
+        
+        redis_key = create_redis_key_for_project_db_private_key(project_uid=aet.project_uid)
+        private_key_base64 = kv_redis.get(redis_key)
+        
+        if private_key_base64 is not None:
+            private_key = convert_base64_private_key_to_rsa_private_key(private_key_base64=private_key_base64)
+            
+            encrypted_password = db_dict["password"]
+            decrypted_password = decrypt_text(text=encrypted_password, private_key=private_key)
+            
+            db_dict["password"] = decrypted_password
+            
+            db_details = dbc.create_db_details_from_database_dict(db_dict=db_dict)
+            db_connection = dbc.DbConnection(db_details=db_details)
+            is_connected = db_connection.test_database_connection()
+        
+            if is_connected:
+                db_instance = db_connection.db_instance
+                db_table = db_connection.get_db_table(db_table_name)
+                if db_table is None:
+                    return
+                
+                columns = None if isinstance(db_table, dh.MongoTable) else db_table.columns
 
-        columns = None if isinstance(db_table, dh.MongoTable) else db_table.columns
+                try:
+                    inserted_dataframe = self._convert_data_variable_to_df(inserted_dataframe, columns)
+                except ValueError:
+                    flog.error('Wrong number of columns', self)
+                    return
 
-        try:
-            inserted_dataframe = self._convert_data_variable_to_df(inserted_dataframe, columns)
-        except ValueError:
-            flog.error('Wrong number of columns', self)
-            return
-
-        connect_to_db_and_run_operation("INSERT", db_instance, db_table, inserted_dataframe=inserted_dataframe)
+                connect_to_db_and_run_operation("INSERT", db_instance, db_table, inserted_dataframe=inserted_dataframe)
 
             # TEMPORARY DISABLED
             # var_name = f"{dbtable.db_connection.database}.{dbtable.name}"
@@ -704,20 +778,45 @@ class DBDeleteHandler(AbstractFunctionHandler):
 
         self.direct_execute(db_name, db_table_name, column_name, operator, value)
 
-    def direct_execute(self, db_name,  dbtable_name, column_name, operator, value):
-        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
-        db_instance = db_table.db1
+    def direct_execute(self, db_name,  db_table_name, column_name, operator, value):
+        project_databases = get_all_databases_in_project()
+        db_dict = filter_database_by_name_from_all_project_databases(project_databases=project_databases, db_name=db_name)
         
-        value = parse_float_db(db_instance=db_instance, value=value)
+        if db_dict is None:
+            # User selects from stored DBs so this shouldn't happen. If this is raised, these is an issue in code probably.
+            raise Exception(f'{self.icon_type}: No DB named {db_name} found in project DBs.')
+        
+        redis_key = create_redis_key_for_project_db_private_key(project_uid=aet.project_uid)
+        private_key_base64 = kv_redis.get(redis_key)
+        
+        if private_key_base64 is not None:
+            private_key = convert_base64_private_key_to_rsa_private_key(private_key_base64=private_key_base64)
+            
+            encrypted_password = db_dict["password"]
+            decrypted_password = decrypt_text(text=encrypted_password, private_key=private_key)
+            
+            db_dict["password"] = decrypted_password
+            
+            db_details = dbc.create_db_details_from_database_dict(db_dict=db_dict)
+            db_connection = dbc.DbConnection(db_details=db_details)
+            is_connected = db_connection.test_database_connection()
+        
+            if is_connected:
+                db_instance = db_connection.db_instance
+                db_table = db_connection.get_db_table(db_table_name)
+                if db_table is None:
+                    return
+        
+                value = parse_float_db(db_instance=db_instance, value=value)
 
-        if type(db_instance) is dh.MongoDb:
-            where_statement = get_condition_mongo(column_name, value, operator)
-        else:
-            where_statement = f"{column_name}{operator}{value}"
-            if where_statement == "*='*'": #delete all data from table -> column_name = ["*"], operator = "=", value = '*'
-                where_statement = None
+                if type(db_instance) is dh.MongoDb:
+                    where_statement = get_condition_mongo(column_name, value, operator)
+                else:
+                    where_statement = f"{column_name}{operator}{value}"
+                    if where_statement == "*='*'": #delete all data from table -> column_name = ["*"], operator = "=", value = '*'
+                        where_statement = None
 
-        connect_to_db_and_run_operation("DELETE", db_instance, db_table, where_statement=where_statement)
+                connect_to_db_and_run_operation("DELETE", db_instance, db_table, where_statement=where_statement)
 
 class DBUpdateHandler(AbstractFunctionHandler):
     """
@@ -828,23 +927,47 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
         self.direct_execute(db_name, db_table_name, set_column_name, set_value, where_column_name, where_operator, where_value)
         
-    def direct_execute(self, db_name, dbtable_name, set_column_name, set_value, where_column_name, where_operator, where_value):
-        db_table = get_db_table_from_db(table_name=dbtable_name, db_name=db_name)
-        db_instance = db_table.db1
+    def direct_execute(self, db_name, db_table_name, set_column_name, set_value, where_column_name, where_operator, where_value):
+        project_databases = get_all_databases_in_project()
+        db_dict = filter_database_by_name_from_all_project_databases(project_databases=project_databases, db_name=db_name)
+        
+        if db_dict is None:
+            # User selects from stored DBs so this shouldn't happen. If this is raised, these is an issue in code probably.
+            raise Exception(f'{self.icon_type}: No DB named {db_name} found in project DBs.')
+        
+        redis_key = create_redis_key_for_project_db_private_key(project_uid=aet.project_uid)
+        private_key_base64 = kv_redis.get(redis_key)
+        
+        if private_key_base64 is not None:
+            private_key = convert_base64_private_key_to_rsa_private_key(private_key_base64=private_key_base64)
+            
+            encrypted_password = db_dict["password"]
+            decrypted_password = decrypt_text(text=encrypted_password, private_key=private_key)
+            
+            db_dict["password"] = decrypted_password
+            
+            db_details = dbc.create_db_details_from_database_dict(db_dict=db_dict)
+            db_connection = dbc.DbConnection(db_details=db_details)
+            is_connected = db_connection.test_database_connection()
+        
+            if is_connected:
+                db_instance = db_connection.db_instance
+                db_table = db_connection.get_db_table(db_table_name)
+                if db_table is None:
+                    return
 
+                if type(db_instance) is dh.MongoDb:
+                    set_statement,where_statement = self._get_mongo_update_statements(db_instance, db_table, set_value, 
+                                                                                    set_column_name, where_value, 
+                                                                                    where_column_name, where_operator)
 
-        if type(db_instance) is dh.MongoDb:
-            set_statement,where_statement = self._get_mongo_update_statements(db_instance, db_table, set_value, 
-                                                                              set_column_name, where_value, 
-                                                                              where_column_name, where_operator)
+                else:
+                    set_statement,where_statement = self._get_sql_update_statements(db_instance, db_table, set_value, 
+                                                                                    set_column_name, where_value, where_column_name, 
+                                                                                    where_operator)
 
-        else:
-            set_statement,where_statement = self._get_sql_update_statements(db_instance, db_table, set_value, 
-                                                                            set_column_name, where_value, where_column_name, 
-                                                                            where_operator)
-
-        connect_to_db_and_run_operation("UPDATE", db_instance, db_table, set_statement=set_statement, 
-                                        where_statement=where_statement)
+                connect_to_db_and_run_operation("UPDATE", db_instance, db_table, set_statement=set_statement, 
+                                                where_statement=where_statement)
 
     def _get_mongo_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, 
                                      where_column_name, where_operator):
@@ -904,8 +1027,8 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
 
         self.direct_execute(db_name, table_name, new_var_name)
 
-    def direct_execute(self,db_name, table_name, new_var_name):
-        db_table = get_db_table_from_db(table_name=table_name, db_name=db_name)
+    def direct_execute(self,db_name, db_table_name, new_var_name):
+        db_table = get_db_table_from_db(table_name=db_table_name, db_name=db_name)
         column_type_pair_dict = dict(zip(db_table.columns, db_table.types))
         variable_handler.new_variable(new_var_name, column_type_pair_dict)
 
