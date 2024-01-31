@@ -506,7 +506,7 @@ class StringModifyVariableHandler(AbstractFunctionHandler):
     def str_modify_existing_variable(self, variable_name, str_operation, argument, argument2, new_variable_name, convert_numerics=False):
         assert str_operation in self.operation_options, f'Operation "{str_operation}" is not in operation options: {self.operation_options}'
 
-        local_variable = variable_handler.get_variable_by_name(variable_name)
+        local_variable = variable_handler.get_local_variable_by_name(variable_name)
         
         if local_variable is None:
             #? Should we maybe notify the user as well (through a pop-up or something)?
