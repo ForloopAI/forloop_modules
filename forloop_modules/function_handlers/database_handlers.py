@@ -29,17 +29,6 @@ def parse_comboentry_input(input_value: list[str]):
     
     return input_value
 
-def get_all_databases_in_project():
-    response = ncrb.get_all_databases()
-        
-    if response.status_code != 200:
-        raise Exception(f'Error {response.status_code}: {response.reason}.')
-    
-    databases = response.json().get("result", {}).get("databases")
-    project_databases = [database for database in databases if database["project_uid"] == aet.project_uid]
-    
-    return project_databases
-
 def filter_database_by_name_from_all_project_databases(project_databases: list[dict], db_name: str):
     selected_databases = [project_db for project_db in project_databases if project_db["database_name"] == db_name]
         
@@ -450,7 +439,7 @@ class DBSelectHandler(AbstractFunctionHandler):
         #     raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
         
     def direct_execute(self, db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name):  
-        project_databases = get_all_databases_in_project()
+        project_databases = ncrb.get_all_databases_by_project_uid()
         db_dict = filter_database_by_name_from_all_project_databases(project_databases=project_databases, db_name=db_name)
         
         if db_dict is None:
@@ -623,7 +612,7 @@ class DBInsertHandler(AbstractFunctionHandler):
         self.direct_execute(db_name, db_table_name, inserted_dataframe)
         
     def direct_execute(self, db_name, db_table_name, inserted_dataframe):
-        project_databases = get_all_databases_in_project()
+        project_databases = ncrb.get_all_databases_by_project_uid()
         db_dict = filter_database_by_name_from_all_project_databases(project_databases=project_databases, db_name=db_name)
         
         if db_dict is None:
@@ -779,7 +768,7 @@ class DBDeleteHandler(AbstractFunctionHandler):
         self.direct_execute(db_name, db_table_name, column_name, operator, value)
 
     def direct_execute(self, db_name,  db_table_name, column_name, operator, value):
-        project_databases = get_all_databases_in_project()
+        project_databases = ncrb.get_all_databases_by_project_uid()
         db_dict = filter_database_by_name_from_all_project_databases(project_databases=project_databases, db_name=db_name)
         
         if db_dict is None:
@@ -928,7 +917,7 @@ class DBUpdateHandler(AbstractFunctionHandler):
         self.direct_execute(db_name, db_table_name, set_column_name, set_value, where_column_name, where_operator, where_value)
         
     def direct_execute(self, db_name, db_table_name, set_column_name, set_value, where_column_name, where_operator, where_value):
-        project_databases = get_all_databases_in_project()
+        project_databases = ncrb.get_all_databases_by_project_uid()
         db_dict = filter_database_by_name_from_all_project_databases(project_databases=project_databases, db_name=db_name)
         
         if db_dict is None:
