@@ -386,37 +386,6 @@ class APIEdge(BaseModel): #Added default values
     #     return values
 
 
-class InitialVariableModel(BaseModel):
-    uid: str = "0"
-    name: str = ""
-    value: Any = "" # strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None (anything evaluatable by ast.literal_eval)
-    type: Optional[str] = None # Type can be enforced or autoinferred
-    size: Optional[int] = None
-    is_result: bool = False
-    pipeline_uid: str = "0"
-    project_uid: str = "0" # TODO: Is this necessary? Node is indirectly linked to a project via pipeline
-
-    @field_validator("name", "value")
-    @classmethod
-    def check_for_single_quote_mark(cls, value: str) -> str:
-        """HACK: Current DBHydra's implementation of INSERT method will remove any ' mark from the
-        variable while inserting a record - even if this ' mark is a part of the inserted string.
-        """
-        if isinstance(value, str) and "'" in value:
-            raise ValueError("Single quotation marks are not permitted")
-        return value
-
-    # NOTE: Should we enforce variable name to be a valid Python variable name?
-    # What are possible repercussions of having Unicode characters in names?
-    # @field_validator("name", mode="before")
-    # @classmethod
-    # def check_name_chars(cls, value: str) -> str:
-    #     regex = r"^[a-zA-Z0-9_]*$"
-    #     if not re.match(regex, value):
-    #         raise ValueError("Variable name must only be composed of a-z, A-Z, 0-9, _ characters")
-    #     return value
-
-
 class VariableModel(BaseModel):
     uid: str = "0"
     name: str = ""
@@ -430,7 +399,8 @@ class VariableModel(BaseModel):
     @field_validator("name", "value")
     @classmethod
     def check_for_single_quote_mark(cls, value: str) -> str:
-        """HACK: Current DBHydra's implementation of INSERT method will remove any ' mark from the
+        """
+        HACK: Current DBHydra's implementation of INSERT method will remove any ' mark from the
         variable while inserting a record - even if this ' mark is a part of the inserted string.
         """
         if isinstance(value, str) and "'" in value:
@@ -450,6 +420,38 @@ class VariableModel(BaseModel):
 
 class APIVariable(VariableModel):
     uid : Any = Field(None, exclude=True, alias="_do_not_send_in_request")
+
+
+class InitialVariableModel(BaseModel):
+    uid: str = "0"
+    name: str = ""
+    value: Any = "" # strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None (anything evaluatable by ast.literal_eval)
+    is_result: bool = False  # TODO: Remove when PrototypeJobs are implemented
+    type: Optional[str] = None # Type can be enforced or autoinferred
+    size: Optional[int] = None
+    pipeline_uid: str = "0"
+    project_uid: str = "0" # TODO: Is this necessary? Node is indirectly linked to a project via pipeline
+
+    @field_validator("name", "value")
+    @classmethod
+    def check_for_single_quote_mark(cls, value: str) -> str:
+        """
+        HACK: Current DBHydra's implementation of INSERT method will remove any ' mark from the
+        variable while inserting a record - even if this ' mark is a part of the inserted string.
+        """
+        if isinstance(value, str) and "'" in value:
+            raise ValueError("Single quotation marks are not permitted")
+        return value
+
+    # NOTE: Should we enforce variable name to be a valid Python variable name?
+    # What are possible repercussions of having Unicode characters in names?
+    # @field_validator("name", mode="before")
+    # @classmethod
+    # def check_name_chars(cls, value: str) -> str:
+    #     regex = r"^[a-zA-Z0-9_]*$"
+    #     if not re.match(regex, value):
+    #         raise ValueError("Variable name must only be composed of a-z, A-Z, 0-9, _ characters")
+    #     return value
 
 
 class APIInitialVariable(InitialVariableModel):

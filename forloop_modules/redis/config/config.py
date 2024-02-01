@@ -14,16 +14,22 @@ class RedisConfig(BaseSettings):
 
     # None values for Host and Password are correct options:
     # in-memory local caching will be used instead of a Redis server
-    HOST: Optional[str] = None
+    HOST: Optional[str] = "localhost"
     USERNAME: str = "default"
     PASSWORD: Optional[str] = None
     PORT: int = 6379
     DB: int = 0
 
+    VARIABLE_KEY: str = "stored_variable_"  # key prefix to be concatenated with variable name
+    INITIAL_VARIABLE_KEY: str = "stored_initial_variable_"  # key prefix to be concatenated with variable name
+
     JOB_KEY: str = "jobs"
     JOB_INDEX_NAME: str = "index"
     JOB_LOCK_NAME: str = "jobs:lock"
     JOB_PRIMARY_KEY: str = "jobs:pk"
+    
+    # Complete nonsense name --> to avoid accidental selection as a variable
+    PRIVATE_ENCRYPTION_KEY_KEY: str = "ForLoop_unicorn_2025_key_for_key_1998_CraZy_FRog"
 
 @lru_cache
 def get_redis_config() -> RedisConfig:

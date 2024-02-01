@@ -76,6 +76,7 @@ class ActiveEntityTracker:
         self.active_session_uid: str = None
         self.active_pipeline_uid: str = None
         self.active_script_uid: str = None
+        self.active_pipeline_job_uid: Optional[str] = None
         self.home_folder = None     # To be refactored to another location (should be stores as user metadata) - refactored to AET for now
  
     
@@ -90,8 +91,7 @@ class ActiveEntityTracker:
         flog.warning('Setting the home folder')
         self.home_folder = 'output/'
         Path(self.home_folder).mkdir(exist_ok=True)
- 
-    
+
     def _initialize_project_and_pipeline_after_login(self, email: str):
         project_response = initialize_last_or_new_project_by_email(email)
         self.project_uid = json.loads(project_response.content.decode('utf-8'))["uid"]
@@ -109,5 +109,7 @@ class ActiveEntityTracker:
         self.project_uid = project_uid if project_uid is not None else self.project_uid
         self.active_pipeline_uid = pipeline_uid if pipeline_uid is not None else self.active_pipeline_uid
 
+    def set_pipeline_job_uid(self, pipeline_job_uid: str) -> None:
+        self.active_pipeline_job_uid = pipeline_job_uid
 
 aet=ActiveEntityTracker()
