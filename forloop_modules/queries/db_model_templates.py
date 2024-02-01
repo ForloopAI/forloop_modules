@@ -429,6 +429,13 @@ class APINode(BaseModel):
     is_breakpoint_enabled: bool = False
     is_disabled: bool = False
 
+
+class APINodeExecute(BaseModel):
+    typ: str
+    params: dict
+    fields: Optional[list] = None
+
+
 class APIEdge(BaseModel): #Added default values
     from_node_uid: str = "0"
     to_node_uid: str = "0"

@@ -7,14 +7,16 @@ from forloop_modules.function_handlers.auxilliary.abstract_function_handler impo
 from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
+from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.globals.scraping_utilities_handler import suh
 from forloop_modules.globals.variable_handler import variable_handler
-from forloop_modules.redis.redis_connection import kv_redis
+from forloop_modules.redis.redis_connection import kv_redis, redis_config
 
 
 class FindSimilarItemsHandler(AbstractFunctionHandler):
     """The FindSimilarItems node accepts a list of XPaths and determines their generalized XPath."""
+
     def __init__(self):
         self.icon_type = "FindSimilarItems"
         self.fn_name = "Find Similar Items"
@@ -213,6 +215,7 @@ class PrepareIconsHandler(AbstractFunctionHandler):
 
 class RefreshBrowserViewHandler(AbstractFunctionHandler):
     """The RefreshBrowserView node refreshes the currently loaded webpage in the BrowserView."""
+
     def __init__(self):
         self.icon_type = "RefreshBrowserView"
         self.fn_name = "Refresh Browser View"
@@ -242,6 +245,7 @@ class RefreshBrowserViewHandler(AbstractFunctionHandler):
 
 class ScanWebPageHandler(AbstractFunctionHandler):
     """ScanWebPage Node looks for certain type of elements on web page and displays them in BrowserView."""
+
     def __init__(self):
         self.icon_type = "ScanWebPage"
         self.fn_name = "Scan web page"
@@ -364,10 +368,15 @@ class ScanWebPageHandler(AbstractFunctionHandler):
         self, incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images,
         incl_buttons, by_xpath, context_xpath=''
     ):
-        suh.scan_web_page(
+        elements = suh.scan_web_page(
             incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images,
             incl_buttons, by_xpath, context_xpath
         )
+        redis_prefix_key = redis_config.SCRAPING_KEY_PREFIX.format(
+            project_uid=aet.project_uid, 
+            pipeline_uid=aet.active_pipeline_uid
+        )
+        kv_redis.set(redis_prefix_key+ "scan_web_page", elements)
 
 
 class ScanWebPageWithAIHandler(AbstractFunctionHandler):
