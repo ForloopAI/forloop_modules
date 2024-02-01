@@ -391,10 +391,18 @@ class DBSelectHandler(AbstractFunctionHandler):
         return fdl
     
     def execute(self, node_detail_form):
-        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)        
-        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)         
-        select = node_detail_form.get_chosen_value_by_name("select", variable_handler)        
-        where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name", variable_handler)        
+        db_name = node_detail_form.get_chosen_value_by_name("db_name", variable_handler)   
+        db_name = parse_comboentry_input(input_value=db_name)
+             
+        db_table_name = node_detail_form.get_chosen_value_by_name("db_table_name", variable_handler)
+        db_table_name = parse_comboentry_input(input_value=db_table_name)
+               
+        select = node_detail_form.get_chosen_value_by_name("select", variable_handler)
+        select = parse_comboentry_input(input_value=select)
+              
+        where_column_name = node_detail_form.get_chosen_value_by_name("where_column_name", variable_handler)
+        where_column_name = parse_comboentry_input(input_value=where_column_name)
+               
         where_operator = node_detail_form.get_chosen_value_by_name("where_operator", variable_handler)
         where_value = node_detail_form.get_chosen_value_by_name("where_value", variable_handler)
         limit = node_detail_form.get_chosen_value_by_name("limit", variable_handler)
@@ -417,11 +425,6 @@ class DBSelectHandler(AbstractFunctionHandler):
         #     raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
         
     def direct_execute(self, db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name):
-        db_name = parse_comboentry_input(input_value=db_name)
-        db_table_name = parse_comboentry_input(input_value=db_table_name)
-        select = parse_comboentry_input(input_value=select)
-        where_column_name = parse_comboentry_input(input_value=where_column_name)
-               
         db_table = get_db_table_from_db(table_name=db_table_name, db_name=db_name)
         db_instance = db_table.db1
         
