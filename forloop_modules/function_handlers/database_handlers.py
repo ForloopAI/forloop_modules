@@ -563,13 +563,13 @@ class DBInsertHandler(AbstractFunctionHandler):
             title="Database",
             name="db_name",
             description="A name of the database containing the desired table.",
-            typ="Comboentry"
+            typ="Combobox"
         )
         self.docs.add_parameter_table_row(
             title="Table name",
             name="db_table_name",
             description="Database table on which the query is executed.",
-            typ="Comboentry",
+            typ="Combobox",
             example=['employees', 'salaries_table']
         )
         self.docs.add_parameter_table_row(
@@ -591,9 +591,9 @@ class DBInsertHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("Database")
-        fdl.comboentry(name="db_name", text="", options=databases_names, row=1)
+        fdl.combobox(name="db_name", options=databases_names, row=1)
         fdl.label("Table name")
-        fdl.comboentry(name="db_table_name", text="", options=db_tables, row=2)
+        fdl.combobox(name="db_table_name", options=db_tables, row=2)
         fdl.label("Inserted Data")
         fdl.entry(name="inserted_dataframe", text="", input_types=["list", "dict", "DataFrame"], row=3)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
