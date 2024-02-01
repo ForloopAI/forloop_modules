@@ -14,11 +14,14 @@ class RedisConfig(BaseSettings):
 
     # None values for Host and Password are correct options:
     # in-memory local caching will be used instead of a Redis server
-    HOST: Optional[str] = None
+    HOST: Optional[str] = None # "localhost" #localhost doesn't work for devs with DummyKVRedis
     USERNAME: str = "default"
     PASSWORD: Optional[str] = None
     PORT: int = 6379
     DB: int = 0
+
+    VARIABLE_KEY: str = "stored_variable_"  # key prefix to be concatenated with variable name
+    INITIAL_VARIABLE_KEY: str = "stored_initial_variable_"  # key prefix to be concatenated with variable name
 
     JOB_KEY: str = "jobs"
     JOB_INDEX_NAME: str = "index"

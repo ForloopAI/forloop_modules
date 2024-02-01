@@ -26,9 +26,11 @@ sys.modules["mouse"]=None #mouse import forbidden - not compatible on mac
 
 
 class ClickHandler(AbstractFunctionHandler):
-    icon_type = "Click"
-    fn_name = "Click"
-    type_category = ntcm.categories.rpa
+    def __init__(self):
+        self.is_cloud_compatible = False
+        self.icon_type = "Click"
+        self.fn_name = "Click"
+        self.type_category = ntcm.categories.rpa
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -45,8 +47,6 @@ class ClickHandler(AbstractFunctionHandler):
         
 
         return fdl
-
-    # def __new__(cls, x, y, *args, **kwargs):
 
     def execute(self, node_detail_form):
         x = node_detail_form.get_chosen_value_by_name("x", variable_handler)
@@ -148,6 +148,7 @@ class ClickImageHandler:  # TODO: AbstractFunctionHandler
 
 class WriteHandler(AbstractFunctionHandler):  # TODO AbstractFunctionHandler
     def __init__(self):
+        self.is_cloud_compatible = False
         self.icon_type = "Write"
         self.fn_name = "Write"
 
@@ -198,6 +199,7 @@ class WriteHandler(AbstractFunctionHandler):  # TODO AbstractFunctionHandler
 class UseKeyHandler(AbstractFunctionHandler):
 
     def __init__(self):
+        self.is_cloud_compatible = False
         self.icon_type = 'UseKey'
         self.fn_name = 'Use Key'
         

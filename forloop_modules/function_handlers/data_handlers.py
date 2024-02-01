@@ -361,6 +361,7 @@ class LoadExcelHandler(AbstractFunctionHandler):
 
 class SaveExcelHandler(AbstractFunctionHandler):
     def __init__(self):
+        self.is_cloud_compatible = False
         self.icon_type = "SaveExcel"
         self.fn_name = "Save Excel"
 
@@ -629,6 +630,7 @@ class ListToDfHandler(AbstractFunctionHandler):
 
 class SaveTxtFileHandler(AbstractFunctionHandler):
     def __init__(self):
+        self.is_cloud_compatible = False
         self.icon_type = "SaveTxtFile"
         self.fn_name = "Save Txt File"
 
@@ -822,6 +824,7 @@ class LoadJsonFileHandler(AbstractFunctionHandler):
 
 class SaveJsonFileHandler(AbstractFunctionHandler):
     def __init__(self):
+        self.is_cloud_compatible = False
         self.icon_type = "SaveJsonFile"
         self.fn_name = "Save Json File"
 
