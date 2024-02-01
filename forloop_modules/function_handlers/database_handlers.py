@@ -695,20 +695,20 @@ class DBDeleteHandler(AbstractFunctionHandler):
             title="Database",
             name="db_name",
             description="A name of the database containing the desired table.",
-            typ="Comboentry"
+            typ="Combobox"
         )
         self.docs.add_parameter_table_row(
             title="From",
             name="db_table_name",
             description="Database table on which the query is executed.",
-            typ="Comboentry",
+            typ="Combobox",
             example=['employees', 'salaries_table']
         )
         self.docs.add_parameter_table_row(
             title="Column",
             name="column_name",
             description="The column on which the condition is evaluated.",
-            typ="Comboentry"
+            typ="Combobox"
         )
         self.docs.add_parameter_table_row(
             title="Operator",
@@ -736,12 +736,12 @@ class DBDeleteHandler(AbstractFunctionHandler):
         fdl.label("DB Delete")
         fdl.label("Database")
         databases_names = [database["database_name"] for database in databases]
-        fdl.comboentry(name="db_name", text="", options=databases_names, row=1)
+        fdl.combobox(name="db_name", options=databases_names, row=1)
         fdl.label("From")
-        fdl.comboentry(name="db_table_name", text="", options=db_tables, row=2)
+        fdl.combobox(name="db_table_name", options=db_tables, row=2)
         fdl.label("Where")
         fdl.label("Column")
-        fdl.comboentry(name="column_name", text="", options=[], row=4)
+        fdl.combobox(name="column_name", options=[], row=4)
         fdl.label("Operator")
         fdl.combobox(name="operator", options=operators, default=operators[0], row=5)
         fdl.label("Value")
