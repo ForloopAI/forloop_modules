@@ -14,7 +14,7 @@ class RedisConfig(BaseSettings):
 
     # None values for Host and Password are correct options:
     # in-memory local caching will be used instead of a Redis server
-    HOST: Optional[str] = "localhost"
+    HOST: Optional[str] = None # "localhost" #localhost doesn't work for devs with DummyKVRedis
     USERNAME: str = "default"
     PASSWORD: Optional[str] = None
     PORT: int = 6379
