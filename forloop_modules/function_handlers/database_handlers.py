@@ -369,11 +369,7 @@ class DBSelectHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
-        if options is not None:
-            databases = options["databases"]
-        else:
-            databases = []
-            
+        databases = options.get("databases", []) if options is not None else []            
         database_names = [database["database_name"] for database in databases]
 
         operators = ["=", "<", ">", ">=", "<=", "<>", " IN "]
