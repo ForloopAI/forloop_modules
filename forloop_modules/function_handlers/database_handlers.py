@@ -322,13 +322,13 @@ class DBSelectHandler(AbstractFunctionHandler):
             title="Database",
             name="db_name",
             description="A name of the database containing the desired table.",
-            typ="Comboentry"
+            typ="Combobox"
         )
         self.docs.add_parameter_table_row(
             title="From",
             name="db_table_name",
             description="Database table on which the query is executed.",
-            typ="Comboentry",
+            typ="Combobox",
             example=['employees', 'salaries_table']
         )
         self.docs.add_parameter_table_row(
@@ -341,7 +341,7 @@ class DBSelectHandler(AbstractFunctionHandler):
             title="Column",
             name="where_column_name",
             description="The column on which the condition is evaluated.",
-            typ="Comboentry"
+            typ="Combobox"
         )
         self.docs.add_parameter_table_row(
             title="Operator",
@@ -384,14 +384,14 @@ class DBSelectHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         fdl.label("DB Select")
         fdl.label("Database")
-        fdl.comboentry(name="db_name", text="", options=database_names, row=1)
+        fdl.combobox(name="db_name", options=database_names, row=1)
         fdl.label("From")
-        fdl.comboentry(name="db_table_name", text="", options=db_tables, row=2)
+        fdl.combobox(name="db_table_name", options=db_tables, row=2)
         fdl.label("Select")
         fdl.comboentry(name="select", text="*", options=["*"], row=3)
         fdl.label("Where")
         fdl.label("Column")
-        fdl.comboentry(name="where_column_name", text="", options=[], row=5)
+        fdl.combobox(name="where_column_name", options=[], row=5)
         fdl.label("Operator")
         fdl.combobox(name="where_operator", options=operators, default=operators[0], row=6)
         fdl.label("Value")
