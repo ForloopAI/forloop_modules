@@ -825,20 +825,20 @@ class DBUpdateHandler(AbstractFunctionHandler):
             title="Database",
             name="db_name",
             description="A name of the database containing the desired table.",
-            typ="Comboentry"
+            typ="Combobox"
         )
         self.docs.add_parameter_table_row(
             title="Table name",
             name="db_table_name",
             description="Database table on which the query is executed.",
-            typ="Comboentry",
+            typ="Combobox",
             example=['employees', 'salaries_table']
         )
         self.docs.add_parameter_table_row(
             title="(Set) Column",
             name="set_column_name",
             description="The column in which the value is updated.",
-            typ="Comboentry"
+            typ="Combobox"
         )
         self.docs.add_parameter_table_row(
             title="Value",
@@ -849,7 +849,7 @@ class DBUpdateHandler(AbstractFunctionHandler):
             title="(Where) Column",
             name="where_column_name",
             description="The column on which the condition is evaluated.",
-            typ="Comboentry"
+            typ="Combobox"
         )
         self.docs.add_parameter_table_row(
             title="Operator",
@@ -877,17 +877,17 @@ class DBUpdateHandler(AbstractFunctionHandler):
         fdl.label("DB Update")
         fdl.label("Database")
         databases_names = [database["database_name"] for database in databases]
-        fdl.comboentry(name="db_name", text="", options=databases_names, row=1)
+        fdl.combobox(name="db_name", options=databases_names, row=1)
         fdl.label("Table name")
-        fdl.comboentry(name="db_table_name", text="", options=db_tables, row=2)
+        fdl.combobox(name="db_table_name", options=db_tables, row=2)
         fdl.label("Set")
         fdl.label("Column")
-        fdl.comboentry(name="set_column_name", text="", options=[], row=4)
+        fdl.combobox(name="set_column_name", options=[], row=4)
         fdl.label("Value")
         fdl.entry(name="set_value", text="", input_types=["str"], row=5)
         fdl.label("Where")
         fdl.label("Column")
-        fdl.comboentry(name="where_column_name", text="", options=[], row=7)
+        fdl.combobox(name="where_column_name", options=[], row=7)
         fdl.label("Operator")
         fdl.combobox(name="where_operator", options=operators, default=operators[0], row=8)
         fdl.label("Value")
