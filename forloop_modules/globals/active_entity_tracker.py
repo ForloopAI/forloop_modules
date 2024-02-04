@@ -97,8 +97,8 @@ class ActiveEntityTracker:
         self.project_uid = json.loads(project_response.content.decode('utf-8'))["uid"]
         pipeline_response = initialize_last_or_new_pipeline(self.project_uid)
         self.active_pipeline_uid= json.loads(pipeline_response.content.decode('utf-8'))["uid"]
-        user_response = refresh_user_and_session_heartbeat(email)
-        self.active_user_uid = json.loads(user_response.content.decode('utf-8'))["uid"]
+        #user_response = refresh_user_and_session_heartbeat(email)
+        #self.active_user_uid = json.loads(user_response.content.decode('utf-8'))["uid"] #TODO problem with payload, line 52 here
         
         
         
