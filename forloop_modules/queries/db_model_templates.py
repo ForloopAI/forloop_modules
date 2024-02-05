@@ -290,8 +290,8 @@ class APIFindSimilarItems(BaseModel):
     xpaths: list[str]
 
 
-class APIPrepareIcons(BaseModel):
-    pass
+class APIConvertToScrapingNodes(BaseModel):
+    xpaths: list[Union[str, list[str]]]
 
 
 class APIScanWebPage(BaseModel):
@@ -321,7 +321,7 @@ class BrowserActionEnum(str, Enum):
 class BrowserInputs(BaseModel):
     action: BrowserActionEnum
     find_similar_items: Optional[APIFindSimilarItems] = None
-    prepare_icons: Optional[APIPrepareIcons] = None
+    convert_to_scraping_nodes: Optional[APIConvertToScrapingNodes] = None
     scan_webpage: Optional[APIScanWebPage] = None
     scan_webpage_with_ai: Optional[APIScanWebPageWithAI] = None
 
