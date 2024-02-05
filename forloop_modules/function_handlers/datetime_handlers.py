@@ -10,9 +10,8 @@ from forloop_modules.function_handlers.auxilliary.node_type_categories_manager i
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.docs_categories import DocsCategories
-
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
-
+from forloop_modules.function_handlers.auxilliary.auxiliary_functions import parse_comboentry_input
 
 ####### PROBLEMATIC IMPORTS TODO: REFACTOR #######
 #from src.gui.item_detail_form import ItemDetailForm #independent on GLC - but is Frontend -> Should separate to two classes
@@ -21,7 +20,6 @@ from forloop_modules.function_handlers.auxilliary.abstract_function_handler impo
 
 
 def convert_timestamp_to_datetime_if_needed(value):
-
     if type(value) == int or type(value) == float:
         value = datetime.datetime.fromtimestamp(value)
 
@@ -526,7 +524,10 @@ class DatetimeToStringHandler(AbstractFunctionHandler):
 
     def execute(self, node_detail_form):
         datetime_var = node_detail_form.get_chosen_value_by_name("datetime_var", variable_handler)
-        return_format = node_detail_form.get_chosen_value_by_name("return_format", variable_handler)[0]
+        
+        return_format = node_detail_form.get_chosen_value_by_name("return_format", variable_handler)
+        return_format = parse_comboentry_input(return_format)
+        
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
         self.direct_execute(datetime_var, return_format, new_var_name)
