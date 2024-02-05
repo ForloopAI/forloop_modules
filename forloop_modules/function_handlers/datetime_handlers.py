@@ -612,9 +612,9 @@ class DatetimeAddDeltaHandler(AbstractFunctionHandler):
         fdl.label("Datetime variable")
         fdl.entry(name="datetime_var", text="", input_types=["datetime", "int", "float"], required=True, row=1)
         fdl.label("Shift to add")
-        fdl.entry(name="datetime_delta", text="", input_types=["str", "int"], required=True, row=2)
+        fdl.entry(name="datetime_delta", text="", input_types=["int"], required=True, row=2)
         fdl.label("Unit")
-        fdl.combobox(name="delta_unit", options=options, multiselect_indices={}, default="seconds", row=3)
+        fdl.combobox(name="delta_unit", options=options, default="seconds", row=3)
         fdl.label("New variable name")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=4)        
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -630,6 +630,9 @@ class DatetimeAddDeltaHandler(AbstractFunctionHandler):
         self.direct_execute(datetime_var, datetime_delta, delta_unit, new_var_name)
 
     def direct_execute(self, datetime_var, datetime_delta, delta_unit, new_var_name):
+        datetime_var = convert_timestamp_to_datetime_if_needed(datetime_var)
+        datetime_delta = ast.literal_eval(datetime_delta)
+        
         inp = Input()
         inp.assign("datetime_var", datetime_var)
         inp.assign("datetime_delta", datetime_delta)
@@ -672,12 +675,7 @@ class DatetimeAddDeltaHandler(AbstractFunctionHandler):
         """
 
     def input_execute(self, inp):
-        datetime_delta = ast.literal_eval(f'[{inp("datetime_delta")}]')
-
-        delta_dict = {}
-
-        for i, unit in enumerate(inp("delta_unit")):
-            delta_dict[unit] = datetime_delta[i]
+        delta_dict = {inp("delta_unit"): inp("datetime_delta")}
 
         delta = relativedelta(**delta_dict)
         datetime_plus_delta = inp("datetime_var") + delta
