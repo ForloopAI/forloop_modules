@@ -643,37 +643,6 @@ class DatetimeAddDeltaHandler(AbstractFunctionHandler):
         variable_handler.new_variable(new_var_name, datetime_plus_delta)  
         #variable_handler.update_data_in_variable_explorer(glc)
 
-        """
-        datetime_var = convert_timestamp_to_datetime_if_needed(datetime_var)
-
-        datetime_delta = f'[{datetime_delta}]'
-        datetime_delta = ast.literal_eval(datetime_delta)
-
-        if len(datetime_delta) != len(delta_unit) or type(datetime_delta) != list:
-            flog.error("Wrong timedelta input")
-            return None
-
-        delta_dict = {}
-
-        for i, unit in enumerate(delta_unit):
-            delta_dict[unit] = datetime_delta[i]
-
-        #delta = relativedelta(**{delta_unit: datetime_delta})
-        delta = relativedelta(**delta_dict)
-
-        try:
-            new_var = datetime_var + delta
-        except Exception as e:
-            flog.error(message=f"{e}")
-            return None
-        
-
-        
-        
-        variable_handler.new_variable(new_var_name, new_var)  
-        #variable_handler.update_data_in_variable_explorer(glc)
-        """
-
     def input_execute(self, inp):
         delta_dict = {inp("delta_unit"): inp("datetime_delta")}
 
