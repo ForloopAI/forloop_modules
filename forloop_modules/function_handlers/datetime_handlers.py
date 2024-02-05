@@ -66,19 +66,6 @@ class DatetimeNowHandler(AbstractFunctionHandler):
 
         variable_handler.new_variable(new_var_name, now)  
         #variable_handler.update_data_in_variable_explorer(glc)
-
-        """
-        now = datetime.datetime.now()
-
-        if datetime_format == "timestamp":
-            if add_decimal:
-                now = now.timestamp()
-            else:
-                now = int(now.timestamp())
-
-        variable_handler.new_variable(new_var_name, now)  
-        ##variable_handler.update_data_in_variable_explorer(glc)
-        """
         
     def input_execute(self, inp):
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -90,7 +77,6 @@ class DatetimeNowHandler(AbstractFunctionHandler):
                 now = int(now.timestamp())
         
         return now
-
 
     def export_code(self, node_detail_form):
         new_var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_name", is_input_variable_name=True)
@@ -200,20 +186,6 @@ class NewDatetimeHandler(AbstractFunctionHandler):
         
         variable_handler.new_variable(new_var_name, new_datetime)
         ##variable_handler.update_data_in_variable_explorer(glc)
-
-        """
-        #is_leap_year = self.check_if_year_is_leap_year(year)
-        try:
-            new_datetime = datetime.datetime(year, month, day, hour, minute, second, microsecond)
-        except Exception as e:
-            flog.error(message=f"{e}")
-            return None
-
-        
-
-        variable_handler.new_variable(new_var_name, new_datetime)  
-        #variable_handler.update_data_in_variable_explorer(glc)
-        """
     
     def input_execute(self, inp):
 
@@ -223,7 +195,6 @@ class NewDatetimeHandler(AbstractFunctionHandler):
 
     # Now without use but could be useful in future when entries support additional value checking
     def check_if_year_is_leap_year(self, year) -> bool:
-
         """
         To determine whether a year is a leap year, follow these steps:
 
@@ -338,7 +309,6 @@ class DatetimeDifferenceHandler(AbstractFunctionHandler):
         #variable_handler.update_data_in_variable_explorer(glc)
     
     def input_execute(self, inp):
-
         datetime1 = convert_timestamp_to_datetime_if_needed(inp("datetime1"))
         datetime2 = convert_timestamp_to_datetime_if_needed(inp("datetime2"))
 
@@ -436,29 +406,6 @@ class DatetimeValueHandler(AbstractFunctionHandler):
         
         variable_handler.new_variable(new_var_name, extracted_value)
         #variable_handler.update_data_in_variable_explorer(glc)
-
-        """
-        datetime_var = convert_timestamp_to_datetime_if_needed(datetime_var)
-
-        apply_format = {
-            "date": lambda x: x.date(),
-            "time": lambda x: x.time(),
-            "year": lambda x: x.year, 
-            "month": lambda x: x.month, 
-            "day": lambda x: x.day, 
-            "hour": lambda x: x.hour, 
-            "minute": lambda x: x.minute, 
-            "second": lambda x: x.second, 
-            "microsecond": lambda x: x.microsecond
-            }
-        
-        extracted_value = apply_format[value_to_get](datetime_var)
-
-        
-
-        variable_handler.new_variable(new_var_name, extracted_value)  
-        #variable_handler.update_data_in_variable_explorer(glc)
-        """
 
     def input_execute(self, inp):
 
@@ -643,20 +590,6 @@ class DatetimeFromStringHandler(AbstractFunctionHandler):
 
         variable_handler.new_variable(new_var_name, parsed_datetime)
         #variable_handler.update_data_in_variable_explorer(glc)
-
-        """
-        try:
-            parsed_datetime = parser.parse(datetime_str_var)
-        except Exception as e:
-            flog.error(message=f"{e}")
-            return None
-
-        
-        
-        variable_handler.new_variable(new_var_name, parsed_datetime)  
-        #variable_handler.update_data_in_variable_explorer(glc)
-        """
-
     
     def input_execute(self, inp):
             
