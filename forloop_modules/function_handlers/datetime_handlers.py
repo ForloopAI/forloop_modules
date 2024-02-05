@@ -182,8 +182,8 @@ class NewDatetimeHandler(AbstractFunctionHandler):
         ##variable_handler.update_data_in_variable_explorer(glc)
     
     def input_execute(self, inp):
-
-        new_datetime = datetime.datetime(inp("year"), inp("month"), inp("day"), inp("hour"), inp("minute"), inp("second"))
+        new_datetime = datetime.datetime(inp("year"), inp("month"), inp("day"), inp("hour"), inp("minute"), 
+                                         inp("second"), tzinfo=datetime.timezone.utc)
 
         return new_datetime
 
