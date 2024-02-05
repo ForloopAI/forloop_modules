@@ -169,17 +169,14 @@ class NewDatetimeHandler(AbstractFunctionHandler):
         second = second or 0
 
         inp = Input()
-
-        try:
-            new_datetime = self.input_execute(inp)
-        except Exception as e:
-            flog.error(message=f"{e}")
         inp.assign("year", int(year))
         inp.assign("month", int(month))
         inp.assign("day", int(day))
         inp.assign("hour", int(hour))
         inp.assign("minute", int(minute))
         inp.assign("second", int(second))
+
+        new_datetime = self.input_execute(inp)
         
         variable_handler.new_variable(new_var_name, new_datetime)
         ##variable_handler.update_data_in_variable_explorer(glc)
