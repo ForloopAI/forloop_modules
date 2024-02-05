@@ -21,13 +21,9 @@ from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 from forloop_modules.function_handlers.auxilliary.data_types_validation import validate_input_data_types
+from forloop_modules.function_handlers.auxilliary.auxiliary_functions import parse_comboentry_input
 from forloop_modules.utils.encryption import decrypt_text, convert_base64_private_key_to_rsa_private_key
 from forloop_modules.redis.redis_connection import kv_redis, create_redis_key_for_project_db_private_key
-
-def parse_comboentry_input(input_value: list[str]):
-    input_value = input_value[0] if isinstance(input_value, list) and len(input_value) > 0 else input_value
-    
-    return input_value
 
 def get_all_databases_in_project():
     response = ncrb.get_all_databases()
