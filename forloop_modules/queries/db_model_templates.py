@@ -312,7 +312,7 @@ class APIScanWebPageWithAI(BaseModel):
 
 class BrowserActionEnum(str, Enum):
     FIND_SIMILAR_ITEMS = "FindSimilarItems"
-    PREPARE_ICONS = "PrepareIcons"
+    CONVERT_TO_SCRAPING_NODES = "ConvertToScrapingNodes"
     SCAN_WEBPAGE = "ScanWebPage"
     SCAN_WEBPAGE_WITH_AI = "ScanWebPageWithAI"
     REFRESH_BROWSER_VIEW = "RefreshBrowserView"
