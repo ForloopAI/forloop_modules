@@ -81,7 +81,7 @@ class DatetimeNowHandler(AbstractFunctionHandler):
         """
         
     def input_execute(self, inp):
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(datetime.timezone.utc)
 
         if inp("datetime_format") == "timestamp":
             if inp("add_decimal"):
