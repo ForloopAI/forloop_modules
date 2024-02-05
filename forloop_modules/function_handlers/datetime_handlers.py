@@ -299,11 +299,7 @@ class DatetimeDifferenceHandler(AbstractFunctionHandler):
         inp.assign("add_decimal", add_decimal)
         inp.assign("transformations", transformations)
 
-
-        try:
-            diff = self.input_execute(inp)
-        except Exception as e:
-            flog.error(message=f"{e}")
+        diff = self.input_execute(inp)
         
         variable_handler.new_variable(new_var_name, diff)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -484,10 +480,7 @@ class DatetimeToStringHandler(AbstractFunctionHandler):
         inp.assign("datetime_var", datetime_var)
         inp.assign("return_format", return_format)
 
-        try:
-            formatted_datetime = self.input_execute(inp)
-        except Exception as e:
-            flog.error(message=f"{e}")
+        formatted_datetime = self.input_execute(inp)
         
         variable_handler.new_variable(new_var_name, formatted_datetime)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -583,10 +576,7 @@ class DatetimeFromStringHandler(AbstractFunctionHandler):
         inp = Input()
         inp.assign("datetime_str_var", datetime_str_var)
 
-        try:
-            parsed_datetime = self.input_execute(inp)
-        except Exception as e:
-            flog.error(message=f"{e}")
+        parsed_datetime = self.input_execute(inp)
 
         variable_handler.new_variable(new_var_name, parsed_datetime)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -651,10 +641,7 @@ class DatetimeAddDeltaHandler(AbstractFunctionHandler):
         inp.assign("datetime_delta", datetime_delta)
         inp.assign("delta_unit", delta_unit)
 
-        try:
-            datetime_plus_delta = self.input_execute(inp)
-        except Exception as e:
-            flog.error(message=f"{e}")
+        datetime_plus_delta = self.input_execute(inp)
 
         variable_handler.new_variable(new_var_name, datetime_plus_delta)  
         #variable_handler.update_data_in_variable_explorer(glc)
