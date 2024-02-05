@@ -164,19 +164,22 @@ class NewDatetimeHandler(AbstractFunctionHandler):
         self.direct_execute(new_var_name, year, month, day, hour=time_entries["hour"], minute=time_entries["minute"], second=time_entries["second"], microsecond=time_entries["microsecond"])
 
     def direct_execute(self, new_var_name, year, month, day, hour, minute, second):
+        hour = hour or 0
+        minute = minute or 0
+        second = second or 0
 
         inp = Input()
-        inp.assign("year", year)
-        inp.assign("month", month)
-        inp.assign("day", day)
-        inp.assign("hour", hour)
-        inp.assign("minute", minute)
-        inp.assign("second", second)
 
         try:
             new_datetime = self.input_execute(inp)
         except Exception as e:
             flog.error(message=f"{e}")
+        inp.assign("year", int(year))
+        inp.assign("month", int(month))
+        inp.assign("day", int(day))
+        inp.assign("hour", int(hour))
+        inp.assign("minute", int(minute))
+        inp.assign("second", int(second))
         
         variable_handler.new_variable(new_var_name, new_datetime)
         ##variable_handler.update_data_in_variable_explorer(glc)
