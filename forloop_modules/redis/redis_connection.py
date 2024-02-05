@@ -121,3 +121,8 @@ else:
         raise InitializationError(
             f"Discrepancy between '{redis_config.JOB_KEY}:{redis_config.JOB_INDEX_NAME}' initialization and validation rules. Could not initialize"
         )
+
+def create_redis_key_for_project_db_private_key(project_uid: str):
+    redis_key = f'{redis_config.PRIVATE_ENCRYPTION_KEY_KEY}_{project_uid}'
+    
+    return redis_key

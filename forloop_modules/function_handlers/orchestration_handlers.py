@@ -93,51 +93,8 @@ class RunForloopPipelineHandler(AbstractFunctionHandler):
         imports = []
         return (imports)
 
-
-
-
-class RunPythonScriptHandler(AbstractFunctionHandler):
-    icon_type = "PythonScript"
-    fn_name = "Python Script"
-    type_category = ntcm.categories.data
-
-    def make_form_dict_list(self, *args, node_detail_form=None):
-
-        fdl = FormDictList()
-        fdl.label(self.fn_name)
-        fdl.label("Script path:")
-        fdl.label("")
-
-        return fdl
-
-    def direct_execute(self):
-        # def __new__(cls, *args, **kwargs):
-        """Do nothing"""
-        pass
-
-    def export_code(self, *args):
-        image = args[0]
-
-        try:
-            filename = image.item_detail_form.elements[2].text
-            with open(filename, 'r') as f:
-                code = f.read()
-        except:
-            code = """
-            """
-        
-        return (code)
-
-    def export_imports(self, *args):
-        imports = []
-        return (imports)
-
-
-
 orchestration_handlers_dict = {
     "Trigger": TriggerHandler(),
-    "RunForloopPipeline": RunForloopPipelineHandler(),
-    "RunPythonScript": RunPythonScriptHandler(),
-    
+    "RunForloopPipeline": RunForloopPipelineHandler()    
     #"PredictModelValues": PredictModelValuesHandler()
 }

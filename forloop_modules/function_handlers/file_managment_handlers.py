@@ -17,6 +17,7 @@ from forloop_modules.function_handlers.auxilliary.abstract_function_handler impo
 
 class DeleteFileHandler(AbstractFunctionHandler):
     def __init__(self):
+        self.is_cloud_compatible = False
         self.icon_type = "DeleteFile"
         self.fn_name = "Delete File"
 
@@ -74,8 +75,8 @@ class DeleteFileHandler(AbstractFunctionHandler):
 
 
 class CreateFolderHandler(AbstractFunctionHandler):
-
     def __init__(self):
+        self.is_cloud_compatible = False
         self.icon_type = 'CreateFolder'
         self.fn_name = 'Create Folder'
 
@@ -144,8 +145,8 @@ class CreateFolderHandler(AbstractFunctionHandler):
 
 
 class MoveFileHandler(AbstractFunctionHandler):
-
     def __init__(self):
+        self.is_cloud_compatible = False
         self.icon_type = 'MoveFile'
         self.fn_name = 'Move File'
 
@@ -221,8 +222,8 @@ class MoveFileHandler(AbstractFunctionHandler):
 
 
 class CreateFileQueueHandler(AbstractFunctionHandler):
-
     def __init__(self):
+        self.is_cloud_compatible = False
         self.icon_type = 'CreateFileQueue'
         self.fn_name = 'Create File Queue'
 
@@ -303,8 +304,8 @@ class CreateFileQueueHandler(AbstractFunctionHandler):
 
 
 class ProcessItemInQueueHandler(AbstractFunctionHandler):
-
     def __init__(self):
+        self.is_cloud_compatible = False
         self.icon_type = 'ProcessItemInQueue'
         self.fn_name = 'Process Item In Queue'
 

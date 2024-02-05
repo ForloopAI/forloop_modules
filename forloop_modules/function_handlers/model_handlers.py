@@ -1,92 +1,17 @@
 import os
 import importlib
-
-from tkinter.filedialog import askopenfile
+import subprocess
 
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
+import forloop_modules.utils.script_utils as su
 
+from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.docs_categories import DocsCategories
-
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler 
-
-
-class PythonScriptHandler(AbstractFunctionHandler):
-    icon_type = "PythonScript"
-    fn_name = "Python Script"
-    type_category = ntcm.categories.data
-
-    def make_form_dict_list(self, *args, node_detail_form=None):
-
-        fdl = FormDictList()
-        fdl.label(self.fn_name)
-        fdl.label("Script path:")
-        fdl.label("")
-
-        return fdl
-
-    def direct_execute(self):
-        # def __new__(cls, *args, **kwargs):
-        """Do nothing"""
-        pass
-
-    def export_code(self, *args):
-        image = args[0]
-
-        try:
-            filename = image.item_detail_form.elements[2].text
-            with open(filename, 'r') as f:
-                code = f.read()
-        except:
-            code = """
-            """
-        
-        return (code)
-
-    def export_imports(self, *args):
-        imports = []
-        return (imports)
-
-
-class JupyterScriptHandler(AbstractFunctionHandler):
-    icon_type = "JupyterScript"
-    fn_name = "Jupyter Script"
-    type_category = ntcm.categories.data
-
-    def make_form_dict_list(self, *args, node_detail_form=None):
-
-        fdl = FormDictList()
-        fdl.label(self.fn_name)
-        fdl.label("Script path:")
-        fdl.label("")
-
-        return fdl
-
-    def direct_execute(self):
-        # def __new__(cls, *args, **kwargs):
-        """Do nothing"""
-        pass
-
-    def export_code(self, *args):
-        image = args[0]
-
-        try:
-            filename = image.item_detail_form.elements[2].text
-            with open(filename, 'r') as f:
-                code = f.read()
-        except:
-            code = """
-            """
-        
-        return (code)
-
-    def export_imports(self, *args):
-        imports = []
-        return (imports)
-
 
 class LoadPythonScriptHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -97,55 +22,32 @@ class LoadPythonScriptHandler(AbstractFunctionHandler):
         self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, options={}, node_detail_form=None):
+        file_types=[('Python scripts', '*.py')]
+        
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("File path:")
-        fdl.entry(name="file_name", text="./my_python_file.py", required=True, input_types=["str"], row=1)
-        fdl.button(function=self.open_python_script, function_args=node_detail_form, text="Look up file", enforce_required=False, name="lookup_py_file")
-        fdl.label("Load and run")
-        fdl.checkbox(name="load_and_run", bool_value=False, row=3)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        fdl.entry(name="file_path", text="", required=True, type="file", file_types=file_types, row=1)
+        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", 
+                   frontend_implementation=True, focused=True)
 
         return fdl
 
-    def open_python_script(self, node_detail_form):
-        file = askopenfile(mode='r', filetypes=[('Python scripts', '*.py')])
-
-        if file is not None:
-            filename = file.name
-            params_dict = node_detail_form.assign_value_by_name(name='file_name', value=filename)
-            ncrb.update_node_by_uid(node_detail_form.node_uid, params=params_dict)
-
     def execute(self, node_detail_form):
-        filename = node_detail_form.get_chosen_value_by_name("file_name", variable_handler)
-        load_and_run = node_detail_form.get_chosen_value_by_name("load_and_run", variable_handler)
-
-        if filename and os.path.isfile(filename):
-            
-            # short_filename = filename.split("/")[-1]
-            
-            # py_script_image = self.itm.new_image_via_API([400, 180],"PythonScript")  # ,label_text=short_filename
-            ncrb.new_node(pos=[400, 180], typ="PythonScript")
-            # py_script_image.item_detail_form.elements[2].text = filename
-            
-            if load_and_run:
-                self._run_python_script(filename)
-
-        else:
-            flog.error(f"Given path `{filename}` is not a file")
-            return None
-
-    def direct_execute(self, file_name):
+        file_path = node_detail_form.get_chosen_value_by_name("file_path", variable_handler)
         
-        self._run_python_script(file_name)        
+        self.direct_execute(file_path)
 
-    def _run_python_script(self, filename: str):
-
-        try:
-            os.system(f'python "{filename}"')
-        except Exception as e:
-            print("RunPythonScript Error: ", e)
-
+    def direct_execute(self, file_path):
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f"Given path `{file_path}` is not a file.")
+        
+        script_name = file_path.split("/")[-1]
+            
+        with open(file_path, "r") as file:
+            code = file.read()
+            
+        su.create_new_script(script_name, text=code)
 
 class LoadJupyterScriptHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -156,67 +58,175 @@ class LoadJupyterScriptHandler(AbstractFunctionHandler):
         self.docs_category = DocsCategories.control
 
     def make_form_dict_list(self, *args, options={}, node_detail_form=None):
+        file_types=[('Jupyter notebooks', '*.ipynb')]
+        
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("File path:")
-        fdl.entry(name="file_name", text="./jupyter_ntb.ipynb", required=True, input_types=["str"], row=1)
-        fdl.button(function=self.open_jupyter_script, function_args=node_detail_form, text="Look up file", enforce_required=False, name="lookup_ipynb_file")
-        fdl.label("Load and run")
-        fdl.checkbox(name="load_and_run", bool_value=False, row=3)
+        fdl.entry(name="file_path", text="", required=True, type="file", file_types=file_types, row=1)
+        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", 
+                   frontend_implementation=True, focused=True)
+
+        return fdl
+
+    def execute(self, node_detail_form):
+        file_path = node_detail_form.get_chosen_value_by_name("file_path", variable_handler)
+
+        self.direct_execute(file_path)
+
+    def direct_execute(self, file_path):
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f"Given path `{file_path}` is not a file.")
+        
+        script_name = file_path.split("/")[-1]
+            
+        with open(file_path, "r") as file:
+            code = file.read()
+            
+        su.create_new_script(script_name, text=code)
+
+class RunPythonScriptHandler(AbstractFunctionHandler):
+    """
+    DANGER ZONE: This handler is allowed for local use only for now! Don't allow it in production!
+    """
+    
+    def __init__(self):
+        self.icon_type = "RunPythonScript"
+        self.fn_name = "Run Python Script"
+
+        self.type_category = ntcm.categories.model
+        self.docs_category = DocsCategories.control
+
+    def make_form_dict_list(self, *args, options={}, node_detail_form=None):
+        script_names = []
+        
+        try:
+            response = ncrb.get_all_scripts()
+        
+            if response.status_code == 200:
+                scripts = response.json()["result"]["scripts"]
+                
+                # TODO: Using aet.project_uid is ok on local but incorrect in general --> change when allowed to run on remote
+                script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
+        except Exception as e:
+            flog.warning(e)
+        
+        fdl = FormDictList()
+        fdl.label(self.fn_name)
+        fdl.label("Script:")
+        fdl.combobox(name="script_name", options=script_names, row=1)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
 
-        # fdl = FormDictList()
-        # fdl.label("Jupyter Notebook Script")
-        # fdl.label("Script filename")
-        # fdl.entry(name="script", text="script.py", input_types=["str"], row=1)
+    def execute(self, node_detail_form):
+        script_name = node_detail_form.get_chosen_value_by_name("script_name", variable_handler)
+        
+        self.direct_execute(script_name)
 
-        # return fdl
+    def direct_execute(self, script_name):
+        """
+        DANGER: The code runs without any checks! 
+        
+        TODO 1: Solve security issues when running the code.
+        TODO 2: Solve scanning for packages used by script and pip installing of the missing ones.
+        """         
+        script = su.get_script_by_name(script_name)
+        script_text = script.get("text", "")
+        
+        random_id = su.generate_random_id()
+        temp_file_name = f'temp_py_script_{random_id}.py'
+        
+        with open(temp_file_name, "w") as temp_file:
+            temp_file.write(script_text)
+            
+        command = f'python3 {temp_file_name}'
+        
+        completed_process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, 
+                                           stderr=subprocess.PIPE, text=True)
+        
+        os.remove(temp_file_name)
 
-    def open_jupyter_script(self, node_detail_form):
-        file = askopenfile(mode='r', filetypes=[('Jupyter notebooks', '*.ipynb')])
+        if completed_process.returncode == 0:
+            output = completed_process.stdout
+            flog.info(f"Command output:\n{output}")
+        else:
+            error_output = completed_process.stderr
+            message = f'Executed script failed with the following traceback:\n{error_output}'
+            flog.warning(message)
+            
+class RunJupyterScriptHandler(AbstractFunctionHandler):
+    """
+    DANGER ZONE: This handler is allowed for local use only for now! Don't allow it in production!
+    """
+    
+    def __init__(self):
+        self.icon_type = "RunJupyterScript"
+        self.fn_name = "Run Jupyter Script"
 
-        if file is not None:
-            filename = file.name
-            params_dict = node_detail_form.assign_value_by_name(name='file_name', value=filename)
-            ncrb.update_node_by_uid(node_detail_form.node_uid, params=params_dict)
+        self.type_category = ntcm.categories.model
+        self.docs_category = DocsCategories.control
+
+    def make_form_dict_list(self, *args, options={}, node_detail_form=None):
+        script_names = []
+        
+        try:
+            response = ncrb.get_all_scripts()
+        
+            if response.status_code == 200:
+                scripts = response.json()["result"]["scripts"]
+                
+                # TODO: Using aet.project_uid is ok on local but incorrect in general --> change when allowed to run on remote
+                script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
+        except Exception as e:
+            flog.warning(e)
+        
+        fdl = FormDictList()
+        fdl.label(self.fn_name)
+        fdl.label("Script:")
+        fdl.combobox(name="script_name", options=script_names, row=1)
+        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+
+        return fdl
 
     def execute(self, node_detail_form):
-        filename = node_detail_form.get_chosen_value_by_name("file_name", variable_handler)
-        load_and_run = node_detail_form.get_chosen_value_by_name("load_and_run", variable_handler)
-
-        if filename and os.path.isfile(filename):
-            
-            # short_filename = filename.split("/")[-1]
-            
-            # jupyter_image = self.itm.new_image_via_API([400, 180],"JupyterScript",label_text=short_filename)
-            ncrb.new_node(pos=[500, 300], typ="JupyterScript")
-            # jupyter_image.item_detail_form.elements[2].text = filename
-            
-            if load_and_run:
-                self._run_jupyter_script(filename)
-
-        else:
-            flog.error(f"Given path `{filename}` is not a file")
-            return None
-
-    def direct_execute(self, filename):
-
-        self._run_jupyter_script(filename)
-
-        # command = "runipy"
-        # location = "C:\\Users\\EUROCOM\\Documents\\Git\\ForloopAI\\forloop_platform_dominik\\"
-
-        # os.chdir(location)
-        # os.system("start cmd cd " + location + script + " /k " + command + " " + location + script)
-
-    def _run_jupyter_script(self, filename):
-
-        # short_filename = filename.split("/")[-1]
-        # run_path = filename.replace(short_filename, "")
+        script_name = node_detail_form.get_chosen_value_by_name("script_name", variable_handler)
         
-        # notebook_filename_out = f'executed_{short_filename}'
+        self.direct_execute(script_name)
+
+    def direct_execute(self, script_name):
+        """
+        DANGER: The code runs without any checks! 
+        
+        TODO: Solve security issues when running the code.
+        """    
+        script = su.get_script_by_name(script_name)
+        script_text = script.get("text", "")
+        
+        random_id = su.generate_random_id()
+        temp_file_name = f'temp_jupyter_script_{random_id}.ipynb'
+        
+        with open(temp_file_name, "w") as temp_file:
+            temp_file.write(script_text)
+            
+        command = f'jupyter nbconvert --to notebook --execute {temp_file_name}'
+        
+        completed_process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, 
+                                           stderr=subprocess.PIPE, text=True)
+        os.remove(temp_file_name)
+
+        if completed_process.returncode == 0:
+            output = completed_process.stdout
+            flog.info(f"Command output:\n{output}")
+        else:
+            error_output = completed_process.stderr
+            message = f'Executed script failed with the following traceback:\n{error_output}'
+            flog.warning(message)
+            
+        # NOTE: Alternative implementation, do not delete yet (if tempted to do so, ask Dominik first).
+        # run_path = filename.replace(script_name, "")
+        
+        # notebook_filename_out = f'executed_{script_name}'
         # notebook_filename_out = os.path.join(run_path, notebook_filename_out)
 
         # with open(filename) as f:
@@ -235,13 +245,6 @@ class LoadJupyterScriptHandler(AbstractFunctionHandler):
         # finally:
         #     with open(notebook_filename_out, mode='w', encoding='utf-8') as f:
         #         nbformat.write(nb, f)
-
-        try:
-            os.system(f"jupyter nbconvert --to notebook --execute {filename}")
-            #os.system(f'runipy "{filename}"')
-        except Exception as e:
-            print("RunJupyterScript Error: ", e)
-
 
 class TrainModelHandler:
     def __init__(self):
@@ -338,10 +341,10 @@ class PredictModelValuesHandler:
 
 
 model_handlers_dict = {
-    "PythonScript": PythonScriptHandler(),
     "LoadPythonScript": LoadPythonScriptHandler(),
-    "JupyterScript": JupyterScriptHandler(),
     "LoadJupyterScript": LoadJupyterScriptHandler(),
+    "RunPythonScript": RunPythonScriptHandler(),
+    "RunJupyterScript": RunJupyterScriptHandler(),
     "TrainModel": TrainModelHandler(),
     #"PredictModelValues": PredictModelValuesHandler()
 }

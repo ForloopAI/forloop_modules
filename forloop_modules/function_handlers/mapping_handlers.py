@@ -215,6 +215,7 @@ class ApplyMappingHandler(AbstractFunctionHandler):
 class DefineFunctionHandler(AbstractFunctionHandler):
 
     def __init__(self):
+        self.is_disabled = True # FIXME: Needs refactor - better UX, check functionality, solve how to store functions
         self.icon_type = 'DefineFunction'
         self.fn_name = 'Define Function'
 
@@ -303,6 +304,7 @@ class DefineFunctionHandler(AbstractFunctionHandler):
 class DefineLambdaFunctionHandler(AbstractFunctionHandler):
 
     def __init__(self):
+        self.is_disabled = True # FIXME: Needs refactor - check functionality, solve how to store and run functions
         self.icon_type = 'DefineLambdaFunction'
         self.fn_name = 'Define Lambda Function'
 
@@ -367,6 +369,7 @@ class DefineLambdaFunctionHandler(AbstractFunctionHandler):
 class RunFunctionHandler(AbstractFunctionHandler):
 
     def __init__(self):
+        self.is_disabled = True
         self.icon_type = 'RunFunction'
         self.fn_name = 'Run Function'
 
