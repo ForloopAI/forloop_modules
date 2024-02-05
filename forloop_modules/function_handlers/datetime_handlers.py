@@ -111,6 +111,8 @@ class NewDatetimeHandler(AbstractFunctionHandler):
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         current_year = datetime.datetime.now().year
+        hours_set = list(range(0, 23, 1))
+        minutes_and_secons_set = list(range(0, 59, 1))
         
         fdl = FormDictList()
         fdl.label(self.fn_name)
@@ -122,33 +124,26 @@ class NewDatetimeHandler(AbstractFunctionHandler):
         fdl.entry(name="month", text="1", input_types=["int"], required=True, row=3)
         fdl.label("Day")
         fdl.entry(name="day", text="1", input_types=["int"], required=True, row=4)
-        fdl.button(name="add_time", function=self.add_time, function_args=args, text="Add time", enforce_required=False)
+        fdl.label("Hour")
+        fdl.combobox(name="hour", options=hours_set, default=hours_set[0], row=5)
+        fdl.label("Minute")
+        fdl.combobox(name="minute", options=minutes_and_secons_set, default=minutes_and_secons_set[0], row=6)
+        fdl.label("Second")
+        fdl.combobox(name="second", options=minutes_and_secons_set, default=minutes_and_secons_set[0], row=7)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
-
-    def add_time(self, args):
-        image = args[0]
-
-        form_dict_list = image.item_detail_form.form_dict_list
-
-        form_dict_list.insert(-2, {"Label": "Hour", "Entry":{"name":"hour","text": "0", "input_types":["int"]}})
-        form_dict_list.insert(-2, {"Label": "Minute", "Entry":{"name":"minute","text": "0", "input_types":["int"]}})
-        form_dict_list.insert(-2, {"Label": "Second", "Entry":{"name":"second","text": "0", "input_types":["int"]}})
-        form_dict_list.insert(-2, {"Label": "Microsecond", "Entry":{"name":"microsecond","text": "0", "input_types":["int"]}})
-        form_dict_list.pop(-2) # removes the "Add time" button
-            
-        image.item_detail_form.elements = []
-        #image.item_detail_form = ItemDetailForm(form_dict_list, self.icon_type, magnetic = False) #temp disabled
-        #image.item_detail_form.generate_elements() #temp disabled
 
     def execute(self, node_detail_form):
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
         year = node_detail_form.get_chosen_value_by_name("year", variable_handler)
         month = node_detail_form.get_chosen_value_by_name("month", variable_handler)
         day = node_detail_form.get_chosen_value_by_name("day", variable_handler)
+        hour = node_detail_form.get_chosen_value_by_name("hour", variable_handler)
+        minute = node_detail_form.get_chosen_value_by_name("minute", variable_handler)
+        second = node_detail_form.get_chosen_value_by_name("second", variable_handler)
 
-        self.direct_execute(new_var_name, year, month, day)
+        self.direct_execute(new_var_name, year, month, day, hour, minute, second)
 
     def execute_with_params(self, params):
         
@@ -168,7 +163,7 @@ class NewDatetimeHandler(AbstractFunctionHandler):
 
         self.direct_execute(new_var_name, year, month, day, hour=time_entries["hour"], minute=time_entries["minute"], second=time_entries["second"], microsecond=time_entries["microsecond"])
 
-    def direct_execute(self, new_var_name, year, month, day, hour, minute, second, microsecond):
+    def direct_execute(self, new_var_name, year, month, day, hour, minute, second):
 
         inp = Input()
         inp.assign("year", year)
@@ -177,7 +172,6 @@ class NewDatetimeHandler(AbstractFunctionHandler):
         inp.assign("hour", hour)
         inp.assign("minute", minute)
         inp.assign("second", second)
-        inp.assign("microsecond", microsecond)
 
         try:
             new_datetime = self.input_execute(inp)
@@ -189,35 +183,9 @@ class NewDatetimeHandler(AbstractFunctionHandler):
     
     def input_execute(self, inp):
 
-        new_datetime = datetime.datetime(inp("year"), inp("month"), inp("day"), inp("hour"), inp("minute"), inp("second"), inp("microsecond"))
+        new_datetime = datetime.datetime(inp("year"), inp("month"), inp("day"), inp("hour"), inp("minute"), inp("second"))
 
         return new_datetime
-
-    # Now without use but could be useful in future when entries support additional value checking
-    def check_if_year_is_leap_year(self, year) -> bool:
-        """
-        To determine whether a year is a leap year, follow these steps:
-
-            1. If the year is evenly divisible by 4, go to step 2. Otherwise, go to step 5.
-            2. If the year is evenly divisible by 100, go to step 3. Otherwise, go to step 4.
-            3. If the year is evenly divisible by 400, go to step 4. Otherwise, go to step 5.
-            4. The year is a leap year (it has 366 days).
-            5. The year is not a leap year (it has 365 days).
-
-        """
-
-        if year%4 == 0:
-            if year%100 == 0:
-                if year%400 == 0:
-                    is_leap_year = True
-                else:
-                    is_leap_year = False
-            else:
-                is_leap_year = True
-        else:
-            is_leap_year = False
-
-        return is_leap_year
 
     def export_code(self, node_detail_form):
         new_var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_name", is_input_variable_name=True)
@@ -243,6 +211,32 @@ class NewDatetimeHandler(AbstractFunctionHandler):
     def export_imports(self, *args):
         imports = ["import datetime"]
         return (imports)
+    
+    # Now without use but could be useful in future when entries support additional value checking
+    def _check_if_year_is_leap_year(self, year) -> bool:
+        """
+        To determine whether a year is a leap year, follow these steps:
+
+            1. If the year is evenly divisible by 4, go to step 2. Otherwise, go to step 5.
+            2. If the year is evenly divisible by 100, go to step 3. Otherwise, go to step 4.
+            3. If the year is evenly divisible by 400, go to step 4. Otherwise, go to step 5.
+            4. The year is a leap year (it has 366 days).
+            5. The year is not a leap year (it has 365 days).
+
+        """
+
+        if year%4 == 0:
+            if year%100 == 0:
+                if year%400 == 0:
+                    is_leap_year = True
+                else:
+                    is_leap_year = False
+            else:
+                is_leap_year = True
+        else:
+            is_leap_year = False
+
+        return is_leap_year
 
 
 class DatetimeDifferenceHandler(AbstractFunctionHandler):
