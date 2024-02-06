@@ -8,7 +8,7 @@ from openai import OpenAI, APITimeoutError, RateLimitError
 import forloop_modules.function_handlers.auxilliary.browser_view_gpt_filtering_prompts as bvgfp
 
 from forloop_modules import flog
-from config.config import open_ai_config
+from forloop_modules.config.config import open_ai_config
 
 API_KEY = ""
 
