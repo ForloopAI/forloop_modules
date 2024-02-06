@@ -1,8 +1,10 @@
 import difflib
+import concurrent.futures
 from typing import Union
 
 import forloop_modules.queries.node_context_requests_backend as ncrb
 from forloop_modules.flog import flog
+from forloop_modules.function_handlers.auxilliary import chatgpt_integration
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import (
     AbstractFunctionHandler,
 )
@@ -13,7 +15,7 @@ from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.globals.scraping_utilities_handler import suh
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.redis.redis_connection import kv_redis, redis_config
-
+from forloop_modules.errors.errors import CriticalPipelineError
 
 class FindSimilarItemsHandler(AbstractFunctionHandler):
     """The FindSimilarItems node accepts a list of XPaths and determines their generalized XPath."""
@@ -285,8 +287,23 @@ class ScanWebPageWithAIHandler(AbstractFunctionHandler):
     def make_form_dict_list(self, node_detail_form=None):
         return FormDictList()
 
-    def direct_execute():
-        pass
+    def direct_execute(self, elements, objective):        
+        client = chatgpt_integration.create_open_ai_client()
+        
+        try:
+            filtered_elements, total_element_groups_count, timeouts_count = chatgpt_integration.filter_elements_with_timeout(client, elements, objective)
+        except concurrent.futures.TimeoutError as e:
+            raise CriticalPipelineError(f"OpenAI server response takes too long: {e}")
+        
+        result = {
+            "elements": filtered_elements,
+            "total_element_groups_count": total_element_groups_count,
+            "timeouts_count": timeouts_count
+        }
+        redis_action_key = redis_config.SCRAPING_ACTION_KEY_TEMPLATE.format(pipeline_uid=aet.active_pipeline_uid)
+        kv_redis.set(redis_action_key, result)
+        
+        return result
 
 
 browser_handlers_dict = {
