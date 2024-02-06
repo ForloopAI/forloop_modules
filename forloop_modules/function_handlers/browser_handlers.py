@@ -249,10 +249,10 @@ class RefreshBrowserViewHandler(AbstractFunctionHandler):
         kv_redis.set(redis_action_key, suh.screenshot_string)
 
 
-class ScanWebPageHandler(AbstractFunctionHandler):
+class ScanWebPageButtonHandler(AbstractFunctionHandler):
     """ScanWebPage Node scans for all specified elements in the currently opened webpage BrowserView."""
     def __init__(self):
-        self.icon_type = "ScanWebPage"
+        self.icon_type = "ScanWebPageButton"
         self.fn_name = "Scan web page"
         self.type_category = ntcm.categories.webscraping
 
@@ -310,6 +310,6 @@ browser_handlers_dict = {
     "FindSimilarItems": FindSimilarItemsHandler(),
     "ConvertToScrapingNodes": ConvertToScrapingNodesHandler(),
     "RefreshBrowserView": RefreshBrowserViewHandler(),
-    "ScanWebPage": ScanWebPageHandler(),
+    "ScanWebPageButton": ScanWebPageButtonHandler(),
     "ScanWebPageWithAI": ScanWebPageWithAIHandler(),
 }
