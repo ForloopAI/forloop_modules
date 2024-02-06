@@ -9,3 +9,5 @@ class OpenAIConfig(BaseSettings):
     )
 
     OPENAI_API_KEY: Optional[str] = None
+    
+open_ai_config = OpenAIConfig()
