@@ -36,140 +36,162 @@ class FindSimilarItemsHandler(AbstractFunctionHandler):
     #     xpaths = params["xpaths"]
     #     self.direct_execute(xpaths)
 
-    def direct_execute(self, xpaths: list[str]):
-        # NOTE: Should input be received with the job or extracted from suh?
-        xpaths = suh.get_browser_view_selected_elements()
-        selected_elements_xpaths_new = xpaths
+    def direct_execute(self, xpath_elements: dict):
+        # selected_elements_xpaths_new = xpaths
 
-        elements_positions = kv_redis.get("elements_positions_temp")
-        # elements_positions = ncm.elements_positions_temp  #temp storage TODO: should be done for users or send via API
-        #for i,element_pos in enumerate(elements_positions):
-        #if element_pos["data"] is not None:
-        #    with open(element_pos["data"],"rb") as file:
-        #        new_data=pickle.load(file)
-        #else:
-        #    new_data=[]
-        #elements_positions[i]["data"]=new_data
+        # elements_positions = kv_redis.get("elements_positions_temp")
+        # # elements_positions = ncm.elements_positions_temp  #temp storage TODO: should be done for users or send via API
+        # #for i,element_pos in enumerate(elements_positions):
+        # #if element_pos["data"] is not None:
+        # #    with open(element_pos["data"],"rb") as file:
+        # #        new_data=pickle.load(file)
+        # #else:
+        # #    new_data=[]
+        # #elements_positions[i]["data"]=new_data
 
-        selected_elements_referential_names = [
-            x["name"] for x in selected_elements_xpaths_new
-        ]  #referential means the referential selected item by which other similar items are found
+        # selected_elements_referential_names = [
+        #     x["name"] for x in selected_elements_xpaths_new
+        # ]  #referential means the referential selected item by which other similar items are found
 
-        selected_elements_xpaths_new = [x["xpath"] for x in selected_elements_xpaths_new]  #temp
-        common_xpath_part, xpaths_leftovers = suh.cut_xpaths_to_common_part(
-            selected_elements_xpaths_new
-        )
+        # selected_elements_xpaths_new = [x["xpath"] for x in selected_elements_xpaths_new]  #temp
+        # common_xpath_part, xpaths_leftovers = suh.cut_xpaths_to_common_part(
+        #     selected_elements_xpaths_new
+        # )
+        # # Find optimal siblings level (index of XPath)
+        # generalized_common_xpath_parts, optimal_xpath_index = suh.get_generalized_xpaths(
+        #     common_xpath_part
+        # )  #scans the website n+1 times - could be optimized?
+        # optimal_generalized_common_xpath_part = generalized_common_xpath_parts[optimal_xpath_index]
+
+        # elements_generalized_xpaths = [
+        #     optimal_generalized_common_xpath_part + x for x in xpaths_leftovers
+        # ]
+
+        # xpath_leftover_referential_name_dict = {}
+        # assert len(xpaths_leftovers) == len(
+        #     selected_elements_referential_names
+        # )  #to ensure that the following for loop will be well defined
+        # for i, xpath_leftover in enumerate(xpaths_leftovers):
+        #     xpath_leftover_referential_name_dict[xpath_leftover
+        #                                         ] = selected_elements_referential_names[i]
+
+        # # new_elements_positions after scanning of generalized elements in suh.get_generalized_xpaths
+        # try:
+        #     suh.update_webpage_elements(refresh_browser_view_elements=False)
+        # except:
+        #     flog.error('Error while loading elements positions!')
+
+        # def extract_shared_prefix_and_suffix_from_strings_and_substring(string, substring):
+
+        #     #string = "/html/body/div[4]/div/div/div/div/div[1]/a/div"
+        #     #substring = "/html/body/div[4]/div/div/div/div/div/a/div"
+
+        #     # Finding the differing part between the two strings
+        #     differ = difflib.ndiff(string, substring)
+        #     diff_indices = [i for i, d in enumerate(differ) if d.startswith('-')]
+
+        #     # Splitting the string into three pieces
+        #     before_piece = string[:diff_indices[0]]
+        #     string[diff_indices[0]:diff_indices[-1] + 1]
+        #     after_piece = string[diff_indices[-1] + 1:]
+
+        #     #Before Piece: /html/body/div[4]/div/div/div/div/div
+        #     #Middle Piece: [1]
+        #     #After Piece: /a/div
+
+        #     return (before_piece, after_piece)
+
+        # try:
+        #     before_piece, after_piece = extract_shared_prefix_and_suffix_from_strings_and_substring(
+        #         common_xpath_part, optimal_generalized_common_xpath_part
+        #     )
+
+        #     #NOT IDEAL - problem if generalized xpath isnt done in on the last tag
+        #     matching_elements = []
+
+        #     matching_elements_groups = {}
+        #     for _j, xpath_leftover in enumerate(
+        #         xpaths_leftovers
+        #     ):  #initialization of lists in groups
+        #         referential_element_group = xpath_leftover_referential_name_dict[xpath_leftover]
+        #         matching_elements_groups[referential_element_group] = []
+
+        #     for i, element_position in enumerate(elements_positions):
+
+        #         is_at_least_one_leftover_contained = False
+        #         is_generalized_common_xpath_part_contained = False
+        #         if before_piece in element_position["xpath"] and after_piece in element_position[
+        #             "xpath"]:
+        #             is_generalized_common_xpath_part_contained = True
+        #         for _j, xpath_leftover in enumerate(xpaths_leftovers):
+        #             if element_position["xpath"].endswith(xpath_leftover.replace(";", "")):
+        #                 is_at_least_one_leftover_contained = True
+        #                 referential_element_group = xpath_leftover_referential_name_dict[
+        #                     xpath_leftover]
+
+        #         if is_generalized_common_xpath_part_contained and is_at_least_one_leftover_contained:
+        #             matching_elements.append(element_position["xpath"])
+        #             matching_elements_groups[referential_element_group].append(
+        #                 element_position
+        #             )  #["xpath"]
+
+        #     # for i,element_position in enumerate(elements_positions):
+
+        #     #     is_at_least_one_leftover_contained=False
+        #     #     is_generalized_common_xpath_part_contained=False
+        #     #     if before_piece in element_position["xpath"] and after_piece in element_position["xpath"]:
+        #     #         is_generalized_common_xpath_part_contained=True
+        #     #     print(is_generalized_common_xpath_part_contained, element_position["xpath"])
+        #     #     for j,xpath_leftover in enumerate(xpaths_leftovers):
+        #     #         if xpath_leftover.replace(";","") in element_position["xpath"]:
+        #     #             is_at_least_one_leftover_contained=True
+
+        #     #     print(is_at_least_one_leftover_contained, xpaths_leftovers)
+
+        #     #     if is_generalized_common_xpath_part_contained and is_at_least_one_leftover_contained:
+        #     #         matching_elements.append(element_position["xpath"])
+        #     kv_redis.set("matching_elements_groups", matching_elements_groups)
+        #     # ncm.matching_elements_groups = matching_elements_groups
+        #     message = "Selected elements XPATHs " + str(selected_elements_xpaths_new)
+        # except Exception as e:
+        #     print(e)
+        #     matching_elements = []
+        #     matching_elements_groups = {}
+        #     kv_redis.set("matching_elements_groups", matching_elements_groups)
+        #     # ncm.matching_elements_groups = matching_elements_groups
+        #     message = "Selected elements XPATHs " + str(
+        #         selected_elements_xpaths_new
+        #     ) + ", Error occured in finding matching elements"
+
+        # Get XPaths of selected elements
+        xpaths = [x['xpath'] for x in xpath_elements]
+        common_xpath_part, xpaths_leftovers = suh.cut_xpaths_to_common_part(xpaths)
         # Find optimal siblings level (index of XPath)
         generalized_common_xpath_parts, optimal_xpath_index = suh.get_generalized_xpaths(
             common_xpath_part
-        )  #scans the website n+1 times - could be optimized?
+        )
+
         optimal_generalized_common_xpath_part = generalized_common_xpath_parts[optimal_xpath_index]
+        flog.warning(optimal_generalized_common_xpath_part)
 
         elements_generalized_xpaths = [
-            optimal_generalized_common_xpath_part + x for x in xpaths_leftovers
+            optimal_generalized_common_xpath_part + x + ';' for x in xpaths_leftovers
         ]
+        flog.warning(f'GENERALIZED XPATHS {elements_generalized_xpaths}')
 
-        xpath_leftover_referential_name_dict = {}
-        assert len(xpaths_leftovers) == len(
-            selected_elements_referential_names
-        )  #to ensure that the following for loop will be well defined
-        for i, xpath_leftover in enumerate(xpaths_leftovers):
-            xpath_leftover_referential_name_dict[xpath_leftover
-                                                ] = selected_elements_referential_names[i]
+        suh.scan_web_page(
+            incl_tables=False, incl_bullets=False, incl_texts=False, incl_headlines=False,
+            incl_links=False, incl_images=False, incl_buttons=False,
+            by_xpath=elements_generalized_xpaths,
+            context_xpath=optimal_generalized_common_xpath_part
+        )
 
-        # new_elements_positions after scanning of generalized elements in suh.get_generalized_xpaths
-        try:
-            suh.update_webpage_elements(refresh_browser_view_elements=False)
-        except:
-            flog.error('Error while loading elements positions!')
-
-        def extract_shared_prefix_and_suffix_from_strings_and_substring(string, substring):
-
-            #string = "/html/body/div[4]/div/div/div/div/div[1]/a/div"
-            #substring = "/html/body/div[4]/div/div/div/div/div/a/div"
-
-            # Finding the differing part between the two strings
-            differ = difflib.ndiff(string, substring)
-            diff_indices = [i for i, d in enumerate(differ) if d.startswith('-')]
-
-            # Splitting the string into three pieces
-            before_piece = string[:diff_indices[0]]
-            string[diff_indices[0]:diff_indices[-1] + 1]
-            after_piece = string[diff_indices[-1] + 1:]
-
-            #Before Piece: /html/body/div[4]/div/div/div/div/div
-            #Middle Piece: [1]
-            #After Piece: /a/div
-
-            return (before_piece, after_piece)
-
-        try:
-            before_piece, after_piece = extract_shared_prefix_and_suffix_from_strings_and_substring(
-                common_xpath_part, optimal_generalized_common_xpath_part
-            )
-
-            #NOT IDEAL - problem if generalized xpath isnt done in on the last tag
-            matching_elements = []
-
-            matching_elements_groups = {}
-            for _j, xpath_leftover in enumerate(
-                xpaths_leftovers
-            ):  #initialization of lists in groups
-                referential_element_group = xpath_leftover_referential_name_dict[xpath_leftover]
-                matching_elements_groups[referential_element_group] = []
-
-            for i, element_position in enumerate(elements_positions):
-
-                is_at_least_one_leftover_contained = False
-                is_generalized_common_xpath_part_contained = False
-                if before_piece in element_position["xpath"] and after_piece in element_position[
-                    "xpath"]:
-                    is_generalized_common_xpath_part_contained = True
-                for _j, xpath_leftover in enumerate(xpaths_leftovers):
-                    if element_position["xpath"].endswith(xpath_leftover.replace(";", "")):
-                        is_at_least_one_leftover_contained = True
-                        referential_element_group = xpath_leftover_referential_name_dict[
-                            xpath_leftover]
-
-                if is_generalized_common_xpath_part_contained and is_at_least_one_leftover_contained:
-                    matching_elements.append(element_position["xpath"])
-                    matching_elements_groups[referential_element_group].append(
-                        element_position
-                    )  #["xpath"]
-
-            # for i,element_position in enumerate(elements_positions):
-
-            #     is_at_least_one_leftover_contained=False
-            #     is_generalized_common_xpath_part_contained=False
-            #     if before_piece in element_position["xpath"] and after_piece in element_position["xpath"]:
-            #         is_generalized_common_xpath_part_contained=True
-            #     print(is_generalized_common_xpath_part_contained, element_position["xpath"])
-            #     for j,xpath_leftover in enumerate(xpaths_leftovers):
-            #         if xpath_leftover.replace(";","") in element_position["xpath"]:
-            #             is_at_least_one_leftover_contained=True
-
-            #     print(is_at_least_one_leftover_contained, xpaths_leftovers)
-
-            #     if is_generalized_common_xpath_part_contained and is_at_least_one_leftover_contained:
-            #         matching_elements.append(element_position["xpath"])
-            kv_redis.set("matching_elements_groups", matching_elements_groups)
-            # ncm.matching_elements_groups = matching_elements_groups
-            message = "Selected elements XPATHs " + str(selected_elements_xpaths_new)
-        except Exception as e:
-            print(e)
-            matching_elements = []
-            matching_elements_groups = {}
-            kv_redis.set("matching_elements_groups", matching_elements_groups)
-            # ncm.matching_elements_groups = matching_elements_groups
-            message = "Selected elements XPATHs " + str(
-                selected_elements_xpaths_new
-            ) + ", Error occured in finding matching elements"
+        browser_view_elements = suh.get_webpage_elements()
 
         data = {
-            "message": message, "ok": True,
-            "elements_generalized_xpaths": elements_generalized_xpaths,
-            "similar_items_xpaths": matching_elements,
-            "similar_items_xpath_groups": matching_elements_groups
+            'elements': browser_view_elements,
+            'element_generalized_xpaths': elements_generalized_xpaths,
+            'similar_item_elements': optimal_generalized_common_xpath_part,
         }
         redis_action_key = redis_config.SCRAPING_ACTION_KEY_TEMPLATE.format(
             pipeline_uid=aet.active_pipeline_uid

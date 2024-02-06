@@ -286,8 +286,15 @@ class APIScript(BaseModel):
 #     total_time: int = 0
 
 
+class XPathElement(BaseModel):
+    rect: dict[str, float] # {"x": 0.0, "y": 0.0, "width": 0.0, "height": 0.0}
+    xpath: str
+    data: str
+    isSelected: bool
+
+
 class APIFindSimilarItems(BaseModel):
-    xpaths: list[str]
+    xpaths: list[XPathElement]
 
 
 class APIConvertToScrapingNodes(BaseModel):
