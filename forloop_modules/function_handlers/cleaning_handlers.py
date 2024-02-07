@@ -438,11 +438,7 @@ class ConstantColumnHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, value, column_name, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-        ###variable_handler.last_active_dataframe_node_uid = node_detail_form.node_uid
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
-
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
