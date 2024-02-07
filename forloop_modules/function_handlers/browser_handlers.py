@@ -83,11 +83,11 @@ class ConvertToScrapingNodesHandler(AbstractFunctionHandler):
         variable_handler.create_variable("columns_ExtractXPathsToDf", columns)
         ncrb.new_node(
             pos=[300, 300], typ="ExtractXPathsToDf", params_dict={
-                "xpaths": {"variable": "xpaths", "value": ""},
-                "columns": {"variable": "columns", "value": ""},
+                "xpaths": {"variable": "xpaths_ExtractXPathsToDf", "value": ""},
+                "columns": {"variable": "columns_ExtractXPathsToDf", "value": ""},
                 "entry_df": {"variable": None, "value": ""},
                 "write_mode": {"variable": None, "value": "Write"},
-                "new_var_name": {"variable": None, "value": "scraped_results"},
+                "new_var_name": {"variable": None, "value": "results_ExtractXPathsToDf"},
             }, fields=[]
         )
 
