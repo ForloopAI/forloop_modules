@@ -419,7 +419,7 @@ class ConstantColumnHandler(AbstractFunctionHandler):
         fdl.label("Value")
         fdl.entry(name="value", text="0", input_types=["int", "float"], row=2)
         fdl.label("Column name")
-        fdl.entry(name="column", text="constant", input_types=["str"], row=3)
+        fdl.entry(name="column_name", text="constant", input_types=["str"], row=3)
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=4)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -431,12 +431,12 @@ class ConstantColumnHandler(AbstractFunctionHandler):
     def execute(self, node_detail_form):
         df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         value = node_detail_form.get_chosen_value_by_name("value", variable_handler)
-        column = node_detail_form.get_chosen_value_by_name("column", variable_handler)
+        column_name = node_detail_form.get_chosen_value_by_name("column_name", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
         new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
 
-        self.direct_execute(df_entry, value, column, new_var_name)
+        self.direct_execute(df_entry, value, column_name, new_var_name)
 
         # glc.last_active_dataframe_icon = image
         ###variable_handler.last_active_dataframe_node_uid = node_detail_form.node_uid
@@ -463,15 +463,15 @@ class ConstantColumnHandler(AbstractFunctionHandler):
         value = cast_user_input_to_proper_type(value)
         return value
 
-    def direct_execute(self, df_entry: pd.DataFrame, value, new_colname: str, new_var_name: str):
+    def direct_execute(self, df_entry: pd.DataFrame, value, column_name: str, new_var_name: str):
         # TODO: add inplace=False default parameter
-        self.debug(df_entry, value, new_colname, new_var_name)
+        self.debug(df_entry, value, column_name, new_var_name)
         value = self.parse_input(value)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("value", value)
-        inp.assign("new_colname", new_colname)
+        inp.assign("new_colname", column_name)
 
         try:
             df_new = self.input_execute(inp)
