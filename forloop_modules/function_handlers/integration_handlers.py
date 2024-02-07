@@ -28,14 +28,12 @@ from forloop_modules.function_handlers.auxilliary.node_type_categories_manager i
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.docs_categories import DocsCategories
-
 from forloop_modules.errors.errors import SoftPipelineError
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
 from forloop_modules.function_handlers.file_managment_handlers import file_managment_handlers_dict
-
 from forloop_modules.utils.definitions import GOOGLE_API_SERVICES, GOOGLE_API_SERVICE_INFO
 from forloop_modules.integrations.slack_integration import SlackApiError, get_channels_in_workspace, send_message_to_slack_direct_execute
-
+from forloop_modules.function_handlers.auxilliary.auxiliary_functions import parse_comboentry_input
 from config.config import other_config #TODO Dominik: Circular dependency to forloop_platform repository # not ideal #Maybe solve with os.environ?
 
 
@@ -182,13 +180,13 @@ class SlackNotificationHandler(AbstractFunctionHandler):
 
     def execute(self, node_detail_form):
         channel_name = node_detail_form.get_chosen_value_by_name("channel_name", variable_handler)
+        channel_name = parse_comboentry_input(channel_name)
+        
         text = node_detail_form.get_chosen_value_by_name("text", variable_handler)
 
         self.direct_execute(channel_name, text)
 
     def direct_execute(self, channel_name, text, file_name=None, *args):
-        #send_message_to_slack_direct_execute(channel_name, text, file_name, args)
-
         inp = Input()
         inp.assign("channel_name", channel_name)
         inp.assign("text", text)
@@ -988,6 +986,8 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
     def execute(self, node_detail_form):
         google_file_url = node_detail_form.get_chosen_value_by_name("google_file_url", variable_handler)
         google_file_name = node_detail_form.get_chosen_value_by_name("google_file_name", variable_handler)
+        google_file_name = parse_comboentry_input(google_file_name)
+        
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
         
         new_var_name = variable_handler._set_up_unique_varname(new_var_name)
@@ -1309,6 +1309,8 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
     def execute(self, node_detail_form):
         google_file_url = node_detail_form.get_chosen_value_by_name("google_file_url", variable_handler)
         google_file_name = node_detail_form.get_chosen_value_by_name("google_file_name", variable_handler)
+        google_file_name = parse_comboentry_input(google_file_name)
+        
         start_row = node_detail_form.get_chosen_value_by_name("start_row", variable_handler)
         stop_row = node_detail_form.get_chosen_value_by_name("stop_row", variable_handler)
 
