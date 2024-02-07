@@ -425,8 +425,6 @@ class ConstantColumnHandler(AbstractFunctionHandler):
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=4)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
-        # {"Button": {"function=self.cfh.show_help, "function_args": [self.setup_ui], "text": "Help"}}
-
         return fdl
 
     def execute(self, node_detail_form):
@@ -438,7 +436,6 @@ class ConstantColumnHandler(AbstractFunctionHandler):
         new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
 
         self.direct_execute(df_entry, value, column_name, new_var_name)
-
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     def execute_with_params(self, params):
@@ -544,7 +541,6 @@ class RenameColumnHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=4)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function":self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help"}}
 
         return fdl
 
@@ -560,10 +556,6 @@ class RenameColumnHandler(AbstractFunctionHandler):
         new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
 
         self.direct_execute(df_entry, old_col_name, new_col_name, new_var_name)
-
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -985,9 +977,6 @@ class RemoveEmptyRowsHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, mode, id_columns, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     def execute_with_params(self, params):
@@ -1112,9 +1101,6 @@ class RemoveDuplicatesHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, subset, keep, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -1241,7 +1227,6 @@ class ReplaceHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", category="new_var",text="", row=7)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button": {"function=self.cfh.show_help, "function_args": [self.setup_ui], "text": "Help")
 
         return fdl
 
@@ -1261,9 +1246,6 @@ class ReplaceHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, columns, match, replace_substring, pattern, replacement, new_var_name)
 
-        # glc.last_active_dataframe_icon = image)
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -1458,9 +1440,6 @@ class StripColumnHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column_name, strip_mode, specific_characters, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     # TODO: Implement export_code
@@ -1505,7 +1484,6 @@ class SearchHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", row=5)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button": {"function=self.cfh.show_help, "function_args": [self.setup_ui], "text": "Help")
 
         return fdl
 
@@ -1523,9 +1501,6 @@ class SearchHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, columns, match, pattern, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -1655,7 +1630,6 @@ class SortHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=8)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button": {"function=self.cfh.show_help, "function_args": [self.setup_ui], text="Help")
 
         return fdl
 
@@ -1674,9 +1648,6 @@ class SortHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column_name1, ascending1, column_name2, ascending2, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -1700,28 +1671,6 @@ class SortHandler(AbstractFunctionHandler):
         flog.debug(f"ASCENDING 2 = {ascending2}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    # def parse_input(self, col_names: str, ascending: str) -> Tuple[List[str], List[bool]]:
-    #     # parse value from entry
-    #     if col_names is not None:
-    #         col_names = col_names.replace(', ', ',').replace(' ,', ',').split(',')
-    #
-    #     if ascending is not None:
-    #         ascending = ascending.replace(', ', ',').replace(' ,', ',').split(',')
-    #     else:
-    #         # here true is string so i can always use strtobool
-    #         ascending = ['True']
-    #
-    #     ordering = []
-    #     # TODO: I THINK THAT USER SHOULD BE WARNED THAT HE NEEDS TO EITHER FILL ONLY ONE BOOL OR SAME SIZE LIST OF BOOLS
-    #     # This adds additional ascending values or ignores overflow ascendings
-    #     for i in range(len(col_names)):
-    #         try:
-    #             ordering.append(strtobool(ascending[i]))
-    #         # append True if not all ordering specified
-    #         except IndexError:
-    #             ordering.append(True)
-    #
-    #     return col_names, ordering
 
     def parse_input(self, col_name1: List[str], col_name2: List[str]) -> Tuple[str, str]:
         return col_name1[0], col_name2[0] if len(col_name2) > 0 else ""
@@ -1853,9 +1802,6 @@ class ColumnWiseShiftHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, complete_col_name, incomplete_col_name, mode, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     def execute_with_params(self, params):
@@ -1952,7 +1898,6 @@ class DifferenceDataHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=4)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button": {"function=self.cfh.show_help, "function_args": [self.user_help], text="Help")
 
         return fdl
 
@@ -2072,7 +2017,6 @@ class OutliersHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", required=True, row=6)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function=self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help")
 
         return fdl
 
@@ -2091,9 +2035,6 @@ class OutliersHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, mode, columns, top_n, ratio, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -2195,11 +2136,7 @@ class OutliersHandler(AbstractFunctionHandler):
 
     def export_imports(self, *args):
         imports = []
-        #  ["from sklearn.preprocessing import MinMaxScaler",
-        # "import rrcf",
-        # self.export_internal_function(KNNImputation),
-        # self.export_internal_function(detect_numeric_outliers),
-# self.export_internal_function(self.remove_outliers)]
+        
         return imports
 
 
@@ -2255,7 +2192,6 @@ class FilterHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=5)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # fdl.button(function=self.cfh.show_help, function_args=[self.setup_ui], text="Help")
 
         return fdl
 
@@ -2273,9 +2209,6 @@ class FilterHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column_name, filtered_str, matched_or_others, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -2398,7 +2331,6 @@ class ConcatHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=5)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function":self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help"}}
 
         return fdl
 
@@ -2416,9 +2348,6 @@ class ConcatHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, df_entry2, axis, join, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -2521,7 +2450,6 @@ class JoinHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=5)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function":self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help"}}
 
         return fdl
 
@@ -2539,9 +2467,6 @@ class JoinHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry1, df_entry2, on, how, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -2569,7 +2494,6 @@ class JoinHandler(AbstractFunctionHandler):
 
         return on
 
-    # str can be obtained from form
     def direct_execute(self, df_entry1: Union[str, pd.DataFrame], df_entry2: Union[str, pd.DataFrame],
                        on: Optional[str], how: str, new_var_name: str, *args):
         self.debug(df_entry1, df_entry2, on, how, new_var_name)
@@ -2653,7 +2577,6 @@ class AnalyzeDataFrameHandler(AbstractFunctionHandler):
         self.direct_execute(new_var_name)
 
     def direct_execute(self, new_var_name, *args):
-        #df = glc.tables.elements[0].df #should be replaced by "last_active_df"
         df=pd.DataFrame([1,2,3],columns=["needs_fix"]) #should be replaced by "last_active_df"
 
         inp = Input()
@@ -2744,7 +2667,6 @@ class SplitColumnHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=7)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function":self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help"}}
 
         return fdl
 
@@ -2764,9 +2686,6 @@ class SplitColumnHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column, split_on, select_index, keep_old, new_col_name, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -2899,7 +2818,6 @@ class ExtractStringHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=6)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function":self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help"}}
 
         return fdl
 
@@ -2919,9 +2837,6 @@ class ExtractStringHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column, extract_pattern, keep_old, concat_groups, new_col_name, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -2945,7 +2860,7 @@ class ExtractStringHandler(AbstractFunctionHandler):
         flog.debug(f"NEW COL = {new_col_name}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    # str can be obtained from form
+
     def direct_execute(self, df_entry: Union[str, pd.DataFrame], column: str, extract_pattern, keep_old: bool,
                        concat_groups: bool, new_col_name: str, new_var_name: str, *args):
         """
@@ -3070,9 +2985,6 @@ class KNNImputationHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, columns, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -3190,9 +3102,6 @@ class ImputationHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, columns, imput_choice, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -3343,7 +3252,6 @@ class AggregateDataHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=6)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # fdl.button(function=self.cfh.show_help, function_args=[self.setup_ui], text="Help")
 
         return fdl
 
@@ -3369,9 +3277,6 @@ class AggregateDataHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, columns_group, columns_aggr, num_aggr, categ_aggr, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -3547,7 +3452,6 @@ class MathOperationHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=5)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # fdl.button(function=self.cfh.show_help, function_args=[self.setup_ui], text="Help")
 
         return fdl
 
@@ -3562,9 +3466,6 @@ class MathOperationHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, mode, first_column, second_column, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -3678,7 +3579,6 @@ class FindJoinColumnHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=3)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # fdl.button(function=self.cfh.show_help, function_args=[self.setup_ui], text="Help")
 
         return fdl
 
@@ -3691,9 +3591,6 @@ class FindJoinColumnHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, df_entry2, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -3819,7 +3716,6 @@ class RoundToHigherFrequencyHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=8)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # fdl.button(function=self.cfh.show_help, function_args=[self.setup_ui], text="Help")
 
         return fdl
 
@@ -3838,9 +3734,6 @@ class RoundToHigherFrequencyHandler(AbstractFunctionHandler):
         self.direct_execute(df_entry, column, initial_freq, df_entry2, final_freq, round_type, new_colname,
                             new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -3958,8 +3851,6 @@ class CategorizeColumnHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column_name, separator, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -4089,17 +3980,10 @@ class SimilarityMatchingHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=8)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function":self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help"}}
 
         return fdl
 
     def execute(self, node_detail_form):
-        """
-        Execution of the drop column transformation
-        """
-        # image = args[0]
-        # item_detail_form = image.item_detail_form
-
         df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         reference_record_index = node_detail_form.get_chosen_value_by_name("reference_record_index", variable_handler)
         categorical_columns = node_detail_form.get_chosen_value_by_name("categorical_columns", variable_handler)
@@ -4108,12 +3992,8 @@ class SimilarityMatchingHandler(AbstractFunctionHandler):
         new_col_name = node_detail_form.get_chosen_value_by_name("new_col_name", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
-        # image.item_detail_form.node_option_form = self.make_node_option_form(new_var_name)
-
         self.direct_execute(df_entry, reference_record_index, categorical_columns, text_columns, numerical_columns, new_col_name, new_var_name)
 
-        # TODO Daniel: Ask Dominik about this --> Does it have to be here? How to replace it?
-        # glc.last_active_dataframe_icon = image
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     def execute_with_params(self, params):
@@ -4526,9 +4406,6 @@ class CleanDataHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
