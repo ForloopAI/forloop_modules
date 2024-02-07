@@ -1061,6 +1061,7 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
         #fdl.label("Sheet ID:")
         #fdl.entry(name="google_file_id", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet URL:")
+        fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet copy name:")
         fdl.entry(name="copied_filename", text="", input_types=["str"], required=True, row=2)
         fdl.label("E-mail")
