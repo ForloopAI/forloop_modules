@@ -970,12 +970,9 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("Sheet URL:")
-        fdl.entry(name="google_file_url", text="", input_types=["str"], required=True, row=1)
-        #fdl.label("Sheet ID:")
-        #fdl.entry(name="google_file_id", text="", input_types=["str"], required=True, row=1)
+        fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet name:")
         fdl.comboentry(name="google_file_name", text="Sheet1", options=sheet_options, row=2)
-        #fdl.entry(name="google_file_name", text="", input_types=["str"], required=True, row=2)
         fdl.label("New variable name:")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=3)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -983,7 +980,8 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
         return fdl
 
     def execute(self, node_detail_form):
-        google_file_url = node_detail_form.get_chosen_value_by_name("google_file_url", variable_handler)
+        sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
+        
         google_file_name = node_detail_form.get_chosen_value_by_name("google_file_name", variable_handler)
         google_file_name = parse_comboentry_input(google_file_name)
         
@@ -992,7 +990,7 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
         new_var_name = variable_handler._set_up_unique_varname(new_var_name)
         fields = self.generate_shown_dataframe_option_field(new_var_name)
 
-        self.direct_execute(google_file_url, google_file_name, new_var_name)
+        self.direct_execute(sheet_url, google_file_name, new_var_name)
 
         response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
         if response.status_code in (200, 201):
@@ -1008,18 +1006,15 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
             return new_var_name
         else:
             raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
-
-
-
     
-    def parse_input(self, google_file_url, google_file_name):
-        google_file_id = google_file_url.split("/d/")[1].split("/")[0]
+    def parse_input(self, sheet_url, google_file_name):
+        google_file_id = sheet_url.split("/d/")[1].split("/")[0]
         google_file_name = google_file_name[0]
 
         return google_file_id, google_file_name
 
-    def direct_execute(self, google_file_url, google_file_name, new_var_name):
-        google_file_id, google_file_name = self.parse_input(google_file_url, google_file_name)
+    def direct_execute(self, sheet_url, google_file_name, new_var_name):
+        google_file_id, google_file_name = self.parse_input(sheet_url, google_file_name)
 
         inp = Input()
         inp.assign("google_file_id", google_file_id)
@@ -1066,7 +1061,6 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
         #fdl.label("Sheet ID:")
         #fdl.entry(name="google_file_id", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet URL:")
-        fdl.entry(name="google_file_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet copy name:")
         fdl.entry(name="copied_filename", text="", input_types=["str"], required=True, row=2)
         fdl.label("E-mail")
@@ -1075,13 +1069,13 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
 
         return fdl
     
-    def parse_input(self, google_file_url):
-        google_file_id = google_file_url.split("/")[-2]
+    def parse_input(self, sheet_url):
+        google_file_id = sheet_url.split("/")[-2]
 
         return google_file_id
 
-    def direct_execute(self, google_file_url, copied_filename, email):
-        google_file_id = self.parse_input(google_file_url)
+    def direct_execute(self, sheet_url, copied_filename, email):
+        google_file_id = self.parse_input(sheet_url)
         
         inp = Input()
         inp.assign("google_file_id", google_file_id)
@@ -1107,11 +1101,11 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
         print("GOOGLE SHEET PERMISSION GRANTED")
 
     def execute(self, node_detail_form):
-        google_file_url = node_detail_form.get_chosen_value_by_name("google_file_url", variable_handler)
+        sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
         copied_filename = node_detail_form.get_chosen_value_by_name("copied_filename", variable_handler)
         email = node_detail_form.get_chosen_value_by_name("email", variable_handler)
 
-        self.direct_execute(google_file_url, copied_filename, email)
+        self.direct_execute(sheet_url, copied_filename, email)
 
     def export_imports(self, *args):
         imports = ["import gspread"]
@@ -1136,7 +1130,7 @@ class UpdateCellHandler(AbstractFunctionHandler):
         #fdl.label("Sheet ID:")
         #fdl.entry(name="google_file_id", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet URL:")
-        fdl.entry(name="google_file_url", text="", input_types=["str"], required=True, row=1)
+        fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet name")
         fdl.comboentry(name="google_file_name", text="Sheet1", options=options, row=2)
         #fdl.entry(name="google_file_name", text="", input_types=["str"], required=True, row=2)
@@ -1148,13 +1142,13 @@ class UpdateCellHandler(AbstractFunctionHandler):
 
         return fdl
     
-    def parse_inupt(self, google_file_url):
-        google_file_id = google_file_url.split("/")[-2]
+    def parse_inupt(self, sheet_url):
+        google_file_id = sheet_url.split("/")[-2]
 
         return google_file_id
 
-    def direct_execute(self, google_file_url, google_file_name, cell_name, value):
-        google_file_id = self.parse_inupt(google_file_url)
+    def direct_execute(self, sheet_url, google_file_name, cell_name, value):
+        google_file_id = self.parse_inupt(sheet_url)
 
         inp = Input()
         inp.assign("google_file_id", google_file_id)
@@ -1187,20 +1181,23 @@ class UpdateCellHandler(AbstractFunctionHandler):
         worksheet.update(inp("cell_name"), inp("value"))
 
     def execute_with_params(self, params):
-        google_file_url = params["google_file_url"]
+        sheet_url = params["sheet_url"]
         google_file_name = params["google_file_name"]
         cell_name = params["cell_name"]
         value = params["value"]
 
-        self.direct_execute(google_file_url, google_file_name, cell_name, value)
+        self.direct_execute(sheet_url, google_file_name, cell_name, value)
 
     def execute(self, node_detail_form):
-        google_file_url = node_detail_form.get_chosen_value_by_name("google_file_url", variable_handler)
-        google_file_name = node_detail_form.get_chosen_value_by_name("google_file_name", variable_handler)[0]
+        sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
+        
+        google_file_name = node_detail_form.get_chosen_value_by_name("google_file_name", variable_handler)
+        google_file_name = parse_comboentry_input(google_file_name)
+        
         cell_name = node_detail_form.get_chosen_value_by_name("cell_name", variable_handler)
         value = node_detail_form.get_chosen_value_by_name("value", variable_handler)
 
-        self.direct_execute(google_file_url, google_file_name, cell_name, value)
+        self.direct_execute(sheet_url, google_file_name, cell_name, value)
 
     def export_imports(self, *args):
         imports = ["import gspread"]
@@ -1225,7 +1222,7 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
         #fdl.label("Sheet ID:")
         #fdl.entry(name="google_file_id", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet URL:")
-        fdl.entry(name="google_file_url", text="", input_types=["str"], required=True, row=1)
+        fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet name")
         fdl.comboentry(name="google_file_name", text="Sheet1", options=options, row=2)
         #fdl.entry(name="google_file_name", text="", input_types=["str"], required=True, row=2)
@@ -1237,13 +1234,13 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
 
         return fdl
 
-    def parse_input(self, google_file_url):
-        google_file_id = google_file_url.split("/")[-2]
+    def parse_input(self, sheet_url):
+        google_file_id = sheet_url.split("/")[-2]
 
         return google_file_id
 
-    def direct_execute(self, google_file_url, google_file_name, start_row, stop_row):
-        google_file_id = self.parse_input(google_file_url)
+    def direct_execute(self, sheet_url, google_file_name, start_row, stop_row):
+        google_file_id = self.parse_input(sheet_url)
 
         inp = Input()
         inp.assign("google_file_id", google_file_id)
@@ -1291,22 +1288,23 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
             worksheet.delete_row(i)
 
     def execute_with_params(self, params):
-        google_file_url = params["google_file_url"]
+        sheet_url = params["sheet_url"]
         google_file_name = params["google_file_name"]
         start_row = params["start_row"]
         stop_row = params["stop_row"]
 
-        self.direct_execute(google_file_url, google_file_name, start_row, stop_row)
+        self.direct_execute(sheet_url, google_file_name, start_row, stop_row)
 
     def execute(self, node_detail_form):
-        google_file_url = node_detail_form.get_chosen_value_by_name("google_file_url", variable_handler)
+        sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
+        
         google_file_name = node_detail_form.get_chosen_value_by_name("google_file_name", variable_handler)
         google_file_name = parse_comboentry_input(google_file_name)
         
         start_row = node_detail_form.get_chosen_value_by_name("start_row", variable_handler)
         stop_row = node_detail_form.get_chosen_value_by_name("stop_row", variable_handler)
 
-        self.direct_execute(google_file_url, google_file_name, start_row, stop_row)
+        self.direct_execute(sheet_url, google_file_name, start_row, stop_row)
 
     def export_imports(self, *args):
         imports = ["import gspread"]
@@ -1480,7 +1478,7 @@ class InsertIntoSheetHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("Sheet URL")
-        fdl.entry(name="google_file_url", text="", input_types=["str"], required=True, row=1)
+        fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet name")
         fdl.entry(name="sheet_name", text="Sheet1", input_types=["str"], required=True, row=2)
         fdl.label("DataFrame")
@@ -1496,17 +1494,17 @@ class InsertIntoSheetHandler(AbstractFunctionHandler):
         return fdl
 
     def execute(self, node_detail_form):
-        google_file_url = node_detail_form.get_chosen_value_by_name(
-            "google_file_url", variable_handler
+        sheet_url = node_detail_form.get_chosen_value_by_name(
+            "sheet_url", variable_handler
         )
         sheet_name = node_detail_form.get_chosen_value_by_name("sheet_name", variable_handler)
         df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         operation = node_detail_form.get_chosen_value_by_name("operation", variable_handler)
-        self.direct_execute(google_file_url, sheet_name, df_entry, operation)
+        self.direct_execute(sheet_url, sheet_name, df_entry, operation)
 
-    def direct_execute(self, google_file_url, sheet_name, df_entry, operation):
+    def direct_execute(self, sheet_url, sheet_name, df_entry, operation):
         try:
-            google_file_id = google_file_url.split("/")[-2]
+            google_file_id = sheet_url.split("/")[-2]
         except Exception as e:
             raise SoftPipelineError("Provided Sheet URL is of incorrect format") from e
 
@@ -1570,7 +1568,7 @@ class ParseDataToSheetHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("Sheet URL")
-        fdl.entry(name="google_file_url", text="", input_types=["str"], required=True, row=1)
+        fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet name")
         fdl.comboentry(name="sheet_name", text="Sheet1", options=sheet_options, row=2)
         fdl.label("File name:")
@@ -1583,11 +1581,13 @@ class ParseDataToSheetHandler(AbstractFunctionHandler):
         return fdl
 
     def execute(self, node_detail_form):
-        google_file_url = node_detail_form.get_chosen_value_by_name("google_file_url", variable_handler)
+        sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
+        
         sheet_name = node_detail_form.get_chosen_value_by_name("sheet_name", variable_handler)
         filename = node_detail_form.get_chosen_value_by_name("filename", variable_handler)
         operation = node_detail_form.get_chosen_value_by_name("operation", variable_handler)
-        self.direct_execute(google_file_url, sheet_name, filename, operation)
+        
+        self.direct_execute(sheet_url, sheet_name, filename, operation)
 
     def open_data_file(self, node_detail_form):
         file = askopenfile(mode='r', filetypes=[('Excel files', '*.xlsx'), ('CSV files', '*.csv')])
@@ -1597,15 +1597,15 @@ class ParseDataToSheetHandler(AbstractFunctionHandler):
             params_dict = node_detail_form.assign_value_by_name(name='filename', value=filename)
             ncrb.update_node_by_uid(node_detail_form.node_uid, params=params_dict)
     
-    def parse_input(self, google_file_url, sheet_name):
-        google_file_id = google_file_url.split("/")[-2]
+    def parse_input(self, sheet_url, sheet_name):
+        google_file_id = sheet_url.split("/")[-2]
         sheet_name = sheet_name[0]
 
         return google_file_id, sheet_name
         
-    def direct_execute(self, google_file_url, sheet_name, filename, operation):
-        if google_file_url != "":
-            google_file_id, sheet_name = self.parse_input(google_file_url, sheet_name)
+    def direct_execute(self, sheet_url, sheet_name, filename, operation):
+        if sheet_url != "":
+            google_file_id, sheet_name = self.parse_input(sheet_url, sheet_name)
 
             inp = Input()
             inp.assign("google_file_id", google_file_id)
@@ -1650,14 +1650,14 @@ class ParseDataToSheetHandler(AbstractFunctionHandler):
         return data
 
     def export_code(self, node_detail_form):
-        google_file_url = node_detail_form.get_variable_name_or_input_value_by_element_name("google_file_url")
+        sheet_url = node_detail_form.get_variable_name_or_input_value_by_element_name("sheet_url")
         sheet_name = node_detail_form.get_variable_name_or_input_value_by_element_name("sheet_name")
         filename = node_detail_form.get_variable_name_or_input_value_by_element_name("filename")
         operation = node_detail_form.get_variable_name_or_input_value_by_element_name("operation")
 
         code_base = f"""
         gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
-        sh = gc.open_by_key({google_file_url})
+        sh = gc.open_by_key({sheet_url})
         worksheet = sh.worksheet({sheet_name})
         """
 
@@ -1714,8 +1714,8 @@ class StoreDfInNewSheetHandler(AbstractFunctionHandler):
 
         self.direct_execute(df, sheet_name, email, new_var_name)
     
-    def parse_input(self, google_file_url, sheet_name):
-        google_file_id = google_file_url.split("/")[-2]
+    def parse_input(self, sheet_url, sheet_name):
+        google_file_id = sheet_url.split("/")[-2]
         sheet_name = sheet_name[0]
 
         return google_file_id, sheet_name
@@ -1752,14 +1752,14 @@ class StoreDfInNewSheetHandler(AbstractFunctionHandler):
         return None
 
     def export_code(self, node_detail_form):
-        google_file_url = node_detail_form.get_variable_name_or_input_value_by_element_name("google_file_url")
+        sheet_url = node_detail_form.get_variable_name_or_input_value_by_element_name("sheet_url")
         sheet_name = node_detail_form.get_variable_name_or_input_value_by_element_name("sheet_name")
         filename = node_detail_form.get_variable_name_or_input_value_by_element_name("filename")
         operation = node_detail_form.get_variable_name_or_input_value_by_element_name("operation")
 
         code_base = f"""
         gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
-        sh = gc.open_by_key({google_file_url})
+        sh = gc.open_by_key({sheet_url})
         worksheet = sh.worksheet({sheet_name})
         """
 
