@@ -373,8 +373,8 @@ class DatetimeValueHandler(AbstractFunctionHandler):
 
     def direct_execute(self, datetime_var, value_to_get, new_var_name):
         apply_format = {
-            "date": lambda x: x.date(),
-            "time": lambda x: x.time(),
+            "date": lambda x: x.date().isoformat(),
+            "time": lambda x: x.time().isoformat(),
             "year": lambda x: x.year, 
             "month": lambda x: x.month, 
             "day": lambda x: x.day, 
