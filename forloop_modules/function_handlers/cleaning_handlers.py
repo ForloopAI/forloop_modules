@@ -349,6 +349,7 @@ class SelectColumnsHandler(AbstractFunctionHandler):
         Select column_names transformation wrapper
         """
         self.debug(df_entry, column_names, new_var_name)
+        column_names = column_names if isinstance(column_names, list) else [column_names]
 
         inp = Input()
         inp.assign("df_entry", df_entry)
