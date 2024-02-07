@@ -31,9 +31,9 @@ class FindSimilarItemsHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         return fdl
 
-    def direct_execute(self, xpath_elements: dict):
+    def direct_execute(self, elements: list[dict]):
         # Get XPaths of selected elements
-        xpaths = [x['xpath'] for x in xpath_elements]
+        xpaths = [x['xpath'] for x in elements]
         common_xpath_part, xpaths_leftovers = suh.cut_xpaths_to_common_part(xpaths)
         # Find optimal siblings level (index of XPath)
         generalized_common_xpath_parts, optimal_xpath_index = suh.get_generalized_xpaths(
@@ -41,12 +41,10 @@ class FindSimilarItemsHandler(AbstractFunctionHandler):
         )
 
         optimal_generalized_common_xpath_part = generalized_common_xpath_parts[optimal_xpath_index]
-        flog.warning(optimal_generalized_common_xpath_part)
 
         elements_generalized_xpaths = [
             optimal_generalized_common_xpath_part + x + ';' for x in xpaths_leftovers
         ]
-        flog.warning(f'GENERALIZED XPATHS {elements_generalized_xpaths}')
 
         suh.scan_web_page(
             incl_tables=False, incl_bullets=False, incl_texts=False, incl_headlines=False,
@@ -116,12 +114,13 @@ class RefreshBrowserViewHandler(AbstractFunctionHandler):
         kv_redis.set(redis_action_key, suh.screenshot_string)
 
 
-class ScanWebPageHandler(AbstractFunctionHandler):
-    """ScanWebPage Node scans for all specified elements in the currently opened webpage BrowserView."""
+
+class ScanBrowserWebpageHandler(AbstractFunctionHandler):
+    """ScanBrowserWebpage Node scans for all specified elements in the currently opened webpage BrowserView."""
 
     def __init__(self):
-        self.icon_type = "ScanWebPage"
-        self.fn_name = "Scan web page"
+        self.icon_type = "ScanBrowserWebpage"
+        self.fn_name = "Scan browser webpage"
         self.type_category = ntcm.categories.webscraping
 
         super().__init__()
@@ -144,10 +143,10 @@ class ScanWebPageHandler(AbstractFunctionHandler):
         kv_redis.set(redis_action_key, suh.webpage_elements)
 
 
-class ScanWebPageWithAIHandler(AbstractFunctionHandler):
+class FilterWebpageElementsWithAIHandler(AbstractFunctionHandler):
     def __init__(self):
-        self.icon_type = "ScanWebPageWithAI"
-        self.fn_name = "Scan web page with AI"
+        self.icon_type = "FilterWebpageElementsWithAI"
+        self.fn_name = "Filter webpage elements with AI"
         self.type_category = ntcm.categories.webscraping
         super().__init__()
 
@@ -162,6 +161,6 @@ browser_handlers_dict = {
     "FindSimilarItems": FindSimilarItemsHandler(),
     "ConvertToScrapingNodes": ConvertToScrapingNodesHandler(),
     "RefreshBrowserView": RefreshBrowserViewHandler(),
-    "ScanWebPage": ScanWebPageHandler(),
-    "ScanWebPageWithAI": ScanWebPageWithAIHandler(),
+    "ScanBrowserWebpage": ScanBrowserWebpageHandler(),
+    "FilterWebpageElementsWithAI": FilterWebpageElementsWithAIHandler(),
 }

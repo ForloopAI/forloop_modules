@@ -287,21 +287,22 @@ class APIScript(BaseModel):
 
 
 class XPathElement(BaseModel):
+    name: str
+    type: str
     rect: dict[str, float] # {"x": 0.0, "y": 0.0, "width": 0.0, "height": 0.0}
     xpath: str
-    data: str
-    isSelected: bool
+    data: dict
 
 
 class APIFindSimilarItems(BaseModel):
-    xpaths: list[XPathElement]
+    elements: list[XPathElement]
 
 
 class APIConvertToScrapingNodes(BaseModel):
     xpaths: list[Union[str, list[str]]]
 
 
-class APIScanWebPage(BaseModel):
+class APIScanBrowserWebpage(BaseModel):
     incl_tables: Optional[bool] = None
     incl_bullets: Optional[bool] = None
     incl_texts: Optional[bool] = None
@@ -312,16 +313,21 @@ class APIScanWebPage(BaseModel):
     by_xpath: Optional[str] = None
 
 
-class APIScanWebPageWithAI(BaseModel):
-    elements: list[dict]
+class APIFilterWebpageElementsWithAI(BaseModel):
+    elements: list[XPathElement]
     objective: str
 
 
 class BrowserActionEnum(str, Enum):
+    """
+    Enum names point to the corresponding input schema, enum values point to the corresponding
+    handler name.
+    """
+
     FIND_SIMILAR_ITEMS = "FindSimilarItems"
     CONVERT_TO_SCRAPING_NODES = "ConvertToScrapingNodes"
-    SCAN_WEBPAGE = "ScanWebPage"
-    SCAN_WEBPAGE_WITH_AI = "ScanWebPageWithAI"
+    SCAN_BROWSER_WEBPAGE = "ScanBrowserWebpage"
+    FILTER_WEBPAGE_ELEMENTS_WITH_AI = "FilterWebpageElementsWithAI"
     REFRESH_BROWSER_VIEW = "RefreshBrowserView"
 
 
@@ -329,8 +335,8 @@ class BrowserInputs(BaseModel):
     action: BrowserActionEnum
     find_similar_items: Optional[APIFindSimilarItems] = None
     convert_to_scraping_nodes: Optional[APIConvertToScrapingNodes] = None
-    scan_webpage: Optional[APIScanWebPage] = None
-    scan_webpage_with_ai: Optional[APIScanWebPageWithAI] = None
+    scan_browser_webpage: Optional[APIScanBrowserWebpage] = None
+    filter_webpage_elements_with_ai: Optional[APIFilterWebpageElementsWithAI] = None
 
     @model_validator(mode="after")
     @classmethod
@@ -338,7 +344,6 @@ class BrowserInputs(BaseModel):
         cls, browser_inputs: "BrowserInputs"
     ) -> "BrowserInputs":
         """Check that corresponding input schema is provided for the chosen action."""
-
         # `BrowserActionEnum` names are mapping to lowercase `BrowserInputs` model attributes
         # For some actions, no input schema is expected
         actions_without_inputs = [BrowserActionEnum.REFRESH_BROWSER_VIEW]
@@ -355,7 +360,7 @@ class BrowserInputs(BaseModel):
         return browser_inputs
 
 
-class APIScanWebpage(BaseModel):
+class APIScanWebpageApi(BaseModel):
     email: str
     url: str
     incl_tables: Optional[bool]
@@ -699,7 +704,7 @@ class APISession(BaseModel):
     # total_time: int = 0
 
 
-# class APIScanWebpage(BaseModel):
+# class APIScanWebpageApi(BaseModel):
 #     url: str
 #     incl_tables: Optional[bool]
 #     incl_bullets: Optional[bool]
