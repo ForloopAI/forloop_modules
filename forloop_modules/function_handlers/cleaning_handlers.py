@@ -574,12 +574,8 @@ class RenameColumnHandler(AbstractFunctionHandler):
         flog.debug(f"NEW COLUMN = {new_col_name}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def parse_input(self, old_col_name: List[str]) -> str:
-        return old_col_name[0] if len(old_col_name) > 0 else ""
-
     def direct_execute(self, df_entry: pd.DataFrame, old_col_name: List[str], new_col_name: str, new_var_name: str,):
         self.debug(df_entry, old_col_name, new_col_name, new_var_name)
-        old_col_name: str = self.parse_input(old_col_name)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
@@ -728,12 +724,8 @@ class CastColumnTypeHandler(AbstractFunctionHandler):
         flog.debug(f"NEW COLUMN TYPE = {new_col_type}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def parse_input(self, old_col_name: List[str]) -> str:
-        return old_col_name[0] if len(old_col_name) > 0 else ""
-
     def direct_execute(self, df_entry: pd.DataFrame, col_name: List[str], new_col_type: str, new_var_name: str, ):
         self.debug(df_entry, col_name, new_col_type, new_var_name)
-        col_name: str = self.parse_input(col_name)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
@@ -772,10 +764,6 @@ class CastColumnTypeHandler(AbstractFunctionHandler):
         return df_new
 
     def export_code(self, node_detail_form):
-        node_detail_form.node_params["col_name"]["value"] = self.parse_input(
-            node_detail_form.node_params["col_name"]["value"]
-        )
-
         code = self.export_code_with_node_params(node_detail_form.node_params)
 
         return code
@@ -864,12 +852,7 @@ class ExplodeColumnHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, col_name, new_var_name)
 
-    def parse_input(self, old_col_name: List[str]) -> str:
-        return old_col_name[0] if len(old_col_name) > 0 else ""
-
     def direct_execute(self, df_entry: pd.DataFrame, col_name: List[str], new_var_name: str, ):
-        col_name: str = self.parse_input(col_name)
-
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("col_name", col_name)
@@ -903,10 +886,6 @@ class ExplodeColumnHandler(AbstractFunctionHandler):
         return df_new
 
     def export_code(self, node_detail_form):
-        node_detail_form.node_params["col_name"]["value"] = self.parse_input(
-            node_detail_form.node_params["col_name"]["value"]
-        )
-
         code = self.export_code_with_node_params(node_detail_form.node_params)
 
         return code
@@ -1374,15 +1353,8 @@ class StripColumnHandler(AbstractFunctionHandler):
         flog.debug(f"SPECIFIC CHARACTERS = {specific_characters}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def parse_input(self, columns: list, strip_mode, specific_characters) -> Tuple[str, Optional[str], Optional[str]]:
-        column_name = columns[0] if len(columns) > 0 else ""
-        strip_mode = strip_mode if len(strip_mode) > 0 else None
-        specific_characters = specific_characters if len(specific_characters) > 0 else None
-        return column_name, strip_mode, specific_characters
-
     def direct_execute(self, df_entry: pd.DataFrame, column_name: List[str], strip_mode: str, specific_characters: str, new_var_name: str):
         self.debug(df_entry, column_name, strip_mode, specific_characters, new_var_name)
-        column_name, strip_mode, specific_characters = self.parse_input(column_name, strip_mode, specific_characters)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
@@ -1521,12 +1493,6 @@ class SearchHandler(AbstractFunctionHandler):
         flog.debug(f"PATTERN = {pattern}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def parse_input(self, columns):
-        if len(columns) == 0:
-            columns = None
-
-        return columns
-
     def direct_execute(self, df_entry: pd.DataFrame, search_cols, match: str, pattern: str, new_var_name: str):
         """
         Search given pattern
@@ -1534,7 +1500,6 @@ class SearchHandler(AbstractFunctionHandler):
         Match can be either exact or pattern
         """
         self.debug(df_entry, search_cols, match, pattern, new_var_name)
-        search_cols = self.parse_input(search_cols)
 
         df_new = pd.DataFrame()
         try:
@@ -1559,8 +1524,6 @@ class SearchHandler(AbstractFunctionHandler):
         return df_new
 
     def export_code(self, node_detail_form):
-        node_detail_form.node_params["columns"]["value"] = self.parse_input(node_detail_form.node_params["columns"]["value"])
-
         code = self.export_code_with_node_params(node_detail_form.node_params)
 
         return code
@@ -1671,10 +1634,6 @@ class SortHandler(AbstractFunctionHandler):
         flog.debug(f"ASCENDING 2 = {ascending2}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-
-    def parse_input(self, col_name1: List[str], col_name2: List[str]) -> Tuple[str, str]:
-        return col_name1[0], col_name2[0] if len(col_name2) > 0 else ""
-
     def direct_execute(self, df_entry: pd.DataFrame, col_name1: List[str], ascending1: str,
                        col_name2: List[str], ascending2: str, new_var_name: str, *args):
         """
@@ -1682,8 +1641,6 @@ class SortHandler(AbstractFunctionHandler):
         """
         self.debug(df_entry, col_name1, ascending1, col_name2, ascending2, new_var_name)
         if col_name1:
-            col_name1, col_name2 = self.parse_input(col_name1, col_name2)
-
             inp = Input()
             inp.assign("df_entry", df_entry)
             inp.assign("col_name1", col_name1)
@@ -1721,10 +1678,6 @@ class SortHandler(AbstractFunctionHandler):
         return df_new
 
     def export_code(self, node_detail_form):
-        node_detail_form.node_params["col_name1"]["value"], node_detail_form.node_params["col_name2"]["value"] = \
-            self.parse_input(node_detail_form.node_params["col_name1"]["value"], node_detail_form.node_params["col_name2"]["value"])
-
-
         code = self.export_code_with_node_params(node_detail_form.node_params)
 
         return code
