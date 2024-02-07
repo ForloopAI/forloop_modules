@@ -8,7 +8,8 @@ from openai import OpenAI, APITimeoutError, RateLimitError
 import forloop_modules.function_handlers.auxilliary.browser_view_gpt_filtering_prompts as bvgfp
 
 from forloop_modules import flog
-from forloop_modules.config.config import open_ai_config
+
+from config.config import other_config #TODO Dominik: Circular dependency to forloop_platform repository # not ideal #Maybe solve with os.environ?
 
 API_KEY = ""
 
@@ -124,7 +125,7 @@ def parse_json_from_chatgpt_response(chatgpt_response_text):
     return json_objects
 
 def create_open_ai_client():
-    client = OpenAI(api_key=open_ai_config.OPENAI_API_KEY)
+    client = OpenAI(api_key=other_config.OPENAI_API_KEY)
     
     return client
     
