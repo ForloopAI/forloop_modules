@@ -237,9 +237,8 @@ class SlackNotificationHandler(AbstractFunctionHandler):
         return (code)
 
     def export_imports(self, *args):
-        # imports=["import doclick.doclick_core as dc"]
         imports = []
-        return (imports)
+        return imports
 
 
 class EmailNotificationHandler(AbstractFunctionHandler):
