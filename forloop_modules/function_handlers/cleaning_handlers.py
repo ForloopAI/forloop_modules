@@ -429,9 +429,6 @@ class ConstantColumnHandler(AbstractFunctionHandler):
         return fdl
 
     def execute(self, node_detail_form):
-        """
-        execution of the constant column transformation
-        """
         df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         value = node_detail_form.get_chosen_value_by_name("value", variable_handler)
         column = node_detail_form.get_chosen_value_by_name("column", variable_handler)
