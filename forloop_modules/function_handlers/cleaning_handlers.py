@@ -498,8 +498,8 @@ class ConstantColumnHandler(AbstractFunctionHandler):
 
 class RenameColumnHandler(AbstractFunctionHandler):
     """
-    
-    Rename Column Node sets a new name (header) to the selected column."""
+    Rename Column Node sets a new name (header) to the selected column.
+    """
     def __init__(self):
         super().__init__()
         self.icon_type = 'RenameColumn'
