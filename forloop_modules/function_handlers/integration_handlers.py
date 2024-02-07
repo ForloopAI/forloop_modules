@@ -1107,13 +1107,6 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
         worksheet.share(inp("email"), perm_type='user', role='writer')
         print("GOOGLE SHEET PERMISSION GRANTED")
 
-    def execute_with_params(self, params):
-        google_file_url = params["google_file_url"]
-        copied_filename = params["copied_filename"]
-        email = params["email"]
-
-        self.direct_execute(google_file_url, copied_filename, email)
-
     def execute(self, node_detail_form):
         google_file_url = node_detail_form.get_chosen_value_by_name("google_file_url", variable_handler)
         copied_filename = node_detail_form.get_chosen_value_by_name("copied_filename", variable_handler)
