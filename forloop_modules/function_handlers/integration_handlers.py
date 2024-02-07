@@ -1585,6 +1585,8 @@ class ParseDataToSheetHandler(AbstractFunctionHandler):
         sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
         
         sheet_name = node_detail_form.get_chosen_value_by_name("sheet_name", variable_handler)
+        sheet_name = parse_comboentry_input(sheet_name)
+        
         filename = node_detail_form.get_chosen_value_by_name("filename", variable_handler)
         operation = node_detail_form.get_chosen_value_by_name("operation", variable_handler)
         
