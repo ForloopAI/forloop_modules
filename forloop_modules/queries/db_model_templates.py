@@ -21,7 +21,7 @@ def is_date_utc(date: datetime.datetime) -> datetime.datetime:
 UTCDatetime = Annotated[
     datetime.datetime,
     AfterValidator(is_date_utc),  # Validate if the date is in UTC zone (zulu format)
-    PlainSerializer(lambda date: f"{date.isoformat()}Z") # Serialize Timestamps to zulu format
+    PlainSerializer(lambda date: f"{date.isoformat()}Z", when_used='json') # Serialize Timestamps to zulu format
 ]
 
 
