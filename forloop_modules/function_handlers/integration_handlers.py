@@ -2120,7 +2120,6 @@ integration_handlers_dict = {
     'UpdateCell': UpdateCellHandler(),
     'DeleteSheetRow': DeleteSheetRowHandler(),
     'NewGoogleSheet': NewGoogleSheetHandler(),
-    'ParseDataToSheet': ParseDataToSheetHandler(),
     'StoreDfInNewSheet': StoreDfInNewSheetHandler(),
 
     'AirtableConnect': AirtableConnectHandler(),
