@@ -1437,6 +1437,10 @@ def append_or_overwrite_data_in_sheet(data:list, worksheet:gspread.Worksheet, op
     return worksheet
 
 class NewGoogleSheetHandler(AbstractFunctionHandler):
+    """
+    New Google Sheet Node serves for creation of a new Google sheet on a specified Google account. It requires two 
+    entries: users e-mail address and a name which will be given to the newly created sheet.
+    """
 
     def __init__(self):
         self.icon_type = 'NewGoogleSheet'
@@ -1444,6 +1448,17 @@ class NewGoogleSheetHandler(AbstractFunctionHandler):
 
         self.type_category = ntcm.categories.integration
         self.docs_category = DocsCategories.integrations
+        self._init_docs()
+        
+    def _init_docs(self):
+        parameter_description = "In order to succesfully create a new Google spreadsheet, two parameters are required as user entries."
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add_parameter_table_row(title="Sheet name", name="sheet_name",
+                                          description="The entered string will be used as a name for the newly created spreadsheet.",
+                                          typ="string", example="Test sheet")
+        self.docs.add_parameter_table_row(title="E-mail", name="email", 
+                                          description="E-mail address with an access to Google worspace. The new spreadsheet will be created in spreadsheets on this account.",
+                                          example="john.doe@gmail.com")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
