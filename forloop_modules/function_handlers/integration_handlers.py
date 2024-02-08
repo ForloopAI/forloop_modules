@@ -33,7 +33,7 @@ from forloop_modules.function_handlers.auxilliary.abstract_function_handler impo
 from forloop_modules.function_handlers.file_managment_handlers import file_managment_handlers_dict
 from forloop_modules.utils.definitions import GOOGLE_API_SERVICES, GOOGLE_API_SERVICE_INFO
 from forloop_modules.integrations.slack_integration import SlackApiError, get_channels_in_workspace, send_message_to_slack_direct_execute
-from forloop_modules.function_handlers.auxilliary.auxiliary_functions import parse_comboentry_input
+from forloop_modules.function_handlers.auxilliary.auxiliary_functions import parse_comboentry_input, parse_google_sheet_id_from_url
 from config.config import other_config #TODO Dominik: Circular dependency to forloop_platform repository # not ideal #Maybe solve with os.environ?
 
 
@@ -972,7 +972,7 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
         fdl.label("Sheet URL:")
         fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet name:")
-        fdl.comboentry(name="google_file_name", text="Sheet1", options=sheet_options, row=2)
+        fdl.entry(name="google_file_name", text="Sheet1", input_types=["str"], required=True, row=2)
         fdl.label("New variable name:")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=3)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -981,10 +981,7 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
 
     def execute(self, node_detail_form):
         sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
-        
         google_file_name = node_detail_form.get_chosen_value_by_name("google_file_name", variable_handler)
-        google_file_name = parse_comboentry_input(google_file_name)
-        
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
         
         new_var_name = variable_handler._set_up_unique_varname(new_var_name)
@@ -992,29 +989,24 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
 
         self.direct_execute(sheet_url, google_file_name, new_var_name)
 
-        response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
-        if response.status_code in (200, 201):
-            result=json.loads(response.content.decode('utf-8'))
-            node_uid = result["uid"]
+        # Deprecated as DataFrame node is being deprecated, TODO: delete the DF node is definitely removed
+        # response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
+        # if response.status_code in (200, 201):
+        #     result=json.loads(response.content.decode('utf-8'))
+        #     node_uid = result["uid"]
 
 
-            ncrb.update_last_active_dataframe_node_uid(node_uid)
+        #     ncrb.update_last_active_dataframe_node_uid(node_uid)
 
-            global loaded_filename
-            loaded_filename = new_var_name
+        #     global loaded_filename
+        #     loaded_filename = new_var_name
 
-            return new_var_name
-        else:
-            raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
-    
-    def parse_input(self, sheet_url, google_file_name):
-        google_file_id = sheet_url.split("/d/")[1].split("/")[0]
-        google_file_name = google_file_name[0]
-
-        return google_file_id, google_file_name
+        #     return new_var_name
+        # else:
+        #     raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
 
     def direct_execute(self, sheet_url, google_file_name, new_var_name):
-        google_file_id, google_file_name = self.parse_input(sheet_url, google_file_name)
+        google_file_id = parse_google_sheet_id_from_url(sheet_url)
 
         inp = Input()
         inp.assign("google_file_id", google_file_id)
@@ -1069,14 +1061,9 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
-    
-    def parse_input(self, sheet_url):
-        google_file_id = sheet_url.split("/")[-2]
-
-        return google_file_id
 
     def direct_execute(self, sheet_url, copied_filename, email):
-        google_file_id = self.parse_input(sheet_url)
+        google_file_id = parse_google_sheet_id_from_url(sheet_url)
         
         inp = Input()
         inp.assign("google_file_id", google_file_id)
@@ -1235,13 +1222,8 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
 
         return fdl
 
-    def parse_input(self, sheet_url):
-        google_file_id = sheet_url.split("/")[-2]
-
-        return google_file_id
-
     def direct_execute(self, sheet_url, google_file_name, start_row, stop_row):
-        google_file_id = self.parse_input(sheet_url)
+        google_file_id = parse_google_sheet_id_from_url(sheet_url)
 
         inp = Input()
         inp.assign("google_file_id", google_file_id)
@@ -1599,16 +1581,10 @@ class ParseDataToSheetHandler(AbstractFunctionHandler):
             filename = file.name
             params_dict = node_detail_form.assign_value_by_name(name='filename', value=filename)
             ncrb.update_node_by_uid(node_detail_form.node_uid, params=params_dict)
-    
-    def parse_input(self, sheet_url, sheet_name):
-        google_file_id = sheet_url.split("/")[-2]
-        sheet_name = sheet_name[0]
-
-        return google_file_id, sheet_name
         
     def direct_execute(self, sheet_url, sheet_name, filename, operation):
         if sheet_url != "":
-            google_file_id, sheet_name = self.parse_input(sheet_url, sheet_name)
+            google_file_id = parse_google_sheet_id_from_url(sheet_url)
 
             inp = Input()
             inp.assign("google_file_id", google_file_id)
@@ -1716,12 +1692,6 @@ class StoreDfInNewSheetHandler(AbstractFunctionHandler):
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
         self.direct_execute(df, sheet_name, email, new_var_name)
-    
-    def parse_input(self, sheet_url, sheet_name):
-        google_file_id = sheet_url.split("/")[-2]
-        sheet_name = sheet_name[0]
-
-        return google_file_id, sheet_name
         
     def direct_execute(self, df, sheet_name, email, new_var_name):
         
