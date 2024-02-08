@@ -1259,6 +1259,9 @@ class UpdateCellHandler(AbstractFunctionHandler):
 
 
 class DeleteSheetRowHandler(AbstractFunctionHandler):
+    """
+    Delete Sheet Row Node serves to deletion of a single row or a series of rows in a Google spreadsheet.
+    """
 
     def __init__(self):
         self.icon_type = 'DeleteSheetRow'
@@ -1266,6 +1269,25 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
 
         self.type_category = ntcm.categories.integration
         self.docs_category = DocsCategories.integrations
+        self._init_docs()
+        
+    def _init_docs(self):
+        parameter_description = """Delete Sheet Row Node requires 3 parameters (Sheet ID, Sheet name, Start row number)
+        to delete a single row and 4 parameters (Sheet ID, Sheet name, Start row number, Stop row number) to delete a
+        series of rows."""
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add_parameter_table_row(title="Sheet URL", name="sheet_url",
+                                          description="A URL of the desired Google spreadsheet.",
+                                          typ="string", example="https://docs.google.com/spreadsheets/d/ 1FApy2bGcFFmpg-lTNS8HWpq-fpHlGcJhvq-DXhr4b1o /edit#gid=0")
+        self.docs.add_parameter_table_row(title="Sheet name", name="google_file_name", 
+                                          description="The name of the spreadsheet, whose row(s) is/are going to be deleted. It is essential to write the name in its full form, i.e. if the name is ‘test_sheet’ then writing ‘test sheet’ will not work.",
+                                          typ="string", example=["Sheet1", "sheet_1", "list 1"])
+        self.docs.add_parameter_table_row(title="Start row number", name="start_row", 
+                                          description="A number of the row to be deleted or the initial row of the series to be deleted. The numbering preserves the Python logic, ie. **the first row corresponds to number 0**!",
+                                          typ="integer", example=[0, 12, 546])
+        self.docs.add_parameter_table_row(title="Stop row number", name="stop_row", 
+                                          description="A number of the last row of the series of rows to be deleted. If left blank, only a single row, i.e. row no. Start row number + 1 (Python logic), will be deleted.",
+                                          typ="integer")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
