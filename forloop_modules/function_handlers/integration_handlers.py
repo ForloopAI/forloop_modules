@@ -1146,6 +1146,10 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
 
 
 class UpdateCellHandler(AbstractFunctionHandler):
+    """
+    Update Cell Node can be used for entering new data in a specific single cell of a spreadsheet or altering already
+    existing data in such a cell.
+    """
 
     def __init__(self):
         self.icon_type = 'UpdateCell'
@@ -1153,6 +1157,23 @@ class UpdateCellHandler(AbstractFunctionHandler):
 
         self.type_category = ntcm.categories.integration
         self.docs_category = DocsCategories.integrations
+        self._init_docs()
+        
+    def _init_docs(self):
+        parameter_description = "Update Cell Node requires 4 parameters as user entries, all of which must be filled in."
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add_parameter_table_row(title="Sheet URL", name="sheet_url",
+                                          description="A URL of the desired Google spreadsheet.",
+                                          typ="string", example="https://docs.google.com/spreadsheets/d/ 1FApy2bGcFFmpg-lTNS8HWpq-fpHlGcJhvq-DXhr4b1o /edit#gid=0")
+        self.docs.add_parameter_table_row(title="Sheet name", name="google_file_name", 
+                                          description="The name of the spreadsheet, whose cell is going to be updated. It is essential to write the name in its full form, i.e. if the name is *test_sheet* then writing *test sheet* will not work.",
+                                          typ="string", example=["Sheet1", "sheet_1", "list 1"])
+        self.docs.add_parameter_table_row(title="Cell name", name="cell_name", 
+                                          description="Specifies which cell will get updated.",
+                                          typ="string", example="B4")
+        self.docs.add_parameter_table_row(title="Value", name="value", 
+                                          description="Data to be inserted into the specified cell.",
+                                          typ="string", example="B4")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
