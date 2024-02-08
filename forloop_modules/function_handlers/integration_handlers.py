@@ -1276,7 +1276,7 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
                                           typ="string", example=["Sheet1", "sheet_1", "list 1"])
         self.docs.add_parameter_table_row(title="Start row number", name="start_row", 
                                           description="A number of the row to be deleted or the initial row of the series to be deleted. The numbering preserves the Python logic, ie. **the first row corresponds to number 0**!",
-                                          typ="integer", example=[0, 12, 546])
+                                          typ="integer", example=["0", "12", "546"])
         self.docs.add_parameter_table_row(title="Stop row number", name="stop_row", 
                                           description="A number of the last row of the series of rows to be deleted. If left blank, only a single row, i.e. row no. Start row number + 1 (Python logic), will be deleted.",
                                           typ="integer")
