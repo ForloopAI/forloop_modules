@@ -958,12 +958,32 @@ class PipedriveAddNoteHandler(AbstractFunctionHandler):
 
 
 class LoadGoogleSheetHandler(AbstractFunctionHandler):
+    """
+    Load Google Sheet Node serves, as the name suggests, for loading a Google sheet into Forloop. It requires three 
+    entries: *Google file ID*, *sheet name* and *new variable name*. It then creates a new Forloop object with an interactive
+    icon which can be used for further analysis in the same manner as a data table.
+    """
+    
     def __init__(self):
         self.icon_type = "LoadGoogleSheet"
         self.fn_name = "Load Google Sheet"
 
         self.type_category = ntcm.categories.integration
         self.docs_category = DocsCategories.integrations
+        self._init_docs()
+        
+    def _init_docs(self):
+        parameter_description = "In order to succesfully load a Google spreadsheet, three parameters are required as user entries."
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add_parameter_table_row(title="Sheet URL", name="sheet_url",
+                                          description="A URL of the desired Google spreadsheet.",
+                                          typ="string", example="https://docs.google.com/spreadsheets/d/ 1FApy2bGcFFmpg-lTNS8HWpq-fpHlGcJhvq-DXhr4b1o /edit#gid=0")
+        self.docs.add_parameter_table_row(title="Sheet name", name="google_file_name", 
+                                          description="The name of the loaded spreadsheet. It is essential to write the name in its full form, i.e. if the name is *test_sheet* then writing *test sheet* will not work.",
+                                          example=["Sheet1", "sheet_1", "list 1"])
+        self.docs.add_parameter_table_row(title="New variable name", name="new_var_name", 
+                                          description="A name that will be used for the newly created icon of the loaded spreadsheet. Therefore this field requires an arbitrary string.",
+                                          example="my_sheet_df")
 
     def make_form_dict_list(self, *args, options={}, node_detail_form=None):
         sheet_options = ["Sheet1", "Sheet2", "Sheet3"]
