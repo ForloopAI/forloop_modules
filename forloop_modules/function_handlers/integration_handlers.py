@@ -986,8 +986,6 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
                                           example="my_sheet_df")
 
     def make_form_dict_list(self, *args, options={}, node_detail_form=None):
-        sheet_options = ["Sheet1", "Sheet2", "Sheet3"]
-
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("Sheet URL:")
