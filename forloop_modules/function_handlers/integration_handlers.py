@@ -1062,6 +1062,10 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
 
 
 class CopyGoogleSheetHandler(AbstractFunctionHandler):
+    """
+    Copy Google Sheet Node makes a copy of the spreadsheet identified by *Sheet ID* for the Google account belonging to
+    the E-mail address. An arbitrary name can be chosen for such copy.
+    """
 
     def __init__(self):
         self.icon_type = 'CopyGoogleSheet'
@@ -1069,6 +1073,20 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
 
         self.type_category = ntcm.categories.integration
         self.docs_category = DocsCategories.integrations
+        self._init_docs()
+        
+    def _init_docs(self):
+        parameter_description = "In order to succesfully copy a Google spreadsheet, three parameters are required as user entries."
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add_parameter_table_row(title="Sheet URL", name="sheet_url",
+                                          description="A URL of the desired Google spreadsheet.",
+                                          typ="string", example="https://docs.google.com/spreadsheets/d/ 1FApy2bGcFFmpg-lTNS8HWpq-fpHlGcJhvq-DXhr4b1o /edit#gid=0")
+        self.docs.add_parameter_table_row(title="Sheet copy name", name="copied_filename", 
+                                          description="The entered string will be used as a name for the newly created copy of the original spreadsheet.",
+                                          example=["copied_sheet_1"])
+        self.docs.add_parameter_table_row(title="E-mail", name="email", 
+                                          description="E-mail address with an access to Google worspace. The copy of the original spreadsheet will be created in spreadsheets on this account.",
+                                          example="john.doe@gmail.com")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
