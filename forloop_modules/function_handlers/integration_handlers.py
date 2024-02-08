@@ -1006,7 +1006,10 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
         #     raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
 
     def direct_execute(self, sheet_url, google_file_name, new_var_name):
-        google_file_id = parse_google_sheet_id_from_url(sheet_url)
+        try:
+            google_file_id = parse_google_sheet_id_from_url(sheet_url)
+        except Exception as e:
+            raise SoftPipelineError("Provided Sheet URL is of incorrect format") from e
 
         inp = Input()
         inp.assign("google_file_id", google_file_id)
@@ -1063,7 +1066,10 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
         return fdl
 
     def direct_execute(self, sheet_url, copied_filename, email):
-        google_file_id = parse_google_sheet_id_from_url(sheet_url)
+        try:
+            google_file_id = parse_google_sheet_id_from_url(sheet_url)
+        except Exception as e:
+            raise SoftPipelineError("Provided Sheet URL is of incorrect format") from e
         
         inp = Input()
         inp.assign("google_file_id", google_file_id)
@@ -1223,7 +1229,10 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
         return fdl
 
     def direct_execute(self, sheet_url, google_file_name, start_row, stop_row):
-        google_file_id = parse_google_sheet_id_from_url(sheet_url)
+        try:
+            google_file_id = parse_google_sheet_id_from_url(sheet_url)
+        except Exception as e:
+            raise SoftPipelineError("Provided Sheet URL is of incorrect format") from e
 
         inp = Input()
         inp.assign("google_file_id", google_file_id)
@@ -1487,7 +1496,7 @@ class InsertIntoSheetHandler(AbstractFunctionHandler):
 
     def direct_execute(self, sheet_url, sheet_name, df_entry, operation):
         try:
-            google_file_id = sheet_url.split("/")[-2]
+            google_file_id = parse_google_sheet_id_from_url(sheet_url)
         except Exception as e:
             raise SoftPipelineError("Provided Sheet URL is of incorrect format") from e
 
@@ -1584,7 +1593,10 @@ class ParseDataToSheetHandler(AbstractFunctionHandler):
         
     def direct_execute(self, sheet_url, sheet_name, filename, operation):
         if sheet_url != "":
-            google_file_id = parse_google_sheet_id_from_url(sheet_url)
+            try:
+                google_file_id = parse_google_sheet_id_from_url(sheet_url)
+            except Exception as e:
+                raise SoftPipelineError("Provided Sheet URL is of incorrect format") from e
 
             inp = Input()
             inp.assign("google_file_id", google_file_id)
