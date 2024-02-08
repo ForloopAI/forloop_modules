@@ -1176,15 +1176,12 @@ class UpdateCellHandler(AbstractFunctionHandler):
                                           typ="string", example="B4")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
-
-        options = ["Sheet1", "Sheet2", "Sheet3"]
-
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("Sheet URL:")
         fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet name")
-        fdl.comboentry(name="google_file_name", text="Sheet1", options=options, row=2)
+        fdl.entry(name="google_file_name", text="Sheet1", input_types=["str"], required=True, row=2)
         fdl.label("Cell name")
         fdl.entry(name="cell_name", text="A1", input_types=["str"], required=True, row=3)
         fdl.label("Value")
@@ -1287,15 +1284,12 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
                                           typ="integer")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
-
-        options = ["Sheet1", "Sheet2", "Sheet3"]
-
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("Sheet URL:")
         fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet name")
-        fdl.comboentry(name="google_file_name", text="Sheet1", options=options, row=2)
+        fdl.entry(name="google_file_name", text="Sheet1", input_types=["str"], required=True, row=2)
         fdl.label("Start row number")
         fdl.entry(name="start_row", text="", input_types=["int"], required=True, row=3)
         fdl.label("Stop row number")
