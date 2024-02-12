@@ -286,7 +286,7 @@ class APIScript(BaseModel):
 #     total_time: int = 0
 
 
-class APIScanWebpageApi(BaseModel):
+class APIScanWebpage(BaseModel):
     email: str
     url: str
     incl_tables: Optional[bool]
@@ -630,7 +630,7 @@ class APISession(BaseModel):
     # total_time: int = 0
 
 
-# class APIScanWebpageApi(BaseModel):
+# class APIScanWebpage(BaseModel):
 #     url: str
 #     incl_tables: Optional[bool]
 #     incl_bullets: Optional[bool]
