@@ -200,14 +200,18 @@ class FindSimilarItemsHandler(AbstractFunctionHandler):
                 selected_elements_xpaths_new
             ) + ", Error occured in finding matching elements"
 
-        return {
+        data = {
             "message": message,
             "ok": True,
             "elements_generalized_xpaths": elements_generalized_xpaths,
             "similar_items_xpaths": matching_elements,
             "similar_items_xpath_groups": matching_elements_groups,
         }
-
+        redis_action_key = redis_config.SCRAPING_ACTION_KEY_TEMPLATE.format(
+            pipeline_uid=aet.active_pipeline_uid
+        )
+        kv_redis.set(redis_action_key, data)
+        return data
 
 class ConvertToScrapingNodesHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -401,7 +405,7 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         # elements_generalized_xpaths = [optimal_generalized_common_xpath_part + x + ';' for x in xpaths_leftovers]
         # print("ELEMENTS",elements_generalized_xpaths)
         optimal_generalized_common_xpath_part = None
-        response = {
+        data = {
             'url': url, 'elements': elements, 'message': 'Page was successfully scanned.',
             'screenshot': f"website_{random_number}",
             'similar_item_elements': optimal_generalized_common_xpath_part, 'total_pages': "???"
@@ -413,8 +417,11 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         # global scan_web_page_last_response_memory
         # scan_web_page_last_response_memory = response
 
-        return response
-
+        redis_action_key = redis_config.SCRAPING_ACTION_KEY_TEMPLATE.format(
+            pipeline_uid=aet.active_pipeline_uid
+        )
+        kv_redis.set(redis_action_key, data)
+        return data
 
 class FilterWebpageElementsWithAIHandler(AbstractFunctionHandler):
     def __init__(self):
