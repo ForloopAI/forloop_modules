@@ -213,6 +213,7 @@ class FindSimilarItemsHandler(AbstractFunctionHandler):
         kv_redis.set(redis_action_key, data)
         return data
 
+
 class ConvertToScrapingNodesHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "ConvertToScrapingNodes"
@@ -288,7 +289,7 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         kv_redis.set(redis_action_key, suh.webpage_elements)
 
     def direct_execute(
-        self, url, incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images,
+        self, incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images,
         incl_buttons, by_xpath, context_xpath=''
     ):
         # start_time = time.perf_counter()
@@ -405,9 +406,12 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         # print("ELEMENTS",elements_generalized_xpaths)
         optimal_generalized_common_xpath_part = None
         data = {
-            'url': url, 'elements': elements, 'message': 'Page was successfully scanned.',
+            #'url': url,
+            'elements': elements,
+            'message': 'Page was successfully scanned.',
             'screenshot': f"website_{random_number}",
-            'similar_item_elements': optimal_generalized_common_xpath_part, 'total_pages': "???"
+            'similar_item_elements': optimal_generalized_common_xpath_part,
+            'total_pages': "???",
         }
 
         # node_context_manager.stored_xpaths = [x["xpath"] for x in elements]
@@ -421,6 +425,7 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         )
         kv_redis.set(redis_action_key, data)
         return data
+
 
 class FilterWebpageElementsWithAIHandler(AbstractFunctionHandler):
     def __init__(self):
