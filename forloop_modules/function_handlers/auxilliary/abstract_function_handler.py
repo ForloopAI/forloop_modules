@@ -389,6 +389,7 @@ class AbstractFunctionHandler(abc.ABC):
         # TODO2: removing this breaks the wizard cleaning
         # node_detail_form.fields = fields
 
-        ncrb.update_node_by_uid(node_detail_form.node_uid, fields=fields)
+        ncrb.update_node_by_uid(node_uid=node_detail_form.node_uid, typ=node_detail_form.typ, 
+                                params=node_detail_form.node_params, fields=fields)
         
         return df_variable_name
