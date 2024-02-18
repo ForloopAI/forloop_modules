@@ -1463,7 +1463,10 @@ class NewGoogleSheetHandler(AbstractFunctionHandler):
         fdl.label("E-mail")
         fdl.entry(name="email", text="", input_types=["str"], required=True, row=2)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        fdl.label("Note: The sheet will appear as a shared one")
+        fdl.label("Note: A new variable containing sheet's url will be crated")
+        fdl.label("under a name '[sheet_name]_url' where [sheet_name]")
+        fdl.label("is the sheet name you provided.")
+        fdl.label("Note 2: The sheet will appear as a shared one")
         fdl.label("  - choose 'own by anyone' option in Sheets")
 
         return fdl
@@ -1534,8 +1537,7 @@ class NewGoogleSheetHandler(AbstractFunctionHandler):
         worksheet.share({email}, perm_type = 'user', role = 'writer')
 
         ### Create new variable containing sheet ID
-        {sheet_name}_id = worksheet.id
-        print(worksheet.id)
+        {sheet_name}_url = worksheet.url
         """
 
         # return(code.format(sheet_name= '"' + sheet_name + '"', email= '"' + email + '"'))
