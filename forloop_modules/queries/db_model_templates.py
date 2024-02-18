@@ -2,7 +2,7 @@ import datetime
 from enum import Enum
 from typing import Annotated, Any, Dict, Generic, List, Literal, Optional, TypeVar, Union
 
-from pydantic import AfterValidator, BaseModel, Field, PlainSerializer
+from pydantic import AfterValidator, BaseModel, Field, PlainSerializer, model_validator
 from pydantic.functional_validators import field_validator
 
 
@@ -21,7 +21,7 @@ def is_date_utc(date: datetime.datetime) -> datetime.datetime:
 UTCDatetime = Annotated[
     datetime.datetime,
     AfterValidator(is_date_utc),  # Validate if the date is in UTC zone (zulu format)
-    PlainSerializer(lambda date: f"{date.isoformat()}Z") # Serialize Timestamps to zulu format
+    PlainSerializer(lambda date: f"{date.isoformat()}Z", when_used='json') # Serialize Timestamps to zulu format
 ]
 
 
@@ -366,6 +366,13 @@ class APINode(BaseModel):
     visible: bool = True
     is_breakpoint_enabled: bool = False
     is_disabled: bool = False
+
+
+class APINodeExecute(BaseModel):
+    typ: str
+    params: dict
+    fields: Optional[list] = None
+
 
 class APIEdge(BaseModel): #Added default values
     from_node_uid: str = "0"

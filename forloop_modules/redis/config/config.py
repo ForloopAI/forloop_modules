@@ -27,7 +27,10 @@ class RedisConfig(BaseSettings):
     JOB_INDEX_NAME: str = "index"
     JOB_LOCK_NAME: str = "jobs:lock"
     JOB_PRIMARY_KEY: str = "jobs:pk"
-    
+
+    # Redis key for storing temporary scraping results
+    SCRAPING_ACTION_KEY_TEMPLATE: str = "pipeline:{pipeline_uid}:scraping:action"
+
     # Complete nonsense name --> to avoid accidental selection as a variable
     PRIVATE_ENCRYPTION_KEY_KEY: str = "ForLoop_unicorn_2025_key_for_key_1998_CraZy_FRog"
 

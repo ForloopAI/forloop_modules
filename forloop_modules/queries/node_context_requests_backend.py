@@ -1049,7 +1049,16 @@ def run_inspect_node_code(node_uid:str):
     response = requests.get(SERVER+":"+str(PORT)+"/api/v1/inspect_node_code/" + str(node_uid))
     return response
 
-
+def get_all_databases_by_project_uid():
+    response = requests.get(SERVER+":"+str(PORT)+"/api/v1/databases")
+        
+    if response.status_code != 200:
+        raise Exception(f'Error {response.status_code}: {response.reason}.')
+    
+    databases = response.json().get("result", {}).get("databases")
+    project_databases = [database for database in databases if database["project_uid"] == aet.project_uid]
+    
+    return project_databases
 
 # def get_all_databases():
 #     response=requests.get(SERVER+":"+str(PORT)+"/api/v1/databases")
