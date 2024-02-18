@@ -1089,8 +1089,6 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
 
         fdl = FormDictList()
         fdl.label(self.fn_name)
-        #fdl.label("Sheet ID:")
-        #fdl.entry(name="google_file_id", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet URL:")
         fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet copy name:")
@@ -1112,9 +1110,6 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
         inp.assign("copied_filename", copied_filename)
         inp.assign("email", email)
 
-        #gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
-
-
         try:
             self.input_execute(inp)
         except Exception as e:
@@ -1126,9 +1121,7 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
         gc.copy(inp("google_file_id"), inp("copied_filename"), copy_permissions=True)
         
         worksheet = gc.open(inp("copied_filename"))
-        print("GOOGLE SHEET COPIED")
         worksheet.share(inp("email"), perm_type='user', role='writer')
-        print("GOOGLE SHEET PERMISSION GRANTED")
 
     def execute(self, node_detail_form):
         sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
@@ -1204,18 +1197,6 @@ class UpdateCellHandler(AbstractFunctionHandler):
         try:
             self.input_execute(inp)
         except Exception as e:
-        """
-
-        gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
-
-
-        try:
-            sh = gc.open_by_key(google_file_id)
-            worksheet = sh.worksheet(sheet_name)
-            worksheet.update(cell_name, value)
-        except Exception as e:
-            flog.error(message=f"{e}")
-        """
             raise SoftPipelineError("Updating Google sheet cell value failed unexpectedly.") from e
     
     def input_execute(self, inp):
@@ -1337,31 +1318,6 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
         except Exception as e:
             raise SoftPipelineError("Delete Google sheet row operation failed unexpectedly.") from e
         
-        """
-
-        gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
-
-
-        try:
-            sh = gc.open_by_key(google_file_id)
-            worksheet = sh.worksheet(sheet_name)
-        except Exception as e:
-            flog.error(message=f"{e}")
-            return None
-
-        if stop_row == "":
-            try:
-                worksheet.delete_row(int(start_row))
-            except ValueError:
-                print('ValueError Exception Raised, argument must be an integer.')
-        else:
-            try:
-                for i in range(int(start_row), int(stop_row) + 1):
-                    worksheet.delete_row(int(start_row))
-            except ValueError:
-                print('ValueError Exception Raised, argument must be an integer.')
-        """
-    
     def input_execute(self, inp):
         gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
 
@@ -1540,7 +1496,6 @@ class NewGoogleSheetHandler(AbstractFunctionHandler):
         {sheet_name}_url = worksheet.url
         """
 
-        # return(code.format(sheet_name= '"' + sheet_name + '"', email= '"' + email + '"'))
         return code
 
     def export_imports(self, *args):
@@ -1579,12 +1534,11 @@ class InsertIntoSheetHandler(AbstractFunctionHandler):
         return fdl
 
     def execute(self, node_detail_form):
-        sheet_url = node_detail_form.get_chosen_value_by_name(
-            "sheet_url", variable_handler
-        )
+        sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
         sheet_name = node_detail_form.get_chosen_value_by_name("sheet_name", variable_handler)
         df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         operation = node_detail_form.get_chosen_value_by_name("operation", variable_handler)
+        
         self.direct_execute(sheet_url, sheet_name, df_entry, operation)
 
     def direct_execute(self, sheet_url, sheet_name, df_entry, operation):
@@ -1722,7 +1676,6 @@ class StoreDfInNewSheetHandler(AbstractFunctionHandler):
         elif operation == "Overwrite":
             code = code_base + code_overwrite
 
-        # return(code.format(filename= '"' + filename + '"', header= header, google_file_id= '"' + google_file_id + '"', sheet_name= '"' + sheet_name + '"', operation= '"' + operation + '"'))
         return code
 
     def export_imports(self, *args):
