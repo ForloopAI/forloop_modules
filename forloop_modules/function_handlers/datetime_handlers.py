@@ -10,9 +10,8 @@ from forloop_modules.function_handlers.auxilliary.node_type_categories_manager i
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.docs_categories import DocsCategories
-
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
-
+from forloop_modules.function_handlers.auxilliary.auxiliary_functions import parse_comboentry_input
 
 ####### PROBLEMATIC IMPORTS TODO: REFACTOR #######
 #from src.gui.item_detail_form import ItemDetailForm #independent on GLC - but is Frontend -> Should separate to two classes
@@ -21,7 +20,6 @@ from forloop_modules.function_handlers.auxilliary.abstract_function_handler impo
 
 
 def convert_timestamp_to_datetime_if_needed(value):
-
     if type(value) == int or type(value) == float:
         value = datetime.datetime.fromtimestamp(value)
 
@@ -68,22 +66,9 @@ class DatetimeNowHandler(AbstractFunctionHandler):
 
         variable_handler.new_variable(new_var_name, now)  
         #variable_handler.update_data_in_variable_explorer(glc)
-
-        """
-        now = datetime.datetime.now()
-
-        if datetime_format == "timestamp":
-            if add_decimal:
-                now = now.timestamp()
-            else:
-                now = int(now.timestamp())
-
-        variable_handler.new_variable(new_var_name, now)  
-        ##variable_handler.update_data_in_variable_explorer(glc)
-        """
         
     def input_execute(self, inp):
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(datetime.timezone.utc)
 
         if inp("datetime_format") == "timestamp":
             if inp("add_decimal"):
@@ -92,7 +77,6 @@ class DatetimeNowHandler(AbstractFunctionHandler):
                 now = int(now.timestamp())
         
         return now
-
 
     def export_code(self, node_detail_form):
         new_var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_name", is_input_variable_name=True)
@@ -127,6 +111,8 @@ class NewDatetimeHandler(AbstractFunctionHandler):
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         current_year = datetime.datetime.now().year
+        hours_set = list(range(0, 23, 1))
+        minutes_and_secons_set = list(range(0, 59, 1))
         
         fdl = FormDictList()
         fdl.label(self.fn_name)
@@ -138,33 +124,26 @@ class NewDatetimeHandler(AbstractFunctionHandler):
         fdl.entry(name="month", text="1", input_types=["int"], required=True, row=3)
         fdl.label("Day")
         fdl.entry(name="day", text="1", input_types=["int"], required=True, row=4)
-        fdl.button(name="add_time", function=self.add_time, function_args=args, text="Add time", enforce_required=False)
+        fdl.label("Hour")
+        fdl.combobox(name="hour", options=hours_set, default=hours_set[0], row=5)
+        fdl.label("Minute")
+        fdl.combobox(name="minute", options=minutes_and_secons_set, default=minutes_and_secons_set[0], row=6)
+        fdl.label("Second")
+        fdl.combobox(name="second", options=minutes_and_secons_set, default=minutes_and_secons_set[0], row=7)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
-
-    def add_time(self, args):
-        image = args[0]
-
-        form_dict_list = image.item_detail_form.form_dict_list
-
-        form_dict_list.insert(-2, {"Label": "Hour", "Entry":{"name":"hour","text": "0", "input_types":["int"]}})
-        form_dict_list.insert(-2, {"Label": "Minute", "Entry":{"name":"minute","text": "0", "input_types":["int"]}})
-        form_dict_list.insert(-2, {"Label": "Second", "Entry":{"name":"second","text": "0", "input_types":["int"]}})
-        form_dict_list.insert(-2, {"Label": "Microsecond", "Entry":{"name":"microsecond","text": "0", "input_types":["int"]}})
-        form_dict_list.pop(-2) # removes the "Add time" button
-            
-        image.item_detail_form.elements = []
-        #image.item_detail_form = ItemDetailForm(form_dict_list, self.icon_type, magnetic = False) #temp disabled
-        #image.item_detail_form.generate_elements() #temp disabled
 
     def execute(self, node_detail_form):
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
         year = node_detail_form.get_chosen_value_by_name("year", variable_handler)
         month = node_detail_form.get_chosen_value_by_name("month", variable_handler)
         day = node_detail_form.get_chosen_value_by_name("day", variable_handler)
+        hour = node_detail_form.get_chosen_value_by_name("hour", variable_handler)
+        minute = node_detail_form.get_chosen_value_by_name("minute", variable_handler)
+        second = node_detail_form.get_chosen_value_by_name("second", variable_handler)
 
-        self.direct_execute(new_var_name, year, month, day)
+        self.direct_execute(new_var_name, year, month, day, hour, minute, second)
 
     def execute_with_params(self, params):
         
@@ -184,71 +163,29 @@ class NewDatetimeHandler(AbstractFunctionHandler):
 
         self.direct_execute(new_var_name, year, month, day, hour=time_entries["hour"], minute=time_entries["minute"], second=time_entries["second"], microsecond=time_entries["microsecond"])
 
-    def direct_execute(self, new_var_name, year, month, day, hour, minute, second, microsecond):
+    def direct_execute(self, new_var_name, year, month, day, hour, minute, second):
+        hour = hour or 0
+        minute = minute or 0
+        second = second or 0
 
         inp = Input()
-        inp.assign("year", year)
-        inp.assign("month", month)
-        inp.assign("day", day)
-        inp.assign("hour", hour)
-        inp.assign("minute", minute)
-        inp.assign("second", second)
-        inp.assign("microsecond", microsecond)
+        inp.assign("year", int(year))
+        inp.assign("month", int(month))
+        inp.assign("day", int(day))
+        inp.assign("hour", int(hour))
+        inp.assign("minute", int(minute))
+        inp.assign("second", int(second))
 
-        try:
-            new_datetime = self.input_execute(inp)
-        except Exception as e:
-            flog.error(message=f"{e}")
+        new_datetime = self.input_execute(inp)
         
         variable_handler.new_variable(new_var_name, new_datetime)
         ##variable_handler.update_data_in_variable_explorer(glc)
-
-        """
-        #is_leap_year = self.check_if_year_is_leap_year(year)
-        try:
-            new_datetime = datetime.datetime(year, month, day, hour, minute, second, microsecond)
-        except Exception as e:
-            flog.error(message=f"{e}")
-            return None
-
-        
-
-        variable_handler.new_variable(new_var_name, new_datetime)  
-        #variable_handler.update_data_in_variable_explorer(glc)
-        """
     
     def input_execute(self, inp):
-
-        new_datetime = datetime.datetime(inp("year"), inp("month"), inp("day"), inp("hour"), inp("minute"), inp("second"), inp("microsecond"))
+        new_datetime = datetime.datetime(inp("year"), inp("month"), inp("day"), inp("hour"), inp("minute"), 
+                                         inp("second"), tzinfo=datetime.timezone.utc)
 
         return new_datetime
-
-    # Now without use but could be useful in future when entries support additional value checking
-    def check_if_year_is_leap_year(self, year) -> bool:
-
-        """
-        To determine whether a year is a leap year, follow these steps:
-
-            1. If the year is evenly divisible by 4, go to step 2. Otherwise, go to step 5.
-            2. If the year is evenly divisible by 100, go to step 3. Otherwise, go to step 4.
-            3. If the year is evenly divisible by 400, go to step 4. Otherwise, go to step 5.
-            4. The year is a leap year (it has 366 days).
-            5. The year is not a leap year (it has 365 days).
-
-        """
-
-        if year%4 == 0:
-            if year%100 == 0:
-                if year%400 == 0:
-                    is_leap_year = True
-                else:
-                    is_leap_year = False
-            else:
-                is_leap_year = True
-        else:
-            is_leap_year = False
-
-        return is_leap_year
 
     def export_code(self, node_detail_form):
         new_var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_name", is_input_variable_name=True)
@@ -274,6 +211,32 @@ class NewDatetimeHandler(AbstractFunctionHandler):
     def export_imports(self, *args):
         imports = ["import datetime"]
         return (imports)
+    
+    # Now without use but could be useful in future when entries support additional value checking
+    def _check_if_year_is_leap_year(self, year) -> bool:
+        """
+        To determine whether a year is a leap year, follow these steps:
+
+            1. If the year is evenly divisible by 4, go to step 2. Otherwise, go to step 5.
+            2. If the year is evenly divisible by 100, go to step 3. Otherwise, go to step 4.
+            3. If the year is evenly divisible by 400, go to step 4. Otherwise, go to step 5.
+            4. The year is a leap year (it has 366 days).
+            5. The year is not a leap year (it has 365 days).
+
+        """
+
+        if year%4 == 0:
+            if year%100 == 0:
+                if year%400 == 0:
+                    is_leap_year = True
+                else:
+                    is_leap_year = False
+            else:
+                is_leap_year = True
+        else:
+            is_leap_year = False
+
+        return is_leap_year
 
 
 class DatetimeDifferenceHandler(AbstractFunctionHandler):
@@ -330,17 +293,12 @@ class DatetimeDifferenceHandler(AbstractFunctionHandler):
         inp.assign("add_decimal", add_decimal)
         inp.assign("transformations", transformations)
 
-
-        try:
-            diff = self.input_execute(inp)
-        except Exception as e:
-            flog.error(message=f"{e}")
+        diff = self.input_execute(inp)
         
         variable_handler.new_variable(new_var_name, diff)
         #variable_handler.update_data_in_variable_explorer(glc)
     
     def input_execute(self, inp):
-
         datetime1 = convert_timestamp_to_datetime_if_needed(inp("datetime1"))
         datetime2 = convert_timestamp_to_datetime_if_needed(inp("datetime2"))
 
@@ -415,8 +373,8 @@ class DatetimeValueHandler(AbstractFunctionHandler):
 
     def direct_execute(self, datetime_var, value_to_get, new_var_name):
         apply_format = {
-            "date": lambda x: x.date(),
-            "time": lambda x: x.time(),
+            "date": lambda x: x.date().isoformat(),
+            "time": lambda x: x.time().isoformat(),
             "year": lambda x: x.year, 
             "month": lambda x: x.month, 
             "day": lambda x: x.day, 
@@ -438,29 +396,6 @@ class DatetimeValueHandler(AbstractFunctionHandler):
         
         variable_handler.new_variable(new_var_name, extracted_value)
         #variable_handler.update_data_in_variable_explorer(glc)
-
-        """
-        datetime_var = convert_timestamp_to_datetime_if_needed(datetime_var)
-
-        apply_format = {
-            "date": lambda x: x.date(),
-            "time": lambda x: x.time(),
-            "year": lambda x: x.year, 
-            "month": lambda x: x.month, 
-            "day": lambda x: x.day, 
-            "hour": lambda x: x.hour, 
-            "minute": lambda x: x.minute, 
-            "second": lambda x: x.second, 
-            "microsecond": lambda x: x.microsecond
-            }
-        
-        extracted_value = apply_format[value_to_get](datetime_var)
-
-        
-
-        variable_handler.new_variable(new_var_name, extracted_value)  
-        #variable_handler.update_data_in_variable_explorer(glc)
-        """
 
     def input_execute(self, inp):
 
@@ -526,7 +461,10 @@ class DatetimeToStringHandler(AbstractFunctionHandler):
 
     def execute(self, node_detail_form):
         datetime_var = node_detail_form.get_chosen_value_by_name("datetime_var", variable_handler)
-        return_format = node_detail_form.get_chosen_value_by_name("return_format", variable_handler)[0]
+        
+        return_format = node_detail_form.get_chosen_value_by_name("return_format", variable_handler)
+        return_format = parse_comboentry_input(return_format)
+        
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
         self.direct_execute(datetime_var, return_format, new_var_name)
@@ -536,10 +474,7 @@ class DatetimeToStringHandler(AbstractFunctionHandler):
         inp.assign("datetime_var", datetime_var)
         inp.assign("return_format", return_format)
 
-        try:
-            formatted_datetime = self.input_execute(inp)
-        except Exception as e:
-            flog.error(message=f"{e}")
+        formatted_datetime = self.input_execute(inp)
         
         variable_handler.new_variable(new_var_name, formatted_datetime)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -635,27 +570,10 @@ class DatetimeFromStringHandler(AbstractFunctionHandler):
         inp = Input()
         inp.assign("datetime_str_var", datetime_str_var)
 
-        try:
-            parsed_datetime = self.input_execute(inp)
-        except Exception as e:
-            flog.error(message=f"{e}")
+        parsed_datetime = self.input_execute(inp)
 
         variable_handler.new_variable(new_var_name, parsed_datetime)
         #variable_handler.update_data_in_variable_explorer(glc)
-
-        """
-        try:
-            parsed_datetime = parser.parse(datetime_str_var)
-        except Exception as e:
-            flog.error(message=f"{e}")
-            return None
-
-        
-        
-        variable_handler.new_variable(new_var_name, parsed_datetime)  
-        #variable_handler.update_data_in_variable_explorer(glc)
-        """
-
     
     def input_execute(self, inp):
             
@@ -694,9 +612,9 @@ class DatetimeAddDeltaHandler(AbstractFunctionHandler):
         fdl.label("Datetime variable")
         fdl.entry(name="datetime_var", text="", input_types=["datetime", "int", "float"], required=True, row=1)
         fdl.label("Shift to add")
-        fdl.entry(name="datetime_delta", text="", input_types=["str", "int"], required=True, row=2)
+        fdl.entry(name="datetime_delta", text="", input_types=["int"], required=True, row=2)
         fdl.label("Unit")
-        fdl.combobox(name="delta_unit", options=options, multiselect_indices={}, default="seconds", row=3)
+        fdl.combobox(name="delta_unit", options=options, default="seconds", row=3)
         fdl.label("New variable name")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=4)        
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -712,57 +630,21 @@ class DatetimeAddDeltaHandler(AbstractFunctionHandler):
         self.direct_execute(datetime_var, datetime_delta, delta_unit, new_var_name)
 
     def direct_execute(self, datetime_var, datetime_delta, delta_unit, new_var_name):
+        datetime_var = convert_timestamp_to_datetime_if_needed(datetime_var)
+        datetime_delta = ast.literal_eval(datetime_delta)
+        
         inp = Input()
         inp.assign("datetime_var", datetime_var)
         inp.assign("datetime_delta", datetime_delta)
         inp.assign("delta_unit", delta_unit)
 
-        try:
-            datetime_plus_delta = self.input_execute(inp)
-        except Exception as e:
-            flog.error(message=f"{e}")
+        datetime_plus_delta = self.input_execute(inp)
 
         variable_handler.new_variable(new_var_name, datetime_plus_delta)  
         #variable_handler.update_data_in_variable_explorer(glc)
 
-        """
-        datetime_var = convert_timestamp_to_datetime_if_needed(datetime_var)
-
-        datetime_delta = f'[{datetime_delta}]'
-        datetime_delta = ast.literal_eval(datetime_delta)
-
-        if len(datetime_delta) != len(delta_unit) or type(datetime_delta) != list:
-            flog.error("Wrong timedelta input")
-            return None
-
-        delta_dict = {}
-
-        for i, unit in enumerate(delta_unit):
-            delta_dict[unit] = datetime_delta[i]
-
-        #delta = relativedelta(**{delta_unit: datetime_delta})
-        delta = relativedelta(**delta_dict)
-
-        try:
-            new_var = datetime_var + delta
-        except Exception as e:
-            flog.error(message=f"{e}")
-            return None
-        
-
-        
-        
-        variable_handler.new_variable(new_var_name, new_var)  
-        #variable_handler.update_data_in_variable_explorer(glc)
-        """
-
     def input_execute(self, inp):
-        datetime_delta = ast.literal_eval(f'[{inp("datetime_delta")}]')
-
-        delta_dict = {}
-
-        for i, unit in enumerate(inp("delta_unit")):
-            delta_dict[unit] = datetime_delta[i]
+        delta_dict = {inp("delta_unit"): inp("datetime_delta")}
 
         delta = relativedelta(**delta_dict)
         datetime_plus_delta = inp("datetime_var") + delta

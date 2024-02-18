@@ -1,4 +1,5 @@
 import inspect
+import datetime
 from typing import Any
 
 import numpy as np
@@ -90,3 +91,8 @@ def serialize_if_dataframe_to_db(variable_series: pd.Series) -> Any:
         df_dict["attrs"] = df.attrs
         variable_series["value"] = df_dict
     return variable_series
+
+def parse_datetime_to_api_format(datetime_value: datetime.datetime):
+    parsed_value = datetime_value.strftime("%Y-%m-%dT%H:%M:%SZ")
+    
+    return parsed_value
