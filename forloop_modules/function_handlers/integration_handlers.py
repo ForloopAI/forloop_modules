@@ -29,7 +29,7 @@ from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDict
 from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.docs_categories import DocsCategories
-from forloop_modules.errors.errors import SoftPipelineError
+from forloop_modules.errors.errors import SoftPipelineError, CriticalPipelineError
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
 from forloop_modules.function_handlers.file_managment_handlers import file_managment_handlers_dict
 from forloop_modules.utils.definitions import GOOGLE_API_SERVICES, GOOGLE_API_SERVICE_INFO
@@ -1037,8 +1037,7 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
         try:
             df = self.input_execute(inp)
         except Exception as e:
-            flog.error(message=f"Error loading Google Sheet: {e}")
-            df = pd.DataFrame()
+            raise CriticalPipelineError("Loading of Google sheet failed unexpectedly.") from e
 
         variable_handler.new_variable(new_var_name, df)
         ##variable_handler.update_data_in_variable_explorer(glc)
@@ -1119,7 +1118,7 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
         try:
             self.input_execute(inp)
         except Exception as e:
-            flog.error(message=f"{e}")
+            raise SoftPipelineError("Copy operation on Google sheet failed unexpectedly.") from e
     
     def input_execute(self, inp):
         gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
@@ -1205,7 +1204,6 @@ class UpdateCellHandler(AbstractFunctionHandler):
         try:
             self.input_execute(inp)
         except Exception as e:
-            flog.error(message=f"{e}")
         """
 
         gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
@@ -1218,6 +1216,7 @@ class UpdateCellHandler(AbstractFunctionHandler):
         except Exception as e:
             flog.error(message=f"{e}")
         """
+            raise SoftPipelineError("Updating Google sheet cell value failed unexpectedly.") from e
     
     def input_execute(self, inp):
         gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
@@ -1301,6 +1300,12 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
             google_file_id = parse_google_sheet_id_from_url(sheet_url)
         except Exception as e:
             raise SoftPipelineError("Provided Sheet URL is of incorrect format") from e
+        
+        try:
+            start_row = int(start_row)
+            stop_row = int(stop_row) if stop_row else None
+        except Exception as e:
+            raise SoftPipelineError("Argument must be and integer.") from e
 
         inp = Input()
         inp.assign("google_file_id", google_file_id)
@@ -1311,7 +1316,7 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
         try:
             self.input_execute(inp)
         except Exception as e:
-            flog.error(message=f"{e}")
+            raise SoftPipelineError("Delete Google sheet row operation failed unexpectedly.") from e
         
         """
 
@@ -1467,20 +1472,20 @@ class NewGoogleSheetHandler(AbstractFunctionHandler):
         self.direct_execute(sheet_name, email)
 
     def direct_execute(self, sheet_name, email):
-        if sheet_name != "":
-            inp = Input()
-            inp.assign("sheet_name", sheet_name)
-            inp.assign("email", email)
+        if not sheet_name:
+            raise SoftPipelineError("The 'Sheet name' argument must be specified.")
+        
+        inp = Input()
+        inp.assign("sheet_name", sheet_name)
+        inp.assign("email", email)
 
-            try:
-                worksheet = self.input_execute(inp)
-            except Exception as e:
-                flog.error(message=f"{e}")
-                worksheet = None
-            
-            if worksheet is not None:
-                variable_handler.new_variable(f"{sheet_name}_id", worksheet.id)
-                ##variable_handler.update_data_in_variable_explorer(glc)
+        try:
+            worksheet = self.input_execute(inp)
+        except Exception as e:
+            raise SoftPipelineError("Create new Google sheet operation failed unexpectedly.") from e
+        
+        variable_handler.new_variable(f"{sheet_name}_url", worksheet.url)
+        ##variable_handler.update_data_in_variable_explorer(glc)
     
     def input_execute(self, inp):
         sheet_name = inp("sheet_name")
@@ -1592,9 +1597,7 @@ class InsertIntoSheetHandler(AbstractFunctionHandler):
         try:
             self.input_execute(inp)
         except gspread.exceptions.APIError as e:
-            raise SoftPipelineError(
-                "No permissions to open/modify the provided Google Sheets"
-            ) from e
+            raise SoftPipelineError("No permissions to open/modify the provided Google Sheets") from e
         except gspread.exceptions.SpreadsheetNotFound as e:
             raise SoftPipelineError("No Google Sheet found under the provided url") from e
 
