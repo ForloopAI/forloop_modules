@@ -1294,6 +1294,25 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
+    
+    def execute(self, node_detail_form):
+        sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
+        
+        sheet_name = node_detail_form.get_chosen_value_by_name("sheet_name", variable_handler)
+        sheet_name = parse_comboentry_input(sheet_name)
+        
+        start_row = node_detail_form.get_chosen_value_by_name("start_row", variable_handler)
+        stop_row = node_detail_form.get_chosen_value_by_name("stop_row", variable_handler)
+
+        self.direct_execute(sheet_url, sheet_name, start_row, stop_row)
+        
+    def execute_with_params(self, params):
+        sheet_url = params["sheet_url"]
+        sheet_name = params["sheet_name"]
+        start_row = params["start_row"]
+        stop_row = params["stop_row"]
+
+        self.direct_execute(sheet_url, sheet_name, start_row, stop_row)
 
     def direct_execute(self, sheet_url, sheet_name, start_row, stop_row):
         try:
@@ -1349,27 +1368,11 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
         sh = gc.open_by_key(inp("google_file_id"))
         worksheet = sh.worksheet(inp("sheet_name"))
 
-        for i in range(int(inp("start_row")), int(inp("stop_row")) + 1):
-            worksheet.delete_row(i)
-
-    def execute_with_params(self, params):
-        sheet_url = params["sheet_url"]
-        sheet_name = params["sheet_name"]
-        start_row = params["start_row"]
-        stop_row = params["stop_row"]
-
-        self.direct_execute(sheet_url, sheet_name, start_row, stop_row)
-
-    def execute(self, node_detail_form):
-        sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
-        
-        sheet_name = node_detail_form.get_chosen_value_by_name("sheet_name", variable_handler)
-        sheet_name = parse_comboentry_input(sheet_name)
-        
-        start_row = node_detail_form.get_chosen_value_by_name("start_row", variable_handler)
-        stop_row = node_detail_form.get_chosen_value_by_name("stop_row", variable_handler)
-
-        self.direct_execute(sheet_url, sheet_name, start_row, stop_row)
+        if inp("stop_row") is None:
+            worksheet.delete_row(inp("stop_row"))
+        else:
+            for i in range(inp("start_row"), inp("stop_row") + 1):
+                worksheet.delete_row(i)
 
     def export_imports(self, *args):
         imports = ["import gspread"]
