@@ -1989,7 +1989,6 @@ integration_handlers_dict = {
     'UpdateCell': UpdateCellHandler(),
     'DeleteSheetRow': DeleteSheetRowHandler(),
     'NewGoogleSheet': NewGoogleSheetHandler(),
-    'StoreDfInNewSheet': StoreDfInNewSheetHandler(),
 
     'AirtableConnect': AirtableConnectHandler(),
     'AirtableAddRecord': AirtableAddRecordHandler(),
