@@ -1390,6 +1390,9 @@ class NewGoogleSheetHandler(AbstractFunctionHandler):
     """
     New Google Sheet Node serves for creation of a new Google sheet on a specified Google account. It requires two 
     entries: users e-mail address and a name which will be given to the newly created sheet.
+    
+    After a successful creation of a Google sheet a new variable named '[sheet_name]_url' (where [sheet_name] is the 
+    name of a sheet you provide) containing it's url will be created. 
     """
 
     def __init__(self):
