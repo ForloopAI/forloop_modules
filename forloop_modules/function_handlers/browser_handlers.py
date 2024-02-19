@@ -1,11 +1,10 @@
-import difflib
-import concurrent.futures
-import random
+import base64
 from pathlib import Path
 from typing import Union
 
+from PIL import Image
+
 import forloop_modules.queries.node_context_requests_backend as ncrb
-from forloop_modules.errors.errors import CriticalPipelineError
 from forloop_modules.flog import flog
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import (
     AbstractFunctionHandler,
@@ -21,6 +20,7 @@ from forloop_modules.redis.redis_connection import kv_redis, redis_config
 
 class FindSimilarItemsHandler(AbstractFunctionHandler):
     """The FindSimilarItems node accepts a list of XPaths and determines their generalized XPath."""
+
     def __init__(self):
         self.icon_type = "FindSimilarItems"
         self.fn_name = "Find Similar Items"
@@ -107,12 +107,12 @@ class FindSimilarItemsHandler(AbstractFunctionHandler):
 
         # new_elements_positions after scanning of generalized elements in suh.get_generalized_xpaths
         try:
-            new_elements_positions = suh.update_webpage_elements(
+            new_elements_positions = suh.update_webpage_elements(  # noqa
                 refresh_browser_view_elements=False
             )
         except:
             flog.error('Error while loading elements positions!')
-            new_elements_positions = []
+            new_elements_positions = []  # noqa
 
         # api_user_flow_step=APIUserFlowStep(user_uid="1", step_identifier="WebExtractor_FindSimilarItems", step_data=str(len(new_elements_positions)), timestamp_utc=datetime.datetime.now())
         # acm.new_user_flow_step(api_user_flow_step)
@@ -243,6 +243,7 @@ class ConvertToScrapingNodesHandler(AbstractFunctionHandler):
 
 class RefreshBrowserViewHandler(AbstractFunctionHandler):
     """The RefreshBrowserView node creates a screenshot of the currently opened webpage in BrowserView."""
+
     def __init__(self):
         self.icon_type = "RefreshBrowserView"
         self.fn_name = "Refresh Browser View"
@@ -262,9 +263,9 @@ class RefreshBrowserViewHandler(AbstractFunctionHandler):
         kv_redis.set(redis_action_key, suh.screenshot_string)
 
 
-
 class ScanBrowserWebpageHandler(AbstractFunctionHandler):
     """ScanBrowserWebpage Node scans for all specified elements in the currently opened webpage BrowserView."""
+
     def __init__(self):
         self.icon_type = "ScanBrowserWebpage"
         self.fn_name = "Scan browser webpage"
@@ -290,15 +291,15 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         kv_redis.set(redis_action_key, suh.webpage_elements)
 
     def direct_execute(
-        self, incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images,
-        incl_buttons, by_xpath, context_xpath=''
+        self, url: str, incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links,
+        incl_images, incl_buttons, xpath
     ):
         # start_time = time.perf_counter()
         # a_time = time.perf_counter() - start_time
 
-        output_folder = str(Path(Path(__file__).parent.resolve(), 'tmp', 'screenshots'))
+        output_folder = Path.cwd() / 'tmp' / 'screenshots'
 
-        random_number = 50000000 + random.randint(1, 10000000)  # initialization
+        # random_number = 50000000 + random.randint(1, 10000000)  # initialization
 
         # Websites where we want to handle blocking like Cloudflare - hardcoded for now
 
@@ -353,7 +354,23 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         #slack_notif.send_slack_notification(api_scan_webpage.url,user_email=api_scan_webpage.email)  #2 seconds
         # e_time = time.perf_counter() - start_time #12.5s
 
+        suh.webscraping_client.load_website(url, timeout=30)
         elements = suh.scan_web_page_API(output_folder)  #9 seconds
+        # with open(output_folder / "website.png", "rb") as file:
+        #     screenshot = file.read()
+        #     screenshot = base64.b64encode(screenshot).decode("utf-8")
+
+        # Convert to WEBP
+        img = Image.open(output_folder / "website.png")
+        webp_filename = url
+        for char in r'<>:"/\|?*':
+            webp_filename = webp_filename.replace(char, '_')
+        webp_filename += ".webp"
+        img.save(output_folder / webp_filename, quality=85)
+        with open(output_folder / webp_filename, "rb") as file:
+            screenshot = file.read()
+            screenshot = base64.b64encode(screenshot).decode("utf-8")
+
         # f_time = time.perf_counter() - start_time #21.5s
         # request_thread.join()
 
@@ -405,14 +422,15 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         # print("Scan and screenshot, Performance:"+"\n".join([str(x) for x in [a_time,b_time,c_time,d_time,e_time,f_time,i_time, j_time]])) #,g_time,h_time
         # elements_generalized_xpaths = [optimal_generalized_common_xpath_part + x + ';' for x in xpaths_leftovers]
         # print("ELEMENTS",elements_generalized_xpaths)
-        optimal_generalized_common_xpath_part = None
+        # optimal_generalized_common_xpath_part = None
         data = {
             #'url': url,
             'elements': elements,
-            'message': 'Page was successfully scanned.',
-            'screenshot': f"website_{random_number}",
-            'similar_item_elements': optimal_generalized_common_xpath_part,
-            'total_pages': "???",
+            # 'message': 'Page was successfully scanned.',
+            # 'screenshot': f"website_{random_number}",
+            'image': screenshot,
+            # 'similar_item_elements': optimal_generalized_common_xpath_part,
+            # 'total_pages': "???",
         }
 
         # node_context_manager.stored_xpaths = [x["xpath"] for x in elements]
