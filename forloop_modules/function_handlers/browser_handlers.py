@@ -112,7 +112,7 @@ class FindSimilarItemsHandler(AbstractFunctionHandler):
             )
         except:
             flog.error('Error while loading elements positions!')
-            new_elements_positions = []  # noqa
+            # new_elements_positions = []  # noqa
 
         # api_user_flow_step=APIUserFlowStep(user_uid="1", step_identifier="WebExtractor_FindSimilarItems", step_data=str(len(new_elements_positions)), timestamp_utc=datetime.datetime.now())
         # acm.new_user_flow_step(api_user_flow_step)
@@ -190,19 +190,19 @@ class FindSimilarItemsHandler(AbstractFunctionHandler):
             #         matching_elements.append(element_position["xpath"])
 
             suh.matching_elements_groups = matching_elements_groups
-            message = "Selected elements XPATHs " + str(selected_elements_xpaths_new)
+            # message = "Selected elements XPATHs " + str(selected_elements_xpaths_new)
         except Exception as e:
             print(e)
             matching_elements = []
             matching_elements_groups = {}
             suh.matching_elements_groups = matching_elements_groups
-            message = "Selected elements XPATHs " + str(
-                selected_elements_xpaths_new
-            ) + ", Error occured in finding matching elements"
+            # message = "Selected elements XPATHs " + str(
+            #     selected_elements_xpaths_new
+            # ) + ", Error occured in finding matching elements"
 
         data = {
-            "message": message,
-            "ok": True,
+            # "message": message,
+            # "ok": True,
             "elements_generalized_xpaths": elements_generalized_xpaths,
             "similar_items_xpaths": matching_elements,
             "similar_items_xpath_groups": matching_elements_groups,
@@ -362,12 +362,8 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
 
         # Convert to WEBP
         img = Image.open(output_folder / "website.png")
-        webp_filename = url
-        for char in r'<>:"/\|?*':
-            webp_filename = webp_filename.replace(char, '_')
-        webp_filename += ".webp"
-        img.save(output_folder / webp_filename, quality=85)
-        with open(output_folder / webp_filename, "rb") as file:
+        img.save(output_folder / "website.png", quality=85)
+        with open(output_folder / "website.png", "rb") as file:
             screenshot = file.read()
             screenshot = base64.b64encode(screenshot).decode("utf-8")
 
