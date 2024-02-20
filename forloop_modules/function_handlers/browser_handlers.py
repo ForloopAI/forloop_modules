@@ -362,8 +362,9 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
 
         # Convert to WEBP
         img = Image.open(output_folder / "website.png")
-        img.save(output_folder / "website.png", quality=85)
-        with open(output_folder / "website.png", "rb") as file:
+        img.save(output_folder / "website.webp", quality=85)
+        (output_folder / "website.png").unlink()
+        with open(output_folder / "website.webp", "rb") as file:
             screenshot = file.read()
             screenshot = base64.b64encode(screenshot).decode("utf-8")
 
