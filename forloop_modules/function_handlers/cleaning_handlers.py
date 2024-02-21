@@ -2012,6 +2012,10 @@ class OutliersHandler(AbstractFunctionHandler):
 
     def direct_execute(self, df_entry: pd.DataFrame, mode: str, columns, top_n, ratio, new_var_name: str, *args):
         self.debug(df_entry, mode, columns, top_n, ratio, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
         ratio, top_n, columns = self.parse_input(ratio, top_n, columns)
 
         inp = Input()
@@ -2023,13 +2027,9 @@ class OutliersHandler(AbstractFunctionHandler):
 
         try:
             df_new = self.input_execute(inp)
-            flog.debug(f"df_new: {df_new}")
-        except KeyError:
-            df_new = df_entry.copy()
-            flog.warning(f'One of columns {inp("columns")} is not present in DataFrame')
         except Exception as e:
-            df_new = pd.DataFrame()
-            flog.error(f"ERROR: {e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
