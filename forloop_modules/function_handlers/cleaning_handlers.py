@@ -1621,19 +1621,19 @@ class SortHandler(AbstractFunctionHandler):
         """
         sort transformation wrapper
         """
-        self.debug(df_entry, col_name1, ascending1, col_name2, ascending2, new_var_name)
+        self.debug(df_entry, column_name1, ascending1, column_name2, ascending2, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
             raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
         
-        if not col_name1:
+        if not column_name1:
             raise SoftPipelineError("Missing column to sort.")
         
         inp = Input()
         inp.assign("df_entry", df_entry)
-        inp.assign("col_name1", col_name1)
+        inp.assign("col_name1", column_name1)
         inp.assign("ascending1", ascending1)
-        inp.assign("col_name2", col_name2)
+        inp.assign("col_name2", column_name2)
         inp.assign("ascending2", ascending2)
 
         try:
