@@ -1329,6 +1329,9 @@ class StripColumnHandler(AbstractFunctionHandler):
 
     def direct_execute(self, df_entry: pd.DataFrame, column_name: List[str], strip_mode: str, specific_characters: str, new_var_name: str):
         self.debug(df_entry, column_name, strip_mode, specific_characters, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
@@ -1338,15 +1341,9 @@ class StripColumnHandler(AbstractFunctionHandler):
 
         try:
             df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
-        except KeyError:
-            df_new = df_entry.copy()
-            flog.warning(f"Column name {column_name} is not present in DataFrame")
         except Exception as e:
-            df_new = df_entry.copy()
-            flog.error(f"Undefined error {e} occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
