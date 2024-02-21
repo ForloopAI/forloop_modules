@@ -4138,6 +4138,9 @@ class CleanDataHandler(AbstractFunctionHandler):
 
     def direct_execute(self, df_entry: pd.DataFrame, new_var_name: str, *args):
         self.debug(df_entry, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
 
         df_new = df_entry.copy()
         try:
