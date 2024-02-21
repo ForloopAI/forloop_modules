@@ -1471,21 +1471,21 @@ class SearchHandler(AbstractFunctionHandler):
         Match can be either exact or pattern
         """
         self.debug(df_entry, search_cols, match, pattern, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
 
-        df_new = pd.DataFrame()
+        inp = Input()
+        inp.assign("df_entry", df_entry)
+        inp.assign("columns", search_cols)
+        inp.assign("match", match)
+        inp.assign("pattern", pattern)
+
         try:
-            inp = Input()
-            inp.assign("df_entry", df_entry)
-            inp.assign("columns", search_cols)
-            inp.assign("match", match)
-            inp.assign("pattern", pattern)
-
             df_new = self.input_execute(inp)
-        except KeyError as e:
-            flog.error('Column not there')
-            flog.error(f"{e}")
         except Exception as e:
-            flog.error(f"{e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
