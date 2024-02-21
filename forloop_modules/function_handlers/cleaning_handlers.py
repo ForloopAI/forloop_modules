@@ -1475,20 +1475,20 @@ class SearchHandler(AbstractFunctionHandler):
         flog.debug(f"PATTERN = {pattern}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, search_cols, match: str, pattern: str, new_var_name: str):
+    def direct_execute(self, df_entry: pd.DataFrame, columns, match: str, pattern: str, new_var_name: str):
         """
         Search given pattern
         Pattern is searched in search columns
         Match can be either exact or pattern
         """
-        self.debug(df_entry, search_cols, match, pattern, new_var_name)
+        self.debug(df_entry, columns, match, pattern, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
             raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
-        inp.assign("columns", search_cols)
+        inp.assign("columns", columns)
         inp.assign("match", match)
         inp.assign("pattern", pattern)
 
