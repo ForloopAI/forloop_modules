@@ -2290,25 +2290,21 @@ class ConcatHandler(AbstractFunctionHandler):
         flog.debug(f"NEW VAR = {new_var_name}")
 
     
-    def direct_execute(
-            self, df_entry: pd.DataFrame, df_entry2: pd.DataFrame, axis: int, join: str,
-            new_var_name: str, *args
-        ):
+    def direct_execute(self, df_entry: pd.DataFrame, df_entry2: pd.DataFrame, axis: int, join: str,new_var_name: str, *args):
+        if not isinstance(df_entry, pd.DataFrame) or not isinstance(df_entry2, pd.DataFrame):
+            raise SoftPipelineError("Both 'Dataframe' and 'Dataframe 2' arguments must be of type 'DataFrame'.")
+        
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("df_entry2", df_entry2)
         inp.assign("axis", axis)
         inp.assign("join", join)
 
-
         try:
             df_new = self.input_execute(inp)
-        except ValueError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            df_new = inp("df_entry").copy()
-            flog.error(f"Undefined error ({e}) occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         
