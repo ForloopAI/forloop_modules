@@ -3019,16 +3019,16 @@ class ImputationHandler(AbstractFunctionHandler):
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
         columns = params["columns"]
-        imput_choice = params["imputation"]
+        imputation = params["imputation"]
         new_var_name = params["new_var_name"]
 
-        self.direct_execute(df_entry, columns, imput_choice, new_var_name)
+        self.direct_execute(df_entry, columns, imputation, new_var_name)
 
-    def debug(self, df_entry: pd.DataFrame, columns: List[str], imput_choice: List[str], new_var_name: str):
+    def debug(self, df_entry: pd.DataFrame, columns: List[str], imputation: List[str], new_var_name: str):
         flog.debug("APPLY IMPUTATION")
         flog.debug(f"DF = {df_entry}")
         flog.debug(f"COLUMNS = {columns}")
-        flog.debug(f"IMPUTATION CHOICE = {imput_choice}")
+        flog.debug(f"IMPUTATION CHOICE = {imputation}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
     def parse_input(self, imput_choice: List[str]):
@@ -3049,19 +3049,19 @@ class ImputationHandler(AbstractFunctionHandler):
 
         return imput_choice
 
-    def direct_execute(self, df_entry: pd.DataFrame, columns: List[str], imput_choice: List[str], new_var_name: str,
+    def direct_execute(self, df_entry: pd.DataFrame, columns: List[str], imputation: List[str], new_var_name: str,
                        *args):
-        self.debug(df_entry, columns, imput_choice, new_var_name)
+        self.debug(df_entry, columns, imputation, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
             raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
         
-        imput_choice: Union[str, int] = self.parse_input(imput_choice)
+        imputation: Union[str, int] = self.parse_input(imputation)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("imp_cols", columns)
-        inp.assign("imputation", imput_choice)
+        inp.assign("imputation", imputation)
 
         try:
             df_new = self.input_execute(inp)
@@ -3258,25 +3258,22 @@ class AggregateDataHandler(AbstractFunctionHandler):
 
         return result
 
-    def direct_execute(self, df_entry, groupby_columns, aggregate_columns, numerical_aggregations,
-                       categorical_aggregations, new_var_name):
+    def direct_execute(self, df_entry, columns_group, columns_aggr, num_aggr, categ_aggr, new_var_name):
         # TODO: returns empty columns as well
-        self.debug(df_entry, groupby_columns, aggregate_columns, numerical_aggregations, categorical_aggregations,
-                   new_var_name)
+        self.debug(df_entry, columns_group, columns_aggr, num_aggr, categ_aggr, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
             raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
         
-        aggregate_columns, groupby_columns, numerical_aggregations, categorical_aggregations = self.parse_input(
-            df_entry, groupby_columns, aggregate_columns, numerical_aggregations,
-            categorical_aggregations)
+        columns_aggr, columns_group, num_aggr, categ_aggr = self.parse_input(df_entry, columns_group, columns_aggr,
+                                                                             num_aggr, categ_aggr)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
-        inp.assign("columns_group", groupby_columns)
-        inp.assign("columns_aggr", aggregate_columns)
-        inp.assign("num_aggr", numerical_aggregations)
-        inp.assign("categ_aggr", categorical_aggregations)
+        inp.assign("columns_group", columns_group)
+        inp.assign("columns_aggr", columns_aggr)
+        inp.assign("num_aggr", num_aggr)
+        inp.assign("categ_aggr", categ_aggr)
 
         try:
             df_new = self.input_execute(inp)
