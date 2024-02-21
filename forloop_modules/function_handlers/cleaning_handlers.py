@@ -436,6 +436,14 @@ class ConstantColumnHandler(AbstractFunctionHandler):
     def direct_execute(self, df_entry: pd.DataFrame, value, column_name: str, new_var_name: str):
         # TODO: add inplace=False default parameter
         self.debug(df_entry, value, column_name, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not value or not column_name:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Both 'Value' and 'Column name' must be provided.")
+        
         value = self.parse_input(value)
 
         inp = Input()
@@ -443,14 +451,7 @@ class ConstantColumnHandler(AbstractFunctionHandler):
         inp.assign("value", value)
         inp.assign("new_colname", column_name)
 
-        try:
-            df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
-        except Exception as e:
-            df_new = pd.DataFrame()
-            flog.error(f"Undefined error {e} occurred")
+        df_new = self.input_execute(inp)
 
         variable_handler.new_variable(new_var_name, df_new)
         ##variable_handler.update_data_in_variable_explorer(glc)
