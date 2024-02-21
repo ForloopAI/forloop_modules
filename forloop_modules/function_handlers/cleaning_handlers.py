@@ -1616,8 +1616,8 @@ class SortHandler(AbstractFunctionHandler):
         flog.debug(f"ASCENDING 2 = {ascending2}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, col_name1: List[str], ascending1: str,
-                       col_name2: List[str], ascending2: str, new_var_name: str, *args):
+    def direct_execute(self, df_entry: pd.DataFrame, column_name1: List[str], ascending1: str,
+                       column_name2: List[str], ascending2: str, new_var_name: str, *args):
         """
         sort transformation wrapper
         """
@@ -3815,6 +3815,10 @@ class CategorizeColumnHandler(AbstractFunctionHandler):
     def direct_execute(self, df_entry: pd.DataFrame, column_name: List[str], separator: List[str], new_var_name: str,
                        *args):
         self.debug(df_entry, column_name, separator, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
         column_name: str
         separator: str
         column_name, separator = self.parse_input(column_name, separator)
@@ -3824,18 +3828,12 @@ class CategorizeColumnHandler(AbstractFunctionHandler):
         inp.assign("column_name", column_name)
         inp.assign("separator", separator)
 
+        # TODO: should deal with not empty data only
         try:
-            # TODO: should deal with not empty data only
             df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
-        except KeyError:
-            df_new = df_entry.copy()
-            flog.warning(f"Column name {column_name} is not present in DataFrame")
         except Exception as e:
-            df_new = df_entry.copy()
-            flog.error(f"Undefined error {e} occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
