@@ -3272,6 +3272,10 @@ class AggregateDataHandler(AbstractFunctionHandler):
         # TODO: returns empty columns as well
         self.debug(df_entry, groupby_columns, aggregate_columns, numerical_aggregations, categorical_aggregations,
                    new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
         aggregate_columns, groupby_columns, numerical_aggregations, categorical_aggregations = self.parse_input(
             df_entry, groupby_columns, aggregate_columns, numerical_aggregations,
             categorical_aggregations)
@@ -3283,7 +3287,11 @@ class AggregateDataHandler(AbstractFunctionHandler):
         inp.assign("num_aggr", numerical_aggregations)
         inp.assign("categ_aggr", categorical_aggregations)
 
-        df_new = self.input_execute(inp)
+        try:
+            df_new = self.input_execute(inp)
+        except Exception as e:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
