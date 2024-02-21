@@ -2382,7 +2382,7 @@ class JoinHandler(AbstractFunctionHandler):
         """
         Execution of the drop column transformation
         """
-        df_entry1 = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
+        df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         df_entry2 = node_detail_form.get_chosen_value_by_name("df_entry2", variable_handler)
         on = node_detail_form.get_chosen_value_by_name("on", variable_handler)
         how = node_detail_form.get_chosen_value_by_name("how", variable_handler)
@@ -2390,19 +2390,18 @@ class JoinHandler(AbstractFunctionHandler):
 
         new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
 
-        self.direct_execute(df_entry1, df_entry2, on, how, new_var_name)
+        self.direct_execute(df_entry, df_entry2, on, how, new_var_name)
 
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
-
     def execute_with_params(self, params):
-        df_entry1 = params["df_entry"]
+        df_entry = params["df_entry"]
         df_entry2 = params["df_entry2"]
         on = params["on"]
         how = params["how"]
         new_var_name = params["new_var_name"]
 
-        self.direct_execute(df_entry1, df_entry2, on, how, new_var_name)
+        self.direct_execute(df_entry, df_entry2, on, how, new_var_name)
 
     def debug(self, df_entry1: Union[str, pd.DataFrame], df_entry2: Union[str, pd.DataFrame],
               on: Optional[str], how: str, new_var_name: str):
@@ -2419,28 +2418,26 @@ class JoinHandler(AbstractFunctionHandler):
 
         return on
 
-    def direct_execute(self, df_entry1: Union[str, pd.DataFrame], df_entry2: Union[str, pd.DataFrame],
+    def direct_execute(self, df_entry: Union[str, pd.DataFrame], df_entry2: Union[str, pd.DataFrame],
                        on: Optional[str], how: str, new_var_name: str, *args):
-        self.debug(df_entry1, df_entry2, on, how, new_var_name)
+        self.debug(df_entry, df_entry2, on, how, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame) or not isinstance(df_entry2, pd.DataFrame):
+            raise SoftPipelineError("Both 'Dataframe' and 'Dataframe 2' arguments must be of type 'DataFrame'.")
+        
         on = self.parse_input(on)
 
         inp = Input()
-        inp.assign("df_entry1", df_entry1)
+        inp.assign("df_entry1", df_entry)
         inp.assign("df_entry2", df_entry2)
         inp.assign("on", on)
         inp.assign("how", how)
 
         try:
             df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
-        except ValueError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            df_new = df_entry1.copy()
-            flog.error(f"Undefined error ({e}) occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -2612,6 +2609,7 @@ class SplitColumnHandler(AbstractFunctionHandler):
         self.direct_execute(df_entry, column, split_on, select_index, keep_old, new_col_name, new_var_name)
 
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
+
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
