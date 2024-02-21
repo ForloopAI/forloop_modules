@@ -1611,31 +1611,25 @@ class SortHandler(AbstractFunctionHandler):
         sort transformation wrapper
         """
         self.debug(df_entry, col_name1, ascending1, col_name2, ascending2, new_var_name)
-        if col_name1:
-            inp = Input()
-            inp.assign("df_entry", df_entry)
-            inp.assign("col_name1", col_name1)
-            inp.assign("ascending1", ascending1)
-            inp.assign("col_name2", col_name2)
-            inp.assign("ascending2", ascending2)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not col_name1:
+            raise SoftPipelineError("Missing column to sort.")
+        
+        inp = Input()
+        inp.assign("df_entry", df_entry)
+        inp.assign("col_name1", col_name1)
+        inp.assign("ascending1", ascending1)
+        inp.assign("col_name2", col_name2)
+        inp.assign("ascending2", ascending2)
 
-            try:
-                df_new = self.input_execute(inp)
-            except ValueError as e:
-                df_new = pd.DataFrame()
-                flog.error(f"{e}")
-            except AttributeError as e:
-                df_new = pd.DataFrame()
-                flog.error(f"{e}")
-            except KeyError as e:
-                df_new = pd.DataFrame()
-                flog.error(f"Column not there, {e}")
-            except Exception as e:
-                df_new = inp("df_entry").copy()
-                flog.error(f"Undefined error {e} occurred")
-        else:
-            df_new = df_entry.copy()
-            flog.error(f"Missing column to sort")
+        try:
+            df_new = self.input_execute(inp)
+        except Exception as e:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
