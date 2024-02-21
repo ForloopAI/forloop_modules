@@ -1723,55 +1723,52 @@ class ColumnWiseShiftHandler(AbstractFunctionHandler):
         """
         df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         mode = node_detail_form.get_chosen_value_by_name("mode", variable_handler)
-        complete_col_name = node_detail_form.get_chosen_value_by_name("complete_col", variable_handler)
+        complete_col = node_detail_form.get_chosen_value_by_name("complete_col", variable_handler)
         incomplete_col_name = node_detail_form.get_chosen_value_by_name("incomplete_col", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
         new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
 
-        self.direct_execute(df_entry, complete_col_name, incomplete_col_name, mode, new_var_name)
 
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
         mode = params["mode"]
-        complete_col_name = params["complete_col"]
+        complete_col = params["complete_col"]
         incomplete_col_name = params["incomplete_col"]
         new_var_name = params["new_var_name"]
 
-        self.direct_execute(df_entry, complete_col_name, incomplete_col_name, mode, new_var_name)
+        self.direct_execute(df_entry, complete_col, incomplete_col_name, mode, new_var_name)
 
-    def debug(self, df_entry: pd.DataFrame, complete_column_name: str, incomplete_column_name: str, mode: str,
+    def debug(self, df_entry: pd.DataFrame, complete_col: str, incomplete_column_name: str, mode: str,
               new_var_name: str):
         flog.debug("APPLY COLUMN WISE SHIFT")
         flog.debug(f"DF = {df_entry}")
-        flog.debug(f"COMPLETE COLUMN NAME = {complete_column_name}")
+        flog.debug(f"COMPLETE COLUMN NAME = {complete_col}")
         flog.debug(f"INCOMPLETE COLUMN NAME = {incomplete_column_name}")
         flog.debug(f"MODE = {mode}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, complete_column_name: str, incomplete_column_name: str, mode: str,
+    def direct_execute(self, df_entry: pd.DataFrame, complete_col: str, incomplete_column_name: str, mode: str,
                        new_var_name: str, *args):
-        self.debug(df_entry, complete_column_name, incomplete_column_name, mode, new_var_name)
+        self.debug(df_entry, complete_col, incomplete_column_name, mode, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("mode", mode)
-        inp.assign("complete_col", complete_column_name)
+        inp.assign("complete_col", complete_col)
         inp.assign("incomplete_col", incomplete_column_name)
 
-        df_new = pd.DataFrame()
         try:
             df_new = self.input_execute(inp)
-            flog.debug("Result column wise shift")
-            flog.debug(f"{df_new}")
-        except KeyError as e:
-            flog.warning(f"One of columns is not present in DataFrame")
-            flog.warning(f"{e}")
         except Exception as e:
-            flog.error(f"{e}")
-
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
+        
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
 
