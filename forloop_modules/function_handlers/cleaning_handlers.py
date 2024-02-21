@@ -236,7 +236,11 @@ class DropColumnHandler(AbstractFunctionHandler):
         inp.assign("df_entry", df_entry)
         inp.assign("column_name", column_name)
 
-        df_new = self.input_execute(inp)
+        try:
+            df_new = self.input_execute(inp)
+        except Exception as e:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         ###variable_handler.update_data_in_variable_explorer(glc)
@@ -338,7 +342,11 @@ class SelectColumnsHandler(AbstractFunctionHandler):
         inp.assign("df_entry", df_entry)
         inp.assign("column_names", column_names)
 
-        df_new = self.input_execute(inp)
+        try:
+            df_new = self.input_execute(inp)
+        except Exception as e:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         ###variable_handler.update_data_in_variable_explorer(glc)
@@ -451,7 +459,11 @@ class ConstantColumnHandler(AbstractFunctionHandler):
         inp.assign("value", value)
         inp.assign("new_colname", column_name)
 
-        df_new = self.input_execute(inp)
+        try:
+            df_new = self.input_execute(inp)
+        except Exception as e:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         ##variable_handler.update_data_in_variable_explorer(glc)
