@@ -3412,25 +3412,25 @@ class MathOperationHandler(AbstractFunctionHandler):
 
         return second_column
 
-    def direct_execute(self, df_entry, mode, first_column_name, second_column_name: List[str], new_var_name):
+    def direct_execute(self, df_entry, mode, first_column, second_column: List[str], new_var_name):
         # TODO: CHECKBOX TO CREATE NEW DF OR ADD NEW COLUMN TO OLD ONE
         # TODO: COLUMN NAME OPTIONAL
-        self.debug(df_entry, mode, first_column_name, second_column_name, new_var_name)
+        self.debug(df_entry, mode, first_column, second_column, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
             raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
         
-        second_column_name: str = self.parse_input(second_column_name)
+        second_column: str = self.parse_input(second_column)
 
-        all_required_fields_filled = mode and first_column_name and second_column_name
+        all_required_fields_filled = mode and first_column and second_column
         if not all_required_fields_filled:
             raise SoftPipelineError("Some required arguments are missing.")
         
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("mode", mode)
-        inp.assign("first_column", first_column_name)
-        inp.assign("second_column", second_column_name)
+        inp.assign("first_column", first_column)
+        inp.assign("second_column", second_column)
 
         result = self.input_execute(inp)
 
