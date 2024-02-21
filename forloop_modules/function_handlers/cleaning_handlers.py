@@ -1737,23 +1737,23 @@ class ColumnWiseShiftHandler(AbstractFunctionHandler):
         df_entry = params["df_entry"]
         mode = params["mode"]
         complete_col = params["complete_col"]
-        incomplete_col_name = params["incomplete_col"]
+        incomplete_col = params["incomplete_col"]
         new_var_name = params["new_var_name"]
 
-        self.direct_execute(df_entry, complete_col, incomplete_col_name, mode, new_var_name)
+        self.direct_execute(df_entry, complete_col, incomplete_col, mode, new_var_name)
 
-    def debug(self, df_entry: pd.DataFrame, complete_col: str, incomplete_column_name: str, mode: str,
+    def debug(self, df_entry: pd.DataFrame, complete_col: str, incomplete_col: str, mode: str,
               new_var_name: str):
         flog.debug("APPLY COLUMN WISE SHIFT")
         flog.debug(f"DF = {df_entry}")
         flog.debug(f"COMPLETE COLUMN NAME = {complete_col}")
-        flog.debug(f"INCOMPLETE COLUMN NAME = {incomplete_column_name}")
+        flog.debug(f"INCOMPLETE COLUMN NAME = {incomplete_col}")
         flog.debug(f"MODE = {mode}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, complete_col: str, incomplete_column_name: str, mode: str,
+    def direct_execute(self, df_entry: pd.DataFrame, complete_col: str, incomplete_col: str, mode: str,
                        new_var_name: str, *args):
-        self.debug(df_entry, complete_col, incomplete_column_name, mode, new_var_name)
+        self.debug(df_entry, complete_col, incomplete_col, mode, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
             raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
@@ -1762,7 +1762,7 @@ class ColumnWiseShiftHandler(AbstractFunctionHandler):
         inp.assign("df_entry", df_entry)
         inp.assign("mode", mode)
         inp.assign("complete_col", complete_col)
-        inp.assign("incomplete_col", incomplete_column_name)
+        inp.assign("incomplete_col", incomplete_col)
 
         try:
             df_new = self.input_execute(inp)
