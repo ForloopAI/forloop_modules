@@ -1850,28 +1850,27 @@ class DifferenceDataHandler(AbstractFunctionHandler):
         flog.debug(f"RIGHT DF NAME = {right_df.head()}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, right_df: pd.DataFrame, new_var_name: str, *args):
-        self.debug(df_entry, right_df, new_var_name)
+    def direct_execute(self, df_entry: pd.DataFrame, df_entry2: pd.DataFrame, new_var_name: str, *args):
+        self.debug(df_entry, df_entry2, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Main Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not isinstance(df_entry2, pd.DataFrame):
+            raise CriticalPipelineError("'Subtracted Dataframe' argument must be of type 'DataFrame'.")
+        
+        if len(df_entry.columns) != len(df_entry2.columns):
+            raise SoftPipelineError("Both DataFrames must have the same number of columns.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
-        inp.assign("right_df", right_df)
+        inp.assign("right_df", df_entry2)
 
-        df_new = pd.DataFrame()
         try:
-            if len(inp("df_entry").columns) == len(inp("right_df").columns):
-                # different ordering matters!
-                flag = (inp("df_entry").columns == inp("right_df").columns).all()
-                if not flag:
-                    flog.error("WRONG INPUT: DIFFERENT COLUMNS")
-                    return
-
-                df_new = self.input_execute(inp)
-            else:
-                flog.error(f"Different number of columns")
+            df_new = self.input_execute(inp)
         except Exception as e:
-            flog.error(f"UNKNOWN ERROR")
-            flog.error(f"{e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
