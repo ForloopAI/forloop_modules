@@ -1225,26 +1225,7 @@ class ReplaceHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, columns, match, replace_substring, pattern, replacement, new_var_name)
 
-    def debug(self, df_entry: pd.DataFrame, search_cols, match: str, replace_substring, pattern: str, replacement: str,
-              new_var_name: str):
-        flog.debug("APPLY REPLACE")
-        flog.debug(f"DF = {df_entry}")
-        flog.debug(f"SEARCH COLUMNS = {search_cols}")
-        flog.debug(f"MATCH = {match}")
-        flog.debug(f"REPLACE SUBSTRING = {replace_substring}")
-        flog.debug(f"PATTERN = {pattern}")
-        flog.debug(f"REPLACEMENT = {replacement}")
-        flog.debug(f"NEW VAR = {new_var_name}")
-
-    def parse_input(self, columns, match: str, replace_substring: bool):
-        if len(columns) == 0:
-            columns = None
-        if replace_substring is True:
-            match = 'pattern'
-
-        return columns, match
-
-    def direct_execute(self, df_entry: pd.DataFrame, search_cols, match: str, replace_substring: bool, pattern: str,
+    def direct_execute(self, df_entry: pd.DataFrame, columns, match: str, replace_substring: bool, pattern: str,
                        replacement: str,
                        new_var_name: str):
         """
@@ -1254,16 +1235,16 @@ class ReplaceHandler(AbstractFunctionHandler):
         User can also search for substrings, if replace substring is True then match is changed to "pattern"
         pd handles substrings as "pattern" -> the input substring is modified internally to pattern
         """
-        self.debug(df_entry, search_cols, match, replace_substring, pattern, replacement, new_var_name)
+        self.debug(df_entry, columns, match, replace_substring, pattern, replacement, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
             raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
         
-        search_cols, match = self.parse_input(search_cols, match, replace_substring)
+        columns, match = self.parse_input(columns, match, replace_substring)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
-        inp.assign("columns", search_cols)
+        inp.assign("columns", columns)
         inp.assign("match", match)
         inp.assign("pattern", pattern)
         inp.assign("replacement", replacement)
@@ -1298,7 +1279,25 @@ class ReplaceHandler(AbstractFunctionHandler):
                    self.export_internal_function(find_replace),
                    "print('test1')"]
         return imports
+    
+    def debug(self, df_entry: pd.DataFrame, search_cols, match: str, replace_substring, pattern: str, replacement: str,
+              new_var_name: str):
+        flog.debug("APPLY REPLACE")
+        flog.debug(f"DF = {df_entry}")
+        flog.debug(f"SEARCH COLUMNS = {search_cols}")
+        flog.debug(f"MATCH = {match}")
+        flog.debug(f"REPLACE SUBSTRING = {replace_substring}")
+        flog.debug(f"PATTERN = {pattern}")
+        flog.debug(f"REPLACEMENT = {replacement}")
+        flog.debug(f"NEW VAR = {new_var_name}")
 
+    def parse_input(self, columns, match: str, replace_substring: bool):
+        if len(columns) == 0:
+            columns = None
+        if replace_substring is True:
+            match = 'pattern'
+
+        return columns, match
 
 class StripColumnHandler(AbstractFunctionHandler):
     def __init__(self):
