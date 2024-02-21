@@ -309,7 +309,6 @@ class SelectColumnsHandler(AbstractFunctionHandler):
 
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
-
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
         column_names = params["column_names"]
@@ -323,25 +322,23 @@ class SelectColumnsHandler(AbstractFunctionHandler):
         flog.debug(f"COLUMNS = {column_names}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, column_names: list, new_var_name: str):
-        """
-        Select column_names transformation wrapper
-        """
+    def direct_execute(self, df_entry: pd.DataFrame, column_names: Union[list, str], new_var_name: str):
         self.debug(df_entry, column_names, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not column_names:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("No columns entered for a DF selection.")
+        
         column_names = column_names if isinstance(column_names, list) else [column_names]
 
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("column_names", column_names)
 
-        try:
-            df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
-        except Exception as e:
-            df_new = inp("df_entry").copy()
-            flog.error(f"Undefined error {e} occurred")
+        df_new = self.input_execute(inp)
 
         variable_handler.new_variable(new_var_name, df_new)
         ###variable_handler.update_data_in_variable_explorer(glc)
