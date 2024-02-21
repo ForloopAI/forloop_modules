@@ -550,27 +550,29 @@ class RenameColumnHandler(AbstractFunctionHandler):
         flog.debug(f"NEW COLUMN = {new_col_name}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, old_col_name: List[str], new_col_name: str, new_var_name: str,):
+    def direct_execute(self, df_entry: pd.DataFrame, old_col_name: str, new_col_name: str, new_var_name: str):
         self.debug(df_entry, old_col_name, new_col_name, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not old_col_name or not new_col_name:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Both old and new column names must be filled in.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("old_col_name", old_col_name)
         inp.assign("new_col_name", new_col_name)
 
+        if new_col_name in df_entry.columns:
+            flog.warning("New column name already present in DataFrame")
+            
         try:
-            if new_col_name in df_entry.columns:
-                flog.warning("New column name already present in DataFrame")
             df_new = self.input_execute(inp)
-        except KeyError:
-            df_new = inp("df_entry").copy()
-            flog.warning(f'Column name {old_col_name} is not present in DataFrame')
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            df_new = pd.DataFrame()
-            flog.error(f"Undefined error {e} occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         ##variable_handler.update_data_in_variable_explorer(glc)
