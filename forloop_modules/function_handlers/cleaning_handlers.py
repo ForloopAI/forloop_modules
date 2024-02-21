@@ -2650,32 +2650,32 @@ class SplitColumnHandler(AbstractFunctionHandler):
         If keep old is True, keep old column, otherwise delete it
         """
         self.debug(df_entry, column, split_on, select_index, keep_old, new_col_name, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        all_required_fields_filled = column and split_on and select_index
+        if not all_required_fields_filled:
+            raise SoftPipelineError("Some required arguments are missing.")
 
-        if len(df_entry) > 0 and column and split_on and len(select_index) > 0:
-            select_index, new_col_name = self.parse_input(select_index, new_col_name, column)
+        select_index, new_col_name = self.parse_input(select_index, new_col_name, column)
 
-            inp = Input()
-            inp.assign("df_entry", df_entry)
-            inp.assign("column", column)
-            inp.assign("split_on", split_on)
-            inp.assign("select_index", select_index)
-            inp.assign("keep_old", keep_old)
-            inp.assign("new_col_name", new_col_name)
+        inp = Input()
+        inp.assign("df_entry", df_entry)
+        inp.assign("column", column)
+        inp.assign("split_on", split_on)
+        inp.assign("select_index", select_index)
+        inp.assign("keep_old", keep_old)
+        inp.assign("new_col_name", new_col_name)
 
-            try:
-                df_new = self.input_execute(inp)
-            except AttributeError as e:
-                df_new = pd.DataFrame()
-                flog.error(f"{e}")
-            except ValueError as e:
-                df_new = pd.DataFrame()
-                flog.error(f"{e}")
-            except Exception as e:
-                df_new = df_entry.copy()
-                flog.error(f"Undefined error ({e}) occurred")
+        try:
+            df_new = self.input_execute(inp)
+        except Exception as e:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
-            variable_handler.new_variable(new_var_name, df_new)
-            #variable_handler.update_data_in_variable_explorer(glc)
+        variable_handler.new_variable(new_var_name, df_new)
+        #variable_handler.update_data_in_variable_explorer(glc)
 
     def input_execute(self, inp):
         column_index = inp("df_entry").columns.get_loc(inp("column"))
