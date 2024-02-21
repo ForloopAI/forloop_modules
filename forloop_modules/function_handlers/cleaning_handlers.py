@@ -826,21 +826,18 @@ class ExplodeColumnHandler(AbstractFunctionHandler):
         self.direct_execute(df_entry, col_name, new_var_name)
 
     def direct_execute(self, df_entry: pd.DataFrame, col_name: List[str], new_var_name: str, ):
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("col_name", col_name)
 
         try:
             df_new = self.input_execute(inp)
-        except KeyError:
-            df_new = inp("df_entry").copy()
-            flog.warning(f'Column name {col_name} is not present in DataFrame')
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            flog.error(f"Undefined error {e} occurred")
-            raise SoftPipelineError(f"Can not explode column {col_name}: {e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
 
