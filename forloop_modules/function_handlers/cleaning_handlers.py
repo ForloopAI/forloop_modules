@@ -693,8 +693,19 @@ class CastColumnTypeHandler(AbstractFunctionHandler):
         flog.debug(f"NEW COLUMN TYPE = {new_col_type}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, col_name: List[str], new_col_type: str, new_var_name: str, ):
+    def direct_execute(self, df_entry: pd.DataFrame, col_name: str, new_col_type: str, new_var_name: str, ):
         self.debug(df_entry, col_name, new_col_type, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not col_name or not new_col_type:
+            if not col_name:
+                message = "No column  selected."
+            else:
+                message = "'New column type' argument is required."
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError(message)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
@@ -703,15 +714,9 @@ class CastColumnTypeHandler(AbstractFunctionHandler):
 
         try:
             df_new = self.input_execute(inp)
-        except KeyError:
-            df_new = inp("df_entry").copy()
-            flog.warning(f'Column name {col_name} is not present in DataFrame')
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            flog.error(f"Undefined error {e} occurred")
-            raise SoftPipelineError(f"Can not cast column {col_name} to type {new_col_type}: {e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
 
