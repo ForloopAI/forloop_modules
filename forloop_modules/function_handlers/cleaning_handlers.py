@@ -3538,13 +3538,20 @@ class FindJoinColumnHandler(AbstractFunctionHandler):
     def direct_execute(self, df_entry, df_entry2, new_var_name):
         # TODO: minimal_overlap could be user input
         self.debug(df_entry, df_entry2, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame) or not isinstance(df_entry2, pd.DataFrame):
+            raise SoftPipelineError("Both 'Main Dataframe' and 'Additional DF' argument must be of type 'DataFrame'.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("df_entry2", df_entry2)
         inp.assign("dataframe_column_category_predictions", variable_handler.dataframe_column_category_predictions)
 
-        df_new = self.input_execute(inp)
+        try:
+            df_new = self.input_execute(inp)
+        except Exception as e:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
