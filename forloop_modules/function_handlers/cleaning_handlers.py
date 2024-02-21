@@ -292,7 +292,6 @@ class SelectColumnsHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=3)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button": {"function=self.cfh.show_help, "function_args": [self.setup_ui], "text": "Help"}}
 
         return fdl
 
