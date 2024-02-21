@@ -2155,7 +2155,7 @@ class FilterHandler(AbstractFunctionHandler):
         flog.debug(f"MATCHED OR OTHERS = {matched_or_others}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, column_name: List[str], filtered_str: str, matched_or_others: str,
+    def direct_execute(self, df_entry: pd.DataFrame, column_name: Union[list[str], str], filtered_str: str, matched_or_others: str,
                        new_var_name: str, *args):
         """
         Filter columns text based on a given (sub)string.
