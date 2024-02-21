@@ -3006,7 +3006,7 @@ class ImputationHandler(AbstractFunctionHandler):
         fdl.label("Dataframe")
         fdl.entry(name="df_entry", text="", input_types=["DataFrame"], required=True, row=1)
         fdl.label("Imputed Columns")
-        fdl.combobox(name="imp_cols", options=columns, row=2)
+        fdl.combobox(name="columns", options=columns, row=2)
         fdl.label("Impute choice")
         fdl.comboentry(name="imputation", text="", options=impute_options, row=3)
         # TODO: ADD CHOICE TO IMPUTE COLUMNS EITHER SEPARATELY OR TOGETHER
@@ -3018,7 +3018,7 @@ class ImputationHandler(AbstractFunctionHandler):
 
     def execute(self, node_detail_form):
         df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
-        columns = node_detail_form.get_chosen_value_by_name("imp_cols", variable_handler)
+        columns = node_detail_form.get_chosen_value_by_name("columns", variable_handler)
         imput_choice = node_detail_form.get_chosen_value_by_name("imputation", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
@@ -3031,7 +3031,7 @@ class ImputationHandler(AbstractFunctionHandler):
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
-        columns = params["imp_cols"]
+        columns = params["columns"]
         imput_choice = params["imputation"]
         new_var_name = params["new_var_name"]
 
@@ -3065,6 +3065,10 @@ class ImputationHandler(AbstractFunctionHandler):
     def direct_execute(self, df_entry: pd.DataFrame, columns: List[str], imput_choice: List[str], new_var_name: str,
                        *args):
         self.debug(df_entry, columns, imput_choice, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
         imput_choice: Union[str, int] = self.parse_input(imput_choice)
 
         inp = Input()
@@ -3072,11 +3076,11 @@ class ImputationHandler(AbstractFunctionHandler):
         inp.assign("imp_cols", columns)
         inp.assign("imputation", imput_choice)
 
-        df_new = pd.DataFrame()
         try:
             df_new = self.input_execute(inp)
         except Exception as e:
-            flog.error(f"ERROR: {e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
