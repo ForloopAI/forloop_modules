@@ -3672,40 +3672,40 @@ class RoundToHigherFrequencyHandler(AbstractFunctionHandler):
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
-        column = params["round_column"]
-        initial_freq = params["lower_freq_col"]
+        round_column = params["round_column"]
+        lower_freq_col = params["lower_freq_col"]
         df_entry2 = params["df_entry2"]
-        final_freq = params["higher_freq_col"]
+        higher_freq_col = params["higher_freq_col"]
         round_type = params["round_type"]
         new_colname = params["new_colname"]
         new_var_name = params["new_var_name"]
 
-        self.direct_execute(df_entry, column, initial_freq, df_entry2, final_freq, round_type, new_colname,
+        self.direct_execute(df_entry, round_column, lower_freq_col, df_entry2, higher_freq_col, round_type, new_colname,
                             new_var_name)
 
-    def debug(self, df_entry, column, initial_freq, df_entry2, final_freq: List[str], round_type, new_colname,
+    def debug(self, df_entry, round_column, lower_freq_col, df_entry2, higher_freq_col: List[str], round_type, new_colname,
               new_var_name):
         flog.debug("APPLY FREQUENCY ROUND")
         flog.debug(f"DF = {df_entry}")
-        flog.debug(f"COLUMN = {column}")
-        flog.debug(f"INIT FREQ = {initial_freq}")
+        flog.debug(f"COLUMN = {round_column}")
+        flog.debug(f"INIT FREQ = {lower_freq_col}")
         flog.debug(f"DF2 = {df_entry2}")
-        flog.debug(f"FINAL FREQ = {final_freq}")
+        flog.debug(f"FINAL FREQ = {higher_freq_col}")
         flog.debug(f"ROUND TYPE = {round_type}")
         flog.debug(f"NEW COL = {new_colname}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry, column, initial_freq, df_entry2, final_freq: List[str], round_type, new_colname,
+    def direct_execute(self, df_entry, round_column, lower_freq_col, df_entry2, higher_freq_col: List[str], round_type, new_colname,
                        new_var_name):
-        self.debug(df_entry, column, initial_freq, df_entry2, final_freq, round_type, new_colname, new_var_name)
+        self.debug(df_entry, round_column, lower_freq_col, df_entry2, higher_freq_col, round_type, new_colname, new_var_name)
         final_freq: str = final_freq[0]
 
         inp = Input()
         inp.assign("df_entry", df_entry)
-        inp.assign("round_column", column)
-        inp.assign("lower_freq_col", initial_freq)
+        inp.assign("round_column", round_column)
+        inp.assign("lower_freq_col", lower_freq_col)
         inp.assign("df_entry2", df_entry2)
-        inp.assign("higher_freq_col", final_freq)
+        inp.assign("higher_freq_col", higher_freq_col)
         inp.assign("round_type", round_type)
         inp.assign("new_colname", new_colname)
 
