@@ -207,11 +207,6 @@ class DropColumnHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column_name, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        ###variable_handler.last_active_dataframe_node_uid = node_detail_form.node_uid
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     def execute_with_params(self, params):
@@ -257,15 +252,6 @@ class DropColumnHandler(AbstractFunctionHandler):
     def export_imports(self, *args):
         imports = []
         return imports
-
-    """
-    def make_flpl_node_dict(self, line_dict: dict) -> dict:
-        node = {"type": "DropColumn", "params": {"df_entry": {"variable": None, "value": line_dict['var_affected']}, 
-                "column_names": {"variable": None, "value": line_dict['arguments'][0]}, 
-                "new_var_name": {"variable": None, "value": line_dict['new_var']}}}
-        return node
-    """
-
 
 class SelectColumnsHandler(AbstractFunctionHandler):
     """
@@ -325,9 +311,6 @@ class SelectColumnsHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column_names, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -558,7 +541,6 @@ class RenameColumnHandler(AbstractFunctionHandler):
         self.direct_execute(df_entry, old_col_name, new_col_name, new_var_name)
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
-
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
         old_col_name = params["old_col_name"]
@@ -614,15 +596,6 @@ class RenameColumnHandler(AbstractFunctionHandler):
     def export_imports(self, *args):
         imports = []
         return imports
-
-    """
-    def make_flpl_node_dict(self, line_dict: dict) -> dict:
-        node = {"type": "DropColumn", "params": {"df_entry": {"variable": None, "value": line_dict['var_affected']}, 
-                "column_names": {"variable": None, "value": line_dict['arguments'][0]}, 
-                "new_var_name": {"variable": None, "value": line_dict['new_var']}}}
-        return node
-    """
-
 
 class CastColumnTypeHandler(AbstractFunctionHandler):
     """CastColumnType Node changes data type of the selected column."""
@@ -771,7 +744,6 @@ class CastColumnTypeHandler(AbstractFunctionHandler):
     def export_imports(self, *args):
         imports = []
         return imports
-
 
 class ExplodeColumnHandler(AbstractFunctionHandler):
     """ExplodeColumn Node flattens (explodes) dict-like values in column to new columns """
@@ -1082,7 +1054,6 @@ class RemoveDuplicatesHandler(AbstractFunctionHandler):
 
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
-
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
         keep = params["keep"]
@@ -1227,7 +1198,6 @@ class ReplaceHandler(AbstractFunctionHandler):
 
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
-
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
         columns = params["columns"]
@@ -1319,7 +1289,6 @@ class StripColumnHandler(AbstractFunctionHandler):
         self.icon_type = 'StripColumn'
         self.fn_name = 'Strip Column'
 
-        # self.code_import_patterns = ['drop']
         self.type_category = ntcm.categories.cleaning
         self.docs_category = DocsCategories.cleaning
 
@@ -1777,8 +1746,6 @@ class ColumnWiseShiftHandler(AbstractFunctionHandler):
 
     def direct_execute(self, df_entry: pd.DataFrame, complete_column_name: str, incomplete_column_name: str, mode: str,
                        new_var_name: str, *args):
-        """
-        """
         self.debug(df_entry, complete_column_name, incomplete_column_name, mode, new_var_name)
 
         inp = Input()
@@ -1910,7 +1877,6 @@ class DifferenceDataHandler(AbstractFunctionHandler):
     def export_imports(self, *args):
         imports = [self.export_internal_function(df_difference)]
         return imports
-
 
 class OutliersHandler(AbstractFunctionHandler):
     """
@@ -2091,7 +2057,6 @@ class OutliersHandler(AbstractFunctionHandler):
         imports = []
         
         return imports
-
 
 class FilterHandler(AbstractFunctionHandler):
     """
@@ -2640,7 +2605,6 @@ class SplitColumnHandler(AbstractFunctionHandler):
         self.direct_execute(df_entry, column, split_on, select_index, keep_old, new_col_name, new_var_name)
 
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
-
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
@@ -3896,7 +3860,6 @@ class CategorizeColumnHandler(AbstractFunctionHandler):
         imports = []
         return imports
 
-
 class SimilarityMatchingHandler(AbstractFunctionHandler):
     def __init__(self):
         super().__init__()
@@ -4338,7 +4301,6 @@ class CleanDataHandler(AbstractFunctionHandler):
         except Exception as e:
             flog.error(f"Undefined error {e} occurred")
 
-        print(df_new)
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
 
