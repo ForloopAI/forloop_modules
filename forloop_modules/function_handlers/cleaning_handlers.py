@@ -1729,6 +1729,7 @@ class ColumnWiseShiftHandler(AbstractFunctionHandler):
 
         new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
 
+        self.direct_execute(df_entry, complete_col, incomplete_col_name, mode, new_var_name)
 
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
