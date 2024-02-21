@@ -1243,6 +1243,10 @@ class ReplaceHandler(AbstractFunctionHandler):
         pd handles substrings as "pattern" -> the input substring is modified internally to pattern
         """
         self.debug(df_entry, search_cols, match, replace_substring, pattern, replacement, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
         search_cols, match = self.parse_input(search_cols, match, replace_substring)
 
         inp = Input()
@@ -1254,12 +1258,9 @@ class ReplaceHandler(AbstractFunctionHandler):
 
         try:
             df_new = self.input_execute(inp)
-        except KeyError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"Column not there: {e}")
         except Exception as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
