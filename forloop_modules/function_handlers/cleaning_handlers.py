@@ -2763,7 +2763,6 @@ class ExtractStringHandler(AbstractFunctionHandler):
 
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
-
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
         column = params["column"]
@@ -2793,6 +2792,9 @@ class ExtractStringHandler(AbstractFunctionHandler):
         If keep old is True, keep old column, otherwise delete it
         """
         self.debug(df_entry, column, extract_pattern, keep_old, concat_groups, new_col_name, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
@@ -2804,15 +2806,9 @@ class ExtractStringHandler(AbstractFunctionHandler):
 
         try:
             df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
-        except ValueError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            df_new = pd.DataFrame()
-            flog.error(f"Undefined error ({e}) occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
