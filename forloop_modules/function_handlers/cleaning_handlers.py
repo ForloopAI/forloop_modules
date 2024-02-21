@@ -953,6 +953,10 @@ class RemoveEmptyRowsHandler(AbstractFunctionHandler):
 
     def direct_execute(self, df_entry: pd.DataFrame, mode: str, id_columns: List[str], new_var_name: str):
         self.debug(df_entry, mode, id_columns, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
         id_columns = self.parse_input(id_columns)
 
         inp = Input()
@@ -963,8 +967,8 @@ class RemoveEmptyRowsHandler(AbstractFunctionHandler):
         try:
             df_new = self.input_execute(inp)
         except Exception as e:
-            df_new = pd.DataFrame()
-            flog.error(f"ERROR {e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
