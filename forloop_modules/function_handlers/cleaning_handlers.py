@@ -3701,14 +3701,10 @@ class RoundToHigherFrequencyHandler(AbstractFunctionHandler):
         inp.assign("new_colname", new_colname)
 
         try:
-            # TODO: Add inplace parameter as optional
             df_new = self.input_execute(inp)
-        except KeyError:
-            df_new = df_entry.copy()
-            flog.warning(f"Column is not present in DataFrame")
         except Exception as e:
-            df_new = df_entry.copy()
-            flog.error(f"Undefined error {e} occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
