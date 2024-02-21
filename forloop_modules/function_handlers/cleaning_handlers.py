@@ -222,24 +222,21 @@ class DropColumnHandler(AbstractFunctionHandler):
         flog.debug(f"COLUMNS = {column_name}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, column_name: List[str], new_var_name: str):
+    def direct_execute(self, df_entry: pd.DataFrame, column_name: str, new_var_name: str):
         self.debug(df_entry, column_name, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not column_name:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("No column selected for drop operation.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("column_name", column_name)
 
-        try:
-            df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
-        except KeyError:
-            df_new = inp("df_entry").copy()
-            flog.warning(f'Column name {inp("column_name")} is not present in DataFrame')
-        except Exception as e:
-            df_new = inp("df_entry").copy()
-            flog.error(f"Undefined error {e} occurred")
+        df_new = self.input_execute(inp)
 
         variable_handler.new_variable(new_var_name, df_new)
         ###variable_handler.update_data_in_variable_explorer(glc)
