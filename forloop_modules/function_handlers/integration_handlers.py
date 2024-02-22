@@ -1582,7 +1582,14 @@ class InsertIntoSheetHandler(AbstractFunctionHandler):
             worksheet = sh.add_worksheet(title=inp("sheet_name"), rows="100", cols="20")
 
         if inp("operation") == "Append":
-            worksheet.append_rows(insert_data[1:])  # Omit column names row
+            cell_values = worksheet.get_all_values()
+            are_all_sheet_cells_empty = all(all(cell == '' for cell in row) for row in cell_values)
+            
+            if are_all_sheet_cells_empty:
+                worksheet.append_rows(insert_data)
+            else:
+                # In case of some data present we ommit column names (first row)
+                worksheet.append_rows(insert_data[1:])
         elif inp("operation") == "Overwrite":
             worksheet.clear()
             worksheet.update(insert_data)
