@@ -25,7 +25,6 @@ from forloop_modules.function_handlers.auxilliary.auxiliary_functions import par
 from forloop_modules.utils.encryption import decrypt_text, convert_base64_private_key_to_rsa_private_key
 from forloop_modules.redis.redis_connection import kv_redis, create_redis_key_for_project_db_private_key
 
-
 def get_all_databases_in_project():
     response = ncrb.get_all_databases()
         

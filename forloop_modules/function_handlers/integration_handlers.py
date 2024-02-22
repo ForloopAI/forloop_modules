@@ -26,16 +26,15 @@ import forloop_modules.queries.node_context_requests_backend as ncrb
 
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
+from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.docs_categories import DocsCategories
-
-from forloop_modules.errors.errors import SoftPipelineError
+from forloop_modules.errors.errors import SoftPipelineError, CriticalPipelineError
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
 from forloop_modules.function_handlers.file_managment_handlers import file_managment_handlers_dict
-
 from forloop_modules.utils.definitions import GOOGLE_API_SERVICES, GOOGLE_API_SERVICE_INFO
 from forloop_modules.integrations.slack_integration import SlackApiError, get_channels_in_workspace, send_message_to_slack_direct_execute
-
+from forloop_modules.function_handlers.auxilliary.auxiliary_functions import parse_comboentry_input, parse_google_sheet_id_from_url
 from config.config import other_config #TODO Dominik: Circular dependency to forloop_platform repository # not ideal #Maybe solve with os.environ?
 
 
@@ -182,13 +181,13 @@ class SlackNotificationHandler(AbstractFunctionHandler):
 
     def execute(self, node_detail_form):
         channel_name = node_detail_form.get_chosen_value_by_name("channel_name", variable_handler)
+        channel_name = parse_comboentry_input(channel_name)
+        
         text = node_detail_form.get_chosen_value_by_name("text", variable_handler)
 
         self.direct_execute(channel_name, text)
 
     def direct_execute(self, channel_name, text, file_name=None, *args):
-        #send_message_to_slack_direct_execute(channel_name, text, file_name, args)
-
         inp = Input()
         inp.assign("channel_name", channel_name)
         inp.assign("text", text)
@@ -239,9 +238,8 @@ class SlackNotificationHandler(AbstractFunctionHandler):
         return (code)
 
     def export_imports(self, *args):
-        # imports=["import doclick.doclick_core as dc"]
         imports = []
-        return (imports)
+        return imports
 
 
 class EmailNotificationHandler(AbstractFunctionHandler):
@@ -960,25 +958,40 @@ class PipedriveAddNoteHandler(AbstractFunctionHandler):
 
 
 class LoadGoogleSheetHandler(AbstractFunctionHandler):
+    """
+    Load Google Sheet Node serves, as the name suggests, for loading a Google sheet into Forloop. It requires three 
+    entries: *Google file ID*, *sheet name* and *new variable name*. It then creates a new Forloop object with an interactive
+    icon which can be used for further analysis in the same manner as a data table.
+    """
+    
     def __init__(self):
         self.icon_type = "LoadGoogleSheet"
         self.fn_name = "Load Google Sheet"
 
         self.type_category = ntcm.categories.integration
         self.docs_category = DocsCategories.integrations
+        self._init_docs()
+        
+    def _init_docs(self):
+        parameter_description = "In order to succesfully load a Google spreadsheet, three parameters are required as user entries."
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add_parameter_table_row(title="Sheet URL", name="sheet_url",
+                                          description="A URL of the desired Google spreadsheet.",
+                                          typ="string", example="https://docs.google.com/spreadsheets/d/ 1FApy2bGcFFmpg-lTNS8HWpq-fpHlGcJhvq-DXhr4b1o /edit#gid=0")
+        self.docs.add_parameter_table_row(title="Sheet name", name="sheet_name", 
+                                          description="The name of the loaded spreadsheet. It is essential to write the name in its full form, i.e. if the name is *test_sheet* then writing *test sheet* will not work.",
+                                          example=["Sheet1", "sheet_1", "list 1"])
+        self.docs.add_parameter_table_row(title="New variable name", name="new_var_name", 
+                                          description="A name that will be used for the newly created icon of the loaded spreadsheet. Therefore this field requires an arbitrary string.",
+                                          example="my_sheet_df")
 
     def make_form_dict_list(self, *args, options={}, node_detail_form=None):
-        sheet_options = ["Sheet1", "Sheet2", "Sheet3"]
-
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("Sheet URL:")
-        fdl.entry(name="google_file_url", text="", input_types=["str"], required=True, row=1)
-        #fdl.label("Sheet ID:")
-        #fdl.entry(name="google_file_id", text="", input_types=["str"], required=True, row=1)
+        fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet name:")
-        fdl.comboentry(name="google_file_name", text="Sheet1", options=sheet_options, row=2)
-        #fdl.entry(name="google_file_name", text="", input_types=["str"], required=True, row=2)
+        fdl.entry(name="sheet_name", text="Sheet1", input_types=["str"], required=True, row=2)
         fdl.label("New variable name:")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=3)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -986,51 +999,45 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
         return fdl
 
     def execute(self, node_detail_form):
-        google_file_url = node_detail_form.get_chosen_value_by_name("google_file_url", variable_handler)
-        google_file_name = node_detail_form.get_chosen_value_by_name("google_file_name", variable_handler)
+        sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
+        sheet_name = node_detail_form.get_chosen_value_by_name("sheet_name", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
         
         new_var_name = variable_handler._set_up_unique_varname(new_var_name)
         fields = self.generate_shown_dataframe_option_field(new_var_name)
 
-        self.direct_execute(google_file_url, google_file_name, new_var_name)
+        self.direct_execute(sheet_url, sheet_name, new_var_name)
 
-        response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
-        if response.status_code in (200, 201):
-            result=json.loads(response.content.decode('utf-8'))
-            node_uid = result["uid"]
-
-
-            ncrb.update_last_active_dataframe_node_uid(node_uid)
-
-            global loaded_filename
-            loaded_filename = new_var_name
-
-            return new_var_name
-        else:
-            raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
+        # Deprecated as DataFrame node is being deprecated, TODO: delete the DF node is definitely removed
+        # response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
+        # if response.status_code in (200, 201):
+        #     result=json.loads(response.content.decode('utf-8'))
+        #     node_uid = result["uid"]
 
 
+        #     ncrb.update_last_active_dataframe_node_uid(node_uid)
 
-    
-    def parse_input(self, google_file_url, google_file_name):
-        google_file_id = google_file_url.split("/d/")[1].split("/")[0]
-        google_file_name = google_file_name[0]
+        #     global loaded_filename
+        #     loaded_filename = new_var_name
 
-        return google_file_id, google_file_name
+        #     return new_var_name
+        # else:
+        #     raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
 
-    def direct_execute(self, google_file_url, google_file_name, new_var_name):
-        google_file_id, google_file_name = self.parse_input(google_file_url, google_file_name)
+    def direct_execute(self, sheet_url, sheet_name, new_var_name):
+        try:
+            google_file_id = parse_google_sheet_id_from_url(sheet_url)
+        except Exception as e:
+            raise SoftPipelineError("Provided Sheet URL is of incorrect format") from e
 
         inp = Input()
         inp.assign("google_file_id", google_file_id)
-        inp.assign("google_file_name", google_file_name)
+        inp.assign("sheet_name", sheet_name)
 
         try:
             df = self.input_execute(inp)
         except Exception as e:
-            flog.error(message=f"Error loading Google Sheet: {e}")
-            df = pd.DataFrame()
+            raise CriticalPipelineError("Loading of Google sheet failed unexpectedly.") from e
 
         variable_handler.new_variable(new_var_name, df)
         ##variable_handler.update_data_in_variable_explorer(glc)
@@ -1039,7 +1046,7 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
         gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
         
         sh = gc.open_by_key(inp("google_file_id"))
-        worksheet = sh.worksheet(inp("google_file_name"))
+        worksheet = sh.worksheet(inp("sheet_name"))
         list_of_lists = worksheet.get_all_values()   
 
         df = pd.DataFrame(list_of_lists[1:], columns=list_of_lists[0])
@@ -1052,6 +1059,10 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
 
 
 class CopyGoogleSheetHandler(AbstractFunctionHandler):
+    """
+    Copy Google Sheet Node makes a copy of the spreadsheet identified by *Sheet ID* for the Google account belonging to
+    the E-mail address. An arbitrary name can be chosen for such copy.
+    """
 
     def __init__(self):
         self.icon_type = 'CopyGoogleSheet'
@@ -1059,15 +1070,27 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
 
         self.type_category = ntcm.categories.integration
         self.docs_category = DocsCategories.integrations
+        self._init_docs()
+        
+    def _init_docs(self):
+        parameter_description = "In order to succesfully copy a Google spreadsheet, three parameters are required as user entries."
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add_parameter_table_row(title="Sheet URL", name="sheet_url",
+                                          description="A URL of the desired Google spreadsheet.",
+                                          typ="string", example="https://docs.google.com/spreadsheets/d/ 1FApy2bGcFFmpg-lTNS8HWpq-fpHlGcJhvq-DXhr4b1o /edit#gid=0")
+        self.docs.add_parameter_table_row(title="Sheet copy name", name="copied_filename", 
+                                          description="The entered string will be used as a name for the newly created copy of the original spreadsheet.",
+                                          example=["copied_sheet_1"])
+        self.docs.add_parameter_table_row(title="E-mail", name="email", 
+                                          description="E-mail address with an access to Google worspace. The copy of the original spreadsheet will be created in spreadsheets on this account.",
+                                          example="john.doe@gmail.com")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
         fdl = FormDictList()
         fdl.label(self.fn_name)
-        #fdl.label("Sheet ID:")
-        #fdl.entry(name="google_file_id", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet URL:")
-        fdl.entry(name="google_file_url", text="", input_types=["str"], required=True, row=1)
+        fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet copy name:")
         fdl.entry(name="copied_filename", text="", input_types=["str"], required=True, row=2)
         fdl.label("E-mail")
@@ -1075,27 +1098,22 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
-    
-    def parse_input(self, google_file_url):
-        google_file_id = google_file_url.split("/")[-2]
 
-        return google_file_id
-
-    def direct_execute(self, google_file_url, copied_filename, email):
-        google_file_id = self.parse_input(google_file_url)
+    def direct_execute(self, sheet_url, copied_filename, email):
+        try:
+            google_file_id = parse_google_sheet_id_from_url(sheet_url)
+        except Exception as e:
+            raise SoftPipelineError("Provided Sheet URL is of incorrect format") from e
         
         inp = Input()
         inp.assign("google_file_id", google_file_id)
         inp.assign("copied_filename", copied_filename)
         inp.assign("email", email)
 
-        #gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
-
-
         try:
             self.input_execute(inp)
         except Exception as e:
-            flog.error(message=f"{e}")
+            raise SoftPipelineError("Copy operation on Google sheet failed unexpectedly.") from e
     
     def input_execute(self, inp):
         gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
@@ -1103,23 +1121,14 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
         gc.copy(inp("google_file_id"), inp("copied_filename"), copy_permissions=True)
         
         worksheet = gc.open(inp("copied_filename"))
-        print("GOOGLE SHEET COPIED")
         worksheet.share(inp("email"), perm_type='user', role='writer')
-        print("GOOGLE SHEET PERMISSION GRANTED")
-
-    def execute_with_params(self, params):
-        google_file_url = params["google_file_url"]
-        copied_filename = params["copied_filename"]
-        email = params["email"]
-
-        self.direct_execute(google_file_url, copied_filename, email)
 
     def execute(self, node_detail_form):
-        google_file_url = node_detail_form.get_chosen_value_by_name("google_file_url", variable_handler)
+        sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
         copied_filename = node_detail_form.get_chosen_value_by_name("copied_filename", variable_handler)
         email = node_detail_form.get_chosen_value_by_name("email", variable_handler)
 
-        self.direct_execute(google_file_url, copied_filename, email)
+        self.direct_execute(sheet_url, copied_filename, email)
 
     def export_imports(self, *args):
         imports = ["import gspread"]
@@ -1127,6 +1136,10 @@ class CopyGoogleSheetHandler(AbstractFunctionHandler):
 
 
 class UpdateCellHandler(AbstractFunctionHandler):
+    """
+    Update Cell Node can be used for entering new data in a specific single cell of a spreadsheet or altering already
+    existing data in such a cell.
+    """
 
     def __init__(self):
         self.icon_type = 'UpdateCell'
@@ -1134,20 +1147,31 @@ class UpdateCellHandler(AbstractFunctionHandler):
 
         self.type_category = ntcm.categories.integration
         self.docs_category = DocsCategories.integrations
+        self._init_docs()
+        
+    def _init_docs(self):
+        parameter_description = "Update Cell Node requires 4 parameters as user entries, all of which must be filled in."
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add_parameter_table_row(title="Sheet URL", name="sheet_url",
+                                          description="A URL of the desired Google spreadsheet.",
+                                          typ="string", example="https://docs.google.com/spreadsheets/d/ 1FApy2bGcFFmpg-lTNS8HWpq-fpHlGcJhvq-DXhr4b1o /edit#gid=0")
+        self.docs.add_parameter_table_row(title="Sheet name", name="sheet_name", 
+                                          description="The name of the spreadsheet, whose cell is going to be updated. It is essential to write the name in its full form, i.e. if the name is *test_sheet* then writing *test sheet* will not work.",
+                                          typ="string", example=["Sheet1", "sheet_1", "list 1"])
+        self.docs.add_parameter_table_row(title="Cell name", name="cell_name", 
+                                          description="Specifies which cell will get updated.",
+                                          typ="string", example="B4")
+        self.docs.add_parameter_table_row(title="Value", name="value", 
+                                          description="Data to be inserted into the specified cell.",
+                                          typ="string", example="B4")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
-
-        options = ["Sheet1", "Sheet2", "Sheet3"]
-
         fdl = FormDictList()
         fdl.label(self.fn_name)
-        #fdl.label("Sheet ID:")
-        #fdl.entry(name="google_file_id", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet URL:")
-        fdl.entry(name="google_file_url", text="", input_types=["str"], required=True, row=1)
+        fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet name")
-        fdl.comboentry(name="google_file_name", text="Sheet1", options=options, row=2)
-        #fdl.entry(name="google_file_name", text="", input_types=["str"], required=True, row=2)
+        fdl.entry(name="sheet_name", text="Sheet1", input_types=["str"], required=True, row=2)
         fdl.label("Cell name")
         fdl.entry(name="cell_name", text="A1", input_types=["str"], required=True, row=3)
         fdl.label("Value")
@@ -1156,59 +1180,50 @@ class UpdateCellHandler(AbstractFunctionHandler):
 
         return fdl
     
-    def parse_inupt(self, google_file_url):
-        google_file_id = google_file_url.split("/")[-2]
+    def parse_inupt(self, sheet_url):
+        google_file_id = sheet_url.split("/")[-2]
 
         return google_file_id
 
-    def direct_execute(self, google_file_url, google_file_name, cell_name, value):
-        google_file_id = self.parse_inupt(google_file_url)
+    def direct_execute(self, sheet_url, sheet_name, cell_name, value):
+        google_file_id = self.parse_inupt(sheet_url)
 
         inp = Input()
         inp.assign("google_file_id", google_file_id)
-        inp.assign("google_file_name", google_file_name)
+        inp.assign("sheet_name", sheet_name)
         inp.assign("cell_name", cell_name)
         inp.assign("value", value)
 
         try:
             self.input_execute(inp)
         except Exception as e:
-            flog.error(message=f"{e}")
-        """
-
-        gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
-
-
-        try:
-            sh = gc.open_by_key(google_file_id)
-            worksheet = sh.worksheet(google_file_name)
-            worksheet.update(cell_name, value)
-        except Exception as e:
-            flog.error(message=f"{e}")
-        """
+            raise SoftPipelineError("Updating Google sheet cell value failed unexpectedly.") from e
     
     def input_execute(self, inp):
         gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
 
         sh = gc.open_by_key(inp("google_file_id"))
-        worksheet = sh.worksheet(inp("google_file_name"))
+        worksheet = sh.worksheet(inp("sheet_name"))
         worksheet.update(inp("cell_name"), inp("value"))
 
     def execute_with_params(self, params):
-        google_file_url = params["google_file_url"]
-        google_file_name = params["google_file_name"]
+        sheet_url = params["sheet_url"]
+        sheet_name = params["sheet_name"]
         cell_name = params["cell_name"]
         value = params["value"]
 
-        self.direct_execute(google_file_url, google_file_name, cell_name, value)
+        self.direct_execute(sheet_url, sheet_name, cell_name, value)
 
     def execute(self, node_detail_form):
-        google_file_url = node_detail_form.get_chosen_value_by_name("google_file_url", variable_handler)
-        google_file_name = node_detail_form.get_chosen_value_by_name("google_file_name", variable_handler)[0]
+        sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
+        
+        sheet_name = node_detail_form.get_chosen_value_by_name("sheet_name", variable_handler)
+        sheet_name = parse_comboentry_input(sheet_name)
+        
         cell_name = node_detail_form.get_chosen_value_by_name("cell_name", variable_handler)
         value = node_detail_form.get_chosen_value_by_name("value", variable_handler)
 
-        self.direct_execute(google_file_url, google_file_name, cell_name, value)
+        self.direct_execute(sheet_url, sheet_name, cell_name, value)
 
     def export_imports(self, *args):
         imports = ["import gspread"]
@@ -1216,6 +1231,9 @@ class UpdateCellHandler(AbstractFunctionHandler):
 
 
 class DeleteSheetRowHandler(AbstractFunctionHandler):
+    """
+    Delete Sheet Row Node serves to deletion of a single row or a series of rows in a Google spreadsheet.
+    """
 
     def __init__(self):
         self.icon_type = 'DeleteSheetRow'
@@ -1223,20 +1241,33 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
 
         self.type_category = ntcm.categories.integration
         self.docs_category = DocsCategories.integrations
+        self._init_docs()
+        
+    def _init_docs(self):
+        parameter_description = """Delete Sheet Row Node requires 3 parameters (Sheet ID, Sheet name, Start row number)
+        to delete a single row and 4 parameters (Sheet ID, Sheet name, Start row number, Stop row number) to delete a
+        series of rows."""
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add_parameter_table_row(title="Sheet URL", name="sheet_url",
+                                          description="A URL of the desired Google spreadsheet.",
+                                          typ="string", example="https://docs.google.com/spreadsheets/d/ 1FApy2bGcFFmpg-lTNS8HWpq-fpHlGcJhvq-DXhr4b1o /edit#gid=0")
+        self.docs.add_parameter_table_row(title="Sheet name", name="sheet_name", 
+                                          description="The name of the spreadsheet, whose row(s) is/are going to be deleted. It is essential to write the name in its full form, i.e. if the name is ‘test_sheet’ then writing ‘test sheet’ will not work.",
+                                          typ="string", example=["Sheet1", "sheet_1", "list 1"])
+        self.docs.add_parameter_table_row(title="Start row number", name="start_row", 
+                                          description="A number of the row to be deleted or the initial row of the series to be deleted. The numbering preserves the Python logic, ie. **the first row corresponds to number 0**!",
+                                          typ="integer", example=["0", "12", "546"])
+        self.docs.add_parameter_table_row(title="Stop row number", name="stop_row", 
+                                          description="A number of the last row of the series of rows to be deleted. If left blank, only a single row, i.e. row no. Start row number + 1 (Python logic), will be deleted.",
+                                          typ="integer")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
-
-        options = ["Sheet1", "Sheet2", "Sheet3"]
-
         fdl = FormDictList()
         fdl.label(self.fn_name)
-        #fdl.label("Sheet ID:")
-        #fdl.entry(name="google_file_id", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet URL:")
-        fdl.entry(name="google_file_url", text="", input_types=["str"], required=True, row=1)
+        fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet name")
-        fdl.comboentry(name="google_file_name", text="Sheet1", options=options, row=2)
-        #fdl.entry(name="google_file_name", text="", input_types=["str"], required=True, row=2)
+        fdl.entry(name="sheet_name", text="Sheet1", input_types=["str"], required=True, row=2)
         fdl.label("Start row number")
         fdl.entry(name="start_row", text="", input_types=["int"], required=True, row=3)
         fdl.label("Stop row number")
@@ -1244,75 +1275,60 @@ class DeleteSheetRowHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
+    
+    def execute(self, node_detail_form):
+        sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
+        
+        sheet_name = node_detail_form.get_chosen_value_by_name("sheet_name", variable_handler)
+        sheet_name = parse_comboentry_input(sheet_name)
+        
+        start_row = node_detail_form.get_chosen_value_by_name("start_row", variable_handler)
+        stop_row = node_detail_form.get_chosen_value_by_name("stop_row", variable_handler)
 
-    def parse_input(self, google_file_url):
-        google_file_id = google_file_url.split("/")[-2]
+        self.direct_execute(sheet_url, sheet_name, start_row, stop_row)
+        
+    def execute_with_params(self, params):
+        sheet_url = params["sheet_url"]
+        sheet_name = params["sheet_name"]
+        start_row = params["start_row"]
+        stop_row = params["stop_row"]
 
-        return google_file_id
+        self.direct_execute(sheet_url, sheet_name, start_row, stop_row)
 
-    def direct_execute(self, google_file_url, google_file_name, start_row, stop_row):
-        google_file_id = self.parse_input(google_file_url)
+    def direct_execute(self, sheet_url, sheet_name, start_row, stop_row):
+        try:
+            google_file_id = parse_google_sheet_id_from_url(sheet_url)
+        except Exception as e:
+            raise SoftPipelineError("Provided Sheet URL is of incorrect format") from e
+        
+        try:
+            start_row = int(start_row)
+            stop_row = int(stop_row) if stop_row else None
+        except Exception as e:
+            raise SoftPipelineError("Argument must be and integer.") from e
 
         inp = Input()
         inp.assign("google_file_id", google_file_id)
-        inp.assign("google_file_name", google_file_name)
+        inp.assign("sheet_name", sheet_name)
         inp.assign("start_row", start_row)
         inp.assign("stop_row", stop_row)
 
         try:
             self.input_execute(inp)
         except Exception as e:
-            flog.error(message=f"{e}")
+            raise SoftPipelineError("Delete Google sheet row operation failed unexpectedly.") from e
         
-        """
-
-        gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
-
-
-        try:
-            sh = gc.open_by_key(google_file_id)
-            worksheet = sh.worksheet(google_file_name)
-        except Exception as e:
-            flog.error(message=f"{e}")
-            return None
-
-        if stop_row == "":
-            try:
-                worksheet.delete_row(int(start_row))
-            except ValueError:
-                print('ValueError Exception Raised, argument must be an integer.')
-        else:
-            try:
-                for i in range(int(start_row), int(stop_row) + 1):
-                    worksheet.delete_row(int(start_row))
-            except ValueError:
-                print('ValueError Exception Raised, argument must be an integer.')
-        """
-    
     def input_execute(self, inp):
         gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
 
         sh = gc.open_by_key(inp("google_file_id"))
-        worksheet = sh.worksheet(inp("google_file_name"))
+        worksheet = sh.worksheet(inp("sheet_name"))
 
-        for i in range(int(inp("start_row")), int(inp("stop_row")) + 1):
-            worksheet.delete_row(i)
-
-    def execute_with_params(self, params):
-        google_file_url = params["google_file_url"]
-        google_file_name = params["google_file_name"]
-        start_row = params["start_row"]
-        stop_row = params["stop_row"]
-
-        self.direct_execute(google_file_url, google_file_name, start_row, stop_row)
-
-    def execute(self, node_detail_form):
-        google_file_url = node_detail_form.get_chosen_value_by_name("google_file_url", variable_handler)
-        google_file_name = node_detail_form.get_chosen_value_by_name("google_file_name", variable_handler)
-        start_row = node_detail_form.get_chosen_value_by_name("start_row", variable_handler)
-        stop_row = node_detail_form.get_chosen_value_by_name("stop_row", variable_handler)
-
-        self.direct_execute(google_file_url, google_file_name, start_row, stop_row)
+        if inp("stop_row") is None:
+            worksheet.delete_row(inp("stop_row"))
+        else:
+            for i in range(inp("start_row"), inp("stop_row") + 1):
+                worksheet.delete_row(i)
 
     def export_imports(self, *args):
         imports = ["import gspread"]
@@ -1371,6 +1387,13 @@ def append_or_overwrite_data_in_sheet(data:list, worksheet:gspread.Worksheet, op
     return worksheet
 
 class NewGoogleSheetHandler(AbstractFunctionHandler):
+    """
+    New Google Sheet Node serves for creation of a new Google sheet on a specified Google account. It requires two 
+    entries: users e-mail address and a name which will be given to the newly created sheet.
+    
+    After a successful creation of a Google sheet a new variable named '[sheet_name]_url' (where [sheet_name] is the 
+    name of a sheet you provide) containing it's url will be created. 
+    """
 
     def __init__(self):
         self.icon_type = 'NewGoogleSheet'
@@ -1378,6 +1401,17 @@ class NewGoogleSheetHandler(AbstractFunctionHandler):
 
         self.type_category = ntcm.categories.integration
         self.docs_category = DocsCategories.integrations
+        self._init_docs()
+        
+    def _init_docs(self):
+        parameter_description = "In order to succesfully create a new Google spreadsheet, two parameters are required as user entries."
+        self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
+        self.docs.add_parameter_table_row(title="Sheet name", name="sheet_name",
+                                          description="The entered string will be used as a name for the newly created spreadsheet.",
+                                          typ="string", example="Test sheet")
+        self.docs.add_parameter_table_row(title="E-mail", name="email", 
+                                          description="E-mail address with an access to Google worspace. The new spreadsheet will be created in spreadsheets on this account.",
+                                          example="john.doe@gmail.com")
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -1388,7 +1422,10 @@ class NewGoogleSheetHandler(AbstractFunctionHandler):
         fdl.label("E-mail")
         fdl.entry(name="email", text="", input_types=["str"], required=True, row=2)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        fdl.label("Note: The sheet will appear as a shared one")
+        fdl.label("Note: A new variable containing sheet's url will be crated")
+        fdl.label("under a name '[sheet_name]_url' where [sheet_name]")
+        fdl.label("is the sheet name you provided.")
+        fdl.label("Note 2: The sheet will appear as a shared one")
         fdl.label("  - choose 'own by anyone' option in Sheets")
 
         return fdl
@@ -1400,20 +1437,20 @@ class NewGoogleSheetHandler(AbstractFunctionHandler):
         self.direct_execute(sheet_name, email)
 
     def direct_execute(self, sheet_name, email):
-        if sheet_name != "":
-            inp = Input()
-            inp.assign("sheet_name", sheet_name)
-            inp.assign("email", email)
+        if not sheet_name:
+            raise SoftPipelineError("The 'Sheet name' argument must be specified.")
+        
+        inp = Input()
+        inp.assign("sheet_name", sheet_name)
+        inp.assign("email", email)
 
-            try:
-                worksheet = self.input_execute(inp)
-            except Exception as e:
-                flog.error(message=f"{e}")
-                worksheet = None
-            
-            if worksheet is not None:
-                variable_handler.new_variable(f"{sheet_name}_id", worksheet.id)
-                ##variable_handler.update_data_in_variable_explorer(glc)
+        try:
+            worksheet = self.input_execute(inp)
+        except Exception as e:
+            raise SoftPipelineError("Create new Google sheet operation failed unexpectedly.") from e
+        
+        variable_handler.new_variable(f"{sheet_name}_url", worksheet.url)
+        ##variable_handler.update_data_in_variable_explorer(glc)
     
     def input_execute(self, inp):
         sheet_name = inp("sheet_name")
@@ -1459,11 +1496,9 @@ class NewGoogleSheetHandler(AbstractFunctionHandler):
         worksheet.share({email}, perm_type = 'user', role = 'writer')
 
         ### Create new variable containing sheet ID
-        {sheet_name}_id = worksheet.id
-        print(worksheet.id)
+        {sheet_name}_url = worksheet.url
         """
 
-        # return(code.format(sheet_name= '"' + sheet_name + '"', email= '"' + email + '"'))
         return code
 
     def export_imports(self, *args):
@@ -1486,7 +1521,7 @@ class InsertIntoSheetHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("Sheet URL")
-        fdl.entry(name="google_file_url", text="", input_types=["str"], required=True, row=1)
+        fdl.entry(name="sheet_url", text="", input_types=["str"], required=True, row=1)
         fdl.label("Sheet name")
         fdl.entry(name="sheet_name", text="Sheet1", input_types=["str"], required=True, row=2)
         fdl.label("DataFrame")
@@ -1502,17 +1537,16 @@ class InsertIntoSheetHandler(AbstractFunctionHandler):
         return fdl
 
     def execute(self, node_detail_form):
-        google_file_url = node_detail_form.get_chosen_value_by_name(
-            "google_file_url", variable_handler
-        )
+        sheet_url = node_detail_form.get_chosen_value_by_name("sheet_url", variable_handler)
         sheet_name = node_detail_form.get_chosen_value_by_name("sheet_name", variable_handler)
         df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         operation = node_detail_form.get_chosen_value_by_name("operation", variable_handler)
-        self.direct_execute(google_file_url, sheet_name, df_entry, operation)
+        
+        self.direct_execute(sheet_url, sheet_name, df_entry, operation)
 
-    def direct_execute(self, google_file_url, sheet_name, df_entry, operation):
+    def direct_execute(self, sheet_url, sheet_name, df_entry, operation):
         try:
-            google_file_id = google_file_url.split("/")[-2]
+            google_file_id = parse_google_sheet_id_from_url(sheet_url)
         except Exception as e:
             raise SoftPipelineError("Provided Sheet URL is of incorrect format") from e
 
@@ -1525,9 +1559,7 @@ class InsertIntoSheetHandler(AbstractFunctionHandler):
         try:
             self.input_execute(inp)
         except gspread.exceptions.APIError as e:
-            raise SoftPipelineError(
-                "No permissions to open/modify the provided Google Sheets"
-            ) from e
+            raise SoftPipelineError("No permissions to open/modify the provided Google Sheets") from e
         except gspread.exceptions.SpreadsheetNotFound as e:
             raise SoftPipelineError("No Google Sheet found under the provided url") from e
 
@@ -1558,238 +1590,6 @@ class InsertIntoSheetHandler(AbstractFunctionHandler):
     def export_imports(self, *args):
         imports = ["import pandas as pd", "import gspread"]
         return (imports)
-
-
-class ParseDataToSheetHandler(AbstractFunctionHandler):
-    def __init__(self):
-        self.icon_type = "ParseDataToSheet"
-        self.fn_name = "Parse Data To Sheet"
-
-        self.type_category = ntcm.categories.integration
-        self.docs_category = DocsCategories.integrations
-
-    def make_form_dict_list(self, *args, node_detail_form=None):
-
-        options = ["Overwrite", "Append"]
-        sheet_options = ["Sheet1", "Sheet2", "Sheet3"]
-
-        fdl = FormDictList()
-        fdl.label(self.fn_name)
-        fdl.label("Sheet URL")
-        fdl.entry(name="google_file_url", text="", input_types=["str"], required=True, row=1)
-        fdl.label("Sheet name")
-        fdl.comboentry(name="sheet_name", text="Sheet1", options=sheet_options, row=2)
-        fdl.label("File name:")
-        fdl.entry(name="filename", text="", input_types=["str"], required=True, row=3)
-        fdl.button(function=self.open_data_file, function_args=node_detail_form, text="Look up file", enforce_required=False, name="lookup_xlsx_csv_file")
-        fdl.label("Operation")
-        fdl.combobox(name="operation", options=options, default="Append", row=6)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-
-        return fdl
-
-    def execute(self, node_detail_form):
-        google_file_url = node_detail_form.get_chosen_value_by_name("google_file_url", variable_handler)
-        sheet_name = node_detail_form.get_chosen_value_by_name("sheet_name", variable_handler)
-        filename = node_detail_form.get_chosen_value_by_name("filename", variable_handler)
-        operation = node_detail_form.get_chosen_value_by_name("operation", variable_handler)
-        self.direct_execute(google_file_url, sheet_name, filename, operation)
-
-    def open_data_file(self, node_detail_form):
-        file = askopenfile(mode='r', filetypes=[('Excel files', '*.xlsx'), ('CSV files', '*.csv')])
-        filename = ""
-        if file is not None:
-            filename = file.name
-            params_dict = node_detail_form.assign_value_by_name(name='filename', value=filename)
-            ncrb.update_node_by_uid(node_detail_form.node_uid, params=params_dict)
-    
-    def parse_input(self, google_file_url, sheet_name):
-        google_file_id = google_file_url.split("/")[-2]
-        sheet_name = sheet_name[0]
-
-        return google_file_id, sheet_name
-        
-    def direct_execute(self, google_file_url, sheet_name, filename, operation):
-        if google_file_url != "":
-            google_file_id, sheet_name = self.parse_input(google_file_url, sheet_name)
-
-            inp = Input()
-            inp.assign("google_file_id", google_file_id)
-            inp.assign("sheet_name", sheet_name)
-            inp.assign("filename", filename)
-            inp.assign("operation", operation)  
-
-            try:
-                data = self.input_execute(inp)
-            except Exception as e:
-                flog.error(message=f"{e}")
-            
-            variable_handler.new_variable(sheet_name, data)
-            #variable_handler.update_data_in_variable_explorer(glc)
-        
-    def input_execute(self, inp):
-        if inp("filename")[-4:]==".csv":
-            data = pd.read_csv(inp("filename"))
-        else:
-            data = pd.read_excel(inp("filename"))
-
-        data = data.fillna('')
-        list_data = data.values.tolist()
-        list_data.insert(0, data.keys().tolist())
-
-        gc = gspread.service_account("config/google_service_account_credentials.json")
-
-        sh = gc.open_by_key(inp("google_file_id"))
-        try:
-            worksheet = sh.worksheet(inp("sheet_name"))
-        except:
-            #Create new sheet if it doesn't exist
-            worksheet = sh.add_worksheet(title=inp("sheet_name"), rows="100", cols="20")
-
-        # if inp("operation") == "Append":
-        #     worksheet.append_rows(list_data)
-        # elif inp("operation") == "Overwrite":
-        #     worksheet.clear()
-        #     worksheet.update(list_data)
-        worksheet = append_or_overwrite_data_in_sheet(list_data, worksheet, inp("operation"))
-        
-        return data
-
-    def export_code(self, node_detail_form):
-        google_file_url = node_detail_form.get_variable_name_or_input_value_by_element_name("google_file_url")
-        sheet_name = node_detail_form.get_variable_name_or_input_value_by_element_name("sheet_name")
-        filename = node_detail_form.get_variable_name_or_input_value_by_element_name("filename")
-        operation = node_detail_form.get_variable_name_or_input_value_by_element_name("operation")
-
-        code_base = f"""
-        gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
-        sh = gc.open_by_key({google_file_url})
-        worksheet = sh.worksheet({sheet_name})
-        """
-
-        code_append = """
-        worksheet.append_rows(list_data)
-        """
-
-        code_overwrite = """
-        worksheet.clear()
-        worksheet.update(list_data)
-        """
-
-        if operation == "Append":
-            code = code_base + code_append
-        elif operation == "Overwrite":
-            code = code_base + code_overwrite
-
-        # return(code.format(filename= '"' + filename + '"', header= header, google_file_id= '"' + google_file_id + '"', sheet_name= '"' + sheet_name + '"', operation= '"' + operation + '"'))
-        return code
-
-    def export_imports(self, *args):
-        imports = ["import pandas as pd", "import gspread"]
-        return (imports)
-    
-    
-class StoreDfInNewSheetHandler(AbstractFunctionHandler):
-    def __init__(self):
-        self.icon_type = "StoreDfInNewSheet"
-        self.fn_name = "Store Df In New Sheet"
-
-        self.type_category = ntcm.categories.integration
-        self.docs_category = DocsCategories.integrations
-
-    def make_form_dict_list(self, *args, node_detail_form=None):
-        fdl = FormDictList()
-        fdl.label(self.fn_name)
-        fdl.label("Dataframe")
-        fdl.entry(name="df_entry", text="", input_types=["DataFrame"], required=True, row=1)
-        fdl.label("Spreadsheet name")
-        fdl.entry(name="sheet_name", text="", category="arguments", input_types=["str"], required=True, row=2)
-        fdl.label("Email")
-        fdl.entry(name="email", text="", category="arguments", input_types=["str"], required=True, row=3)
-        fdl.label("New variable name")
-        fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=4)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-
-        return fdl
-
-    def execute(self, node_detail_form):
-        df = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
-        sheet_name = node_detail_form.get_chosen_value_by_name("sheet_name", variable_handler)
-        email = node_detail_form.get_chosen_value_by_name("email", variable_handler)
-        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
-
-        self.direct_execute(df, sheet_name, email, new_var_name)
-    
-    def parse_input(self, google_file_url, sheet_name):
-        google_file_id = google_file_url.split("/")[-2]
-        sheet_name = sheet_name[0]
-
-        return google_file_id, sheet_name
-        
-    def direct_execute(self, df, sheet_name, email, new_var_name):
-        
-        # TODO: Refactor the endpoint so it works (either finish datasets or introduce a new approach)
-        # Disabled until then. Do not delete yet!
-        # Comment author: Daniel
-        """dataset_uid = None
-        response = ncrb.store_df_to_google_sheet(dataset_uid, sheet_name, email)
-        
-        if response.status_code in (200, 201):
-            result = json.loads(response.content.decode('utf-8'))
-            url = result.get("detail", {}).get("url")
-            
-            if url is not None:
-                variable_handler.new_variable(new_var_name, url)"""
-               
-        # HACK: Hotfix for the broken enpoint call above so it works. 
-        spreadsheet = create_new_google_spreadsheet_and_share_it_with_user(sheet_name, email)
-        worksheet = spreadsheet.worksheets()[0]
-        
-        data = df.fillna('')
-        list_data = data.values.tolist()
-        list_data.insert(0, data.keys().tolist())
-        worksheet = append_or_overwrite_data_in_sheet(list_data, worksheet, "Overwrite")
-        
-        variable_handler.new_variable(new_var_name, worksheet.url)
-        
-    def input_execute(self, inp):
-        # TODO: Implement
-        
-        return None
-
-    def export_code(self, node_detail_form):
-        google_file_url = node_detail_form.get_variable_name_or_input_value_by_element_name("google_file_url")
-        sheet_name = node_detail_form.get_variable_name_or_input_value_by_element_name("sheet_name")
-        filename = node_detail_form.get_variable_name_or_input_value_by_element_name("filename")
-        operation = node_detail_form.get_variable_name_or_input_value_by_element_name("operation")
-
-        code_base = f"""
-        gc = gspread.service_account(Path("config/google_service_account_credentials.json"))
-        sh = gc.open_by_key({google_file_url})
-        worksheet = sh.worksheet({sheet_name})
-        """
-
-        code_append = """
-        worksheet.append_rows(list_data)
-        """
-
-        code_overwrite = """
-        worksheet.clear()
-        worksheet.update(list_data)
-        """
-
-        if operation == "Append":
-            code = code_base + code_append
-        elif operation == "Overwrite":
-            code = code_base + code_overwrite
-
-        # return(code.format(filename= '"' + filename + '"', header= header, google_file_id= '"' + google_file_id + '"', sheet_name= '"' + sheet_name + '"', operation= '"' + operation + '"'))
-        return code
-
-    def export_imports(self, *args):
-        imports = ["import pandas as pd", "import gspread"]
-        return (imports)
-
 
 class AirtableConnectHandler(AbstractFunctionHandler):
 
@@ -2189,8 +1989,6 @@ integration_handlers_dict = {
     'UpdateCell': UpdateCellHandler(),
     'DeleteSheetRow': DeleteSheetRowHandler(),
     'NewGoogleSheet': NewGoogleSheetHandler(),
-    'ParseDataToSheet': ParseDataToSheetHandler(),
-    'StoreDfInNewSheet': StoreDfInNewSheetHandler(),
 
     'AirtableConnect': AirtableConnectHandler(),
     'AirtableAddRecord': AirtableAddRecordHandler(),
