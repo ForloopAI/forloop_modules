@@ -402,6 +402,7 @@ class VariableModel(BaseModel):
     is_result: bool = False
     pipeline_uid: str = "0"
     project_uid: str = "0" # TODO: Is this necessary? Node is indirectly linked to a project via pipeline
+    pipeline_job_uid: str = "0"
 
     @field_validator("name", "value")
     @classmethod
