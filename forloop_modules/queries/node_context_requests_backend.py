@@ -5,13 +5,14 @@ import requests
 import json
 from inspect import Parameter, Signature
 from pydantic import BaseModel
-from typing import Optional, Any
+from typing import Optional, Any, Generator
 import sys
-
 from pathlib import Path
-
+import httpx
 import forloop_modules.flog as flog
+import json
 
+from forloop_modules.queries.sse_parser import SSEParser
 from forloop_modules.globals.active_entity_tracker import aet
 
 from forloop_modules.queries.db_model_templates import APIProject, APITrigger, APIDataset, APIDbTable, APIScript, APIFile, APIDatabase, APIPipeline, APIEdge, APIVariable, APIPopup, APIInitialVariable
@@ -620,6 +621,24 @@ def update_variable_by_uid(variable_uid: str, name: str, value: Any, is_result: 
 #     flog.info(f'Updated Variable response: {response.text}')
 
 #     return response
+
+
+def get_job_variables():
+    job_uid = aet.active_pipeline_job_uid
+    url = f'{BASE_API}/jobs/{job_uid}/variables'
+    response = requests.get(url)
+    response.raise_for_status()
+    return response
+
+
+def consume_execution_stream(job_uid: str) -> Generator[dict, None, None]:
+    """Run in a separate thread as this is a blocking operation."""
+    url = f'{BASE_API}/jobs/{job_uid}/execution_stream'
+
+    with (httpx.Client(timeout=300) as client):
+        sse_handler = SSEParser(client)
+        for message in sse_handler.stream("GET", url, as_dict=True):
+            yield from message
 
 
 ##### INITIAL VARIABLES #####
@@ -1289,13 +1308,14 @@ def finalize_pipeline(project_uid):
     return response
 
 
-
 def pipeline_direct_execute(pipeline_uid):
-    payload={"pipeline_uid":pipeline_uid,}
+    payload = {"pipeline_uid": pipeline_uid}
     url = f'{BASE_API}/pipelines/{pipeline_uid}/direct_execute'
-    response=requests.post(url=url,json=payload)
-    print(json.loads(response.content))
+    response = requests.post(url=url, json=payload)
+    response.raise_for_status()
+
     return response
+
 
 def filter_webpage_elements_based_on_objective(elements: list[dict], objective: str):
     payload = {
