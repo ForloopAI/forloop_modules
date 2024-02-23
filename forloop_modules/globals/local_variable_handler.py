@@ -10,7 +10,7 @@ import pandas as pd
 import ast 
 import inspect
 
-from typing import Dict, Set, Any, Literal
+from typing import Dict, Set, Any, Literal, Optional
 from dataclasses import dataclass, field
 
 import forloop_modules.flog as flog
@@ -82,7 +82,7 @@ class LocalVariableHandler:
     def handler_mode(self, value: Any) -> None:
         raise AttributeError("Use `change_variable_mode` method to change the mode of LocalVariableHandler.")
 
-    def change_mode(self, mode: Literal["initial_variable", "variable"]) -> None:
+    def change_variable_mode(self, mode: Literal["initial_variable", "variable"]) -> None:
         """Change state specifying on which type of variable is the handler currently operating."""
         if mode not in ["variable", "initial_variable"]:
             raise ValueError(f"Variable mode `{mode}` is not supported.")
@@ -172,7 +172,7 @@ class LocalVariableHandler:
 
         return value
 
-    def new_variable(self, name, value, additional_params: dict = None, project_uid=None):
+    def new_variable(self, name, value, is_result: Optional[bool] = None, additional_params: dict = None, project_uid=None):
         if additional_params is None:
             additional_params = {}
 
@@ -182,15 +182,15 @@ class LocalVariableHandler:
             value = self.process_dataframe_variable_on_initialization(name, value)
 
         if name in self.variables.keys():
-            variable = self.update_variable(name, value, additional_params)
+            variable = self.update_variable(name, value, is_result, additional_params)
             is_new_variable=False
         else:
-            variable=self.create_variable(name, value, additional_params)
+            variable=self.create_variable(name, value, is_result, additional_params)
             is_new_variable=True
 
         return variable, is_new_variable
 
-    def create_variable(self, name, value, additional_params: dict = None, project_uid=None):
+    def create_variable(self, name, value, is_result: Optional[bool] = None, additional_params: dict = None, project_uid=None):
         #self.variable_uid_project_uid_dict[variable.uid]=project_uid #is used in API call
         if additional_params is None:
             additional_params = {}
@@ -214,7 +214,8 @@ class LocalVariableHandler:
                 save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
             #TODO: FILE TRANSFER MISSING
 
-            response = ncrb_fn(name=name, value="", type=type(value).__name__)
+            optional_args = {"is_result": is_result} if is_result is not None else {}
+            response = ncrb_fn(name=name, value="", type=type(value).__name__, **optional_args)
 
         result = response.json()
         self.create_local_variable(
@@ -236,14 +237,14 @@ class LocalVariableHandler:
         self.variables[name]=variable
         return(variable)
 
-    def update_variable(self, name, value, additional_params: dict = None, project_uid=None):
+    def update_variable(self, name, value, is_result: Optional[bool] = None, additional_params: dict = None, project_uid=None):
         if additional_params is None:
             additional_params = {}
 
         if self.handler_mode == "initial_variable":
-            ncrb_fn = ncrb.update_initial_variable_by_uid
+            ncrb_update_by_uid_fn = ncrb.update_initial_variable_by_uid
         elif self.handler_mode == "variable":
-            ncrb_fn = ncrb.update_variable_by_uid
+            ncrb_update_by_uid_fn = ncrb.update_variable_by_uid
 
         variable = None
         try: # Function to run even if no variable is found
@@ -256,11 +257,11 @@ class LocalVariableHandler:
                 "variable_uid": variable["uid"],
                 "name": name,
                 "value": value,
-                "is_result": variable["is_result"]  # TODO: Remove when PrototypeJobs are implemented
+                "is_result": is_result if is_result is not None else variable["is_result"]  # TODO: Remove when PrototypeJobs are implemented
             }
 
             if is_value_serializable(value):
-                response = ncrb_fn(**ncrb_fn_kwargs)
+                response = ncrb_update_by_uid_fn(**ncrb_fn_kwargs)
             else:
                 ncrb_fn_kwargs.update(value="")
 
@@ -271,7 +272,7 @@ class LocalVariableHandler:
                     data_dict[name]=value
                     folder=".//file_transfer"
                     save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
-                response = ncrb_fn(type=type(value).__name__, **ncrb_fn_kwargs)
+                response = ncrb_update_by_uid_fn(type=type(value).__name__, **ncrb_fn_kwargs)
 
             result = response.json()
             self.update_local_variable(
