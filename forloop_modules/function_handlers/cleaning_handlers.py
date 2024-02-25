@@ -142,7 +142,7 @@ class NewDataFrameHandler(AbstractFunctionHandler):
             variable_handler.create_variable(new_var_name, new_df)
 
     def input_execute(self, inp: Input) -> pd.DataFrame:
-        new_df = pd.DataFrame(inp["data"], columns=inp["columns"])
+        new_df = pd.DataFrame(inp("data"), columns=inp("columns"))
         return new_df
 
     def export_imports(self, *args):
