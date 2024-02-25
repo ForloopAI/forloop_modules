@@ -2,7 +2,7 @@ import operator
 import inspect
 import pandas as pd
 
-from forloop_modules.globals.variable_handler import variable_handler, custom_icons_imports
+from forloop_modules.globals.variable_handler import variable_handler
 #from src.gui.gui_layout_context import glc, ItemDetailForm # FRONTEND DEPENDENCY
 
 ##### BACKEND ONLY #####
