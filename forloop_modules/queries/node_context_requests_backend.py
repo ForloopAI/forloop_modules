@@ -1028,7 +1028,7 @@ def update_last_active_script(script_uid: Optional[str] = None):
 
 
 def get_last_active_script():
-    url = f'{BASE_API}/last_active_script'
+    url = f'{BASE_API}/last_active_script?project_uid={aet.project_uid}'
 
     response = requests.get(url)
     flog.info(f'GET Last active Script response: {response.text}')
