@@ -1046,7 +1046,12 @@ def run_code_to_pipeline_conversion():
     return response
 
 def run_inspect_node_code(node_uid:str):
-    response = requests.get(SERVER+":"+str(PORT)+"/api/v1/inspect_node_code/" + str(node_uid))
+    payload = {
+        "uid": node_uid,
+        "project_uid": aet.project_uid
+    }
+    url = f"{BASE_API}/api/v1/inspect_node_code"
+    response = requests.post(url=url, json=payload)
     return response
 
 def get_all_databases_by_project_uid():
