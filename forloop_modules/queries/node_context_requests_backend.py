@@ -1014,14 +1014,14 @@ def update_popup_by_uid(popup_uid, pos=None, typ=None, params_dict=None):
 
 def update_last_active_script(script_uid: Optional[str] = None):
     payload = {
-        "script_uid": script_uid
+        "project_uid": aet.project_uid,
+        "uid": script_uid
     }
-
     flog.info(f'Last active Script payload: {payload}')
 
     url = f'{BASE_API}/last_active_script'
-
     response = requests.put(url, json=payload)
+    
     flog.info(f'Last active Script response: {response.text}')
 
     return response
