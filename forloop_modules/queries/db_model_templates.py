@@ -687,6 +687,10 @@ class LastActiveScriptUid(BaseModel):
     project_uid: str
     uid: Union[str, None] = None
     
+class APIInspectNodeCode(BaseModel):
+    uid: str
+    project_uid: str
+    
 
 
 class PipelineAdjustmentUsingChatGPT(BaseModel):
