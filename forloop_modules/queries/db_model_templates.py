@@ -691,6 +691,10 @@ class APIInspectNodeCode(BaseModel):
     uid: str
     project_uid: str
     
+class APIPipelineToCode(BaseModel):
+    pipeline_uid: str
+    project_uid: str
+    
 
 
 class PipelineAdjustmentUsingChatGPT(BaseModel):
