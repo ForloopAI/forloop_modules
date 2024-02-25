@@ -1048,7 +1048,9 @@ def run_pipeline_to_code_conversion():
     return response
 
 def run_code_to_pipeline_conversion():
-    response = requests.get(SERVER+":"+str(PORT)+"/api/v1/code_to_pipeline")
+    url = f"{BASE_API}/api/v1/code_to_pipeline?project_uid={aet.project_uid}"
+    response = requests.get(url=url)
+    
     return response
 
 def run_inspect_node_code(node_uid:str):
