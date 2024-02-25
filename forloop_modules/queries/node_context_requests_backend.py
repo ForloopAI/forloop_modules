@@ -1038,7 +1038,13 @@ def get_last_active_script():
 #~#~#~#~#~##~#~#~#~# SCRIPTS END #~#~#~#~#~##~#~#~#~#
 
 def run_pipeline_to_code_conversion():
-    response = requests.post(SERVER+":"+str(PORT)+"/api/v1/pipeline_to_code")
+    payload = {
+        "pipeline_uid": aet.active_pipeline_uid,
+        "project_uid": aet.project_uid
+    }
+    url = f"{BASE_API}/api/v1/pipeline_to_code"
+    response = requests.post(url=url, json=payload)
+    
     return response
 
 def run_code_to_pipeline_conversion():
