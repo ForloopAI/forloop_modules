@@ -684,6 +684,7 @@ class APIButtonName(BaseModel):
     
 
 class LastActiveScriptUid(BaseModel):
+    project_uid: str
     uid: Union[str, None] = None
     
 
