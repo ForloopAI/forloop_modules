@@ -1,5 +1,3 @@
-
-
 IS_EXECUTION_CORE=True
 
 #if IS_EXECUTION_CORE:
@@ -7,7 +5,7 @@ IS_EXECUTION_CORE=True
 
 import json
 import pandas as pd
-import ast 
+import ast
 import inspect
 
 from typing import Dict, Set, Any, Literal, Optional
@@ -99,7 +97,7 @@ class LocalVariableHandler:
                 i += 1
         elif " " in name:
             name = "_".join(name.split())
-        
+
         return name
 
     def _is_varname_duplicated(self, name: str) -> bool:
@@ -125,7 +123,7 @@ class LocalVariableHandler:
             return local_variable
         else:
             return local_variable
-        
+
     def get_int_to_str_col_name_mapping(self, df: pd.DataFrame) -> dict[int, str]:
         """
         find columns whose name type is int and create mapping between their int name and its string form
@@ -148,7 +146,7 @@ class LocalVariableHandler:
         name = path.split("/")[-1]
         file = File(path, name)  # suffix
         file_variable = self.create_file(file)
-    
+
     def create_file(self, file: File, project_uid=None):
         # TODO is temporary until workflow for files is introduced
 
@@ -280,21 +278,21 @@ class LocalVariableHandler:
             )  # TODO: Remove when PrototypeJobs are implemented
             return result
 
-        
+
         #else:
         #    self.variables.pop(name)
         #    self.create_variable(name, value)
-            
+
         #variable=self.variables[name]
         #self.variables[name].value=value #Update
         #return(variable)
-    
+
     def update_local_variable(self, name, value, is_result: bool, type=None):
         if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
             value=ast.literal_eval(str(value))
         elif type in REDIS_STORED_TYPES_AS_STRINGS:
             value = kv_redis.get(self.get_variable_redis_name(name))
-        
+
         variable=self.variables[name]
         self.variables[name].value=value #Update
         self.variables[name].is_result = is_result  # TODO: Remove when PrototypeJobs are implemented
@@ -314,6 +312,37 @@ class LocalVariableHandler:
         ncrb_delete_by_uid(variable["uid"])
         self.delete_local_variable(var_name)
 
+
+    def save_variables_as_initial_variables(self):
+        """Save all currently loaded Variables as InitialVariables."""
+        if not self._handler_mode == "variable":
+            raise AttributeError(
+                "LocalVariableHandler must be in 'variable' mode to resave results."
+            )
+
+        for variable in self.variables.values():
+            if is_value_serializable(variable.value):
+                ncrb.new_initial_variable(name=variable.name, value=variable.value)
+            else:
+                value = kv_redis.get(self.get_variable_redis_name(variable.name))
+                if is_value_redis_compatible(variable.value):
+                    kv_redis.set(f'stored_initial_variable_{variable.name}', value)
+                else:
+                    data_dict = {}
+                    data_dict[variable.name] = variable.value
+                    folder = ".//file_transfer"
+                    save_data_dict_to_pickle_folder(data_dict, folder, clean_existing_folder=False)
+                #TODO: FILE TRANSFER MISSING
+
+                optional_args = (
+                    {"is_result": variable.is_result} if variable.is_result is not None else {}
+                )
+                ncrb.new_initial_variable(
+                    name=variable.name, value="", type=type(variable.value).__name__,
+                    **optional_args
+                )
+
+
     def delete_local_variable(self, var_name:str):
         self.variables.pop(var_name)
 
@@ -331,22 +360,22 @@ class LocalVariableHandler:
     @property
     def last_active_dataframe_node_uid(self):
         return self._last_active_dataframe_node_uid
-    
+
     # temporary until cyclic import of ncrb in cleaning handlers is resolved
     @last_active_dataframe_node_uid.setter
     def last_active_dataframe_node_uid(self, node_uid:int):
         self._last_active_dataframe_node_uid = node_uid
-    
+
     #   TODO: fix dependencies
     #def update_data_in_variable_explorer(self, glc): #TODO Dominik: Refactor out, shouldnt be here
     #    self.is_refresh_needed = False
     #    if hasattr(glc, "variable_explorer"):
-            
+
     #        glc.variable_explorer.update_data(self.stored_variable_df)
 
-        # stored_variables_list = [[x.name, x.typ, x.size, x.value] for x in self.values()]
-        # stored_variable_df = pd.DataFrame(stored_variables_list, columns=["Name", "Type", "Size", "Value"])
-        # glc.variable_explorer.update_data(stored_variable_df)
+    # stored_variables_list = [[x.name, x.typ, x.size, x.value] for x in self.values()]
+    # stored_variable_df = pd.DataFrame(stored_variables_list, columns=["Name", "Type", "Size", "Value"])
+    # glc.variable_explorer.update_data(stored_variable_df)
 
 
     def populate_df_analysis_record(self, name, empty_rows, duplicated_rows, empty_columns, id_columns, result):
