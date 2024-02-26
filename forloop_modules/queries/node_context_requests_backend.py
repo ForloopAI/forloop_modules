@@ -117,6 +117,9 @@ def new_factory(resource_name, model):
         }
         payload.update(kwargs)
         set_stored_project_uid_and_pipeline_uid_to_factory_payload(payload)
+        if issubclass(model, APIVariable):
+            payload["pipeline_job_uid"] = aet.active_pipeline_job_uid
+
         #flog.info(f'New {resource_name} payload: {payload}')
         resource_url = f'{BASE_API}/{resource_name}'
 
@@ -124,7 +127,7 @@ def new_factory(resource_name, model):
         #flog.info(f'New {resource_name} response: {response.text}')
         if not response.ok:
             flog.error(response.json())
-            response.raise_for_status()
+            # response.raise_for_status()
         return response
 
     new.__signature__ = Signature(params)
@@ -146,6 +149,8 @@ def update_factory(resource_name, model):
         }
         payload.update(kwargs)
         set_stored_project_uid_and_pipeline_uid_to_factory_payload(payload)
+        if issubclass(model, APIVariable):
+            payload["pipeline_job_uid"] = aet.active_pipeline_job_uid
 
         #flog.info(f'Update {resource_name} payload: {payload}')
         resource_url = f'{BASE_API}/{resource_name}/{uid}'
