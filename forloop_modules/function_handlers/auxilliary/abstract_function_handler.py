@@ -364,17 +364,17 @@ class AbstractFunctionHandler(abc.ABC):
 
         return code
     
-    def generate_shown_dataframe_option_field(self, df_variable_name, fields=None):
-        if fields is None:
-            fields = []
-
+    def generate_shown_dataframe_option_field(self, df_variable_name: str, fields: list[dict]):
         # Hotfix for "untitled{i}" cases --> name wasn't synced properly
         df_variable_name = vh.variable_handler._set_up_unique_varname(df_variable_name)
         fields += [NodeField.field_init("shown_dataframe", df_variable_name, "df_variable_name")]
 
         return fields
     
-    def refresh_shown_dataframe_option_field(self, fields, df_variable_name):
+    def refresh_shown_dataframe_option_field(self, fields: Union[list[dict], None], df_variable_name: str):
+        if fields is None:
+            fields = []
+            
         fields = list(filter(lambda x: x["name"] not in ["shown_dataframe", "options"], fields))
 
         if df_variable_name is not None:
@@ -389,6 +389,7 @@ class AbstractFunctionHandler(abc.ABC):
         # TODO2: removing this breaks the wizard cleaning
         # node_detail_form.fields = fields
 
-        ncrb.update_node_by_uid(node_detail_form.node_uid, fields=fields)
+        ncrb.update_node_by_uid(node_uid=node_detail_form.node_uid, typ=node_detail_form.typ, 
+                                params=node_detail_form.node_params, fields=fields)
         
         return df_variable_name

@@ -123,6 +123,6 @@ else:
         )
 
 def create_redis_key_for_project_db_private_key(project_uid: str):
-    redis_key = f'{redis_config.PRIVATE_ENCRYPTION_KEY_KEY}_{project_uid}'
+    redis_key = redis_config.PASSWORD_ENCRYPTION_KEY_TEMPLATE.format(project_uid=project_uid)
     
     return redis_key

@@ -456,9 +456,15 @@ class FilterWebpageElementsWithAIHandler(AbstractFunctionHandler):
     def make_form_dict_list(self, node_detail_form=None):
         return FormDictList()
 
-    def direct_execute():
-        pass
-
+    def direct_execute(self, elements, objective):
+        response = ncrb.filter_webpage_elements_based_on_objective(elements=elements, objective=objective)
+            
+        if response.status_code in [200, 201]:
+            result = response.json()
+            redis_action_key = redis_config.SCRAPING_ACTION_KEY_TEMPLATE.format(pipeline_uid=aet.active_pipeline_uid)
+            kv_redis.set(redis_action_key, result)
+        else:
+            raise CriticalPipelineError(response.reason)
 
 browser_handlers_dict = {
     "FindSimilarItems": FindSimilarItemsHandler(),

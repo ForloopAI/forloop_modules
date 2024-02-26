@@ -31,8 +31,8 @@ class RedisConfig(BaseSettings):
     # Redis key for storing temporary scraping results
     SCRAPING_ACTION_KEY_TEMPLATE: str = "pipeline:{pipeline_uid}:scraping:action"
 
-    # Complete nonsense name --> to avoid accidental selection as a variable
-    PRIVATE_ENCRYPTION_KEY_KEY: str = "ForLoop_unicorn_2025_key_for_key_1998_CraZy_FRog"
+    # Redis key for storing password encryption private key
+    PASSWORD_ENCRYPTION_KEY_TEMPLATE: str = "project:{project_uid}:password:encryption"
 
 @lru_cache
 def get_redis_config() -> RedisConfig:
