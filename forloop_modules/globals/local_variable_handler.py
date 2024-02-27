@@ -85,6 +85,8 @@ class LocalVariableHandler:
         if mode not in ["variable", "initial_variable"]:
             raise ValueError(f"Variable mode `{mode}` is not supported.")
         self._handler_mode = mode
+        self.variables.clear()
+
 
     def _set_up_unique_varname(self, name: str) -> str:
         i = 2
