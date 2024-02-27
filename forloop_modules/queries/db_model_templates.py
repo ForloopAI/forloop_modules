@@ -695,6 +695,10 @@ class APIPipelineToCode(BaseModel):
     pipeline_uid: str
     project_uid: str
     
+class APICodeToPipeline(BaseModel):
+    pipeline_uid: str
+    project_uid: str
+    
 
 
 class PipelineAdjustmentUsingChatGPT(BaseModel):
