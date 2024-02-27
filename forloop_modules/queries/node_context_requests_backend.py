@@ -1048,8 +1048,12 @@ def run_pipeline_to_code_conversion():
     return response
 
 def run_code_to_pipeline_conversion():
-    url = f"{BASE_API}/api/v1/code_to_pipeline?project_uid={aet.project_uid}"
-    response = requests.get(url=url)
+    payload = {
+        "pipeline_uid": aet.active_pipeline_uid,
+        "project_uid": aet.project_uid
+    }
+    url = f"{BASE_API}/api/v1/code_to_pipeline"
+    response = requests.post(url=url, json=payload)
     
     return response
 
