@@ -1042,7 +1042,7 @@ def run_pipeline_to_code_conversion():
         "pipeline_uid": aet.active_pipeline_uid,
         "project_uid": aet.project_uid
     }
-    url = f"{BASE_API}/api/v1/pipeline_to_code"
+    url = f"{BASE_API}/pipeline_to_code"
     response = requests.post(url=url, json=payload)
     
     return response
@@ -1052,7 +1052,7 @@ def run_code_to_pipeline_conversion():
         "pipeline_uid": aet.active_pipeline_uid,
         "project_uid": aet.project_uid
     }
-    url = f"{BASE_API}/api/v1/code_to_pipeline"
+    url = f"{BASE_API}/code_to_pipeline"
     response = requests.post(url=url, json=payload)
     
     return response
@@ -1062,7 +1062,7 @@ def run_inspect_node_code(node_uid:str):
         "uid": node_uid,
         "project_uid": aet.project_uid
     }
-    url = f"{BASE_API}/api/v1/inspect_node_code"
+    url = f"{BASE_API}/inspect_node_code"
     response = requests.post(url=url, json=payload)
     return response
 
