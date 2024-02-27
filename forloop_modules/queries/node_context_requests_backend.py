@@ -587,7 +587,8 @@ def delete_all_variables():
 def update_variable_by_uid(variable_uid: str, name: str, value: Any, is_result: bool = None, type = None, size: Optional[int] = None):
     project_uid = aet.project_uid
     pipeline_uid = aet.active_pipeline_uid
-    
+    pipeline_job_uid = aet.active_pipeline_job_uid
+
     if type is None:
         for std_type in [str,int,list,dict,float,bool]:
             if isinstance(value,std_type):
@@ -599,7 +600,8 @@ def update_variable_by_uid(variable_uid: str, name: str, value: Any, is_result: 
         "type": type,
         "size": size,
         "project_uid": project_uid,
-        "pipeline_uid": pipeline_uid
+        "pipeline_uid": pipeline_uid,
+        "pipeline_job_uid": pipeline_job_uid
         }
     if is_result is not None:
         payload["is_result"] = is_result
