@@ -33,6 +33,8 @@ class RedisConfig(BaseSettings):
 
     # Redis key for storing password encryption private key
     PASSWORD_ENCRYPTION_KEY_TEMPLATE: str = "project:{project_uid}:password:encryption"
+    
+    LAST_ACTIVE_SCRIPT_KEY_TEMPLATE: str = "project:{project_uid}:last_active_script_uid"
 
 @lru_cache
 def get_redis_config() -> RedisConfig:

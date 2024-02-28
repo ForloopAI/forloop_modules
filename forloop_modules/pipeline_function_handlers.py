@@ -2,12 +2,13 @@ import operator
 import inspect
 import pandas as pd
 
-from forloop_modules.globals.variable_handler import variable_handler, custom_icons_imports
+from forloop_modules.globals.variable_handler import variable_handler
 #from src.gui.gui_layout_context import glc, ItemDetailForm # FRONTEND DEPENDENCY
 
 ##### BACKEND ONLY #####
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input 
+from forloop_modules.errors.errors import SoftPipelineError
 import forloop_modules.function_handlers.auxilliary.forloop_code_eval as fce
 from forloop_modules.function_handlers.control_flow_handlers import control_flow_handlers_dict
 
@@ -145,6 +146,9 @@ class CustomIconHandler(AbstractFunctionHandler):
         self.direct_execute(code_label)
 
     def direct_execute(self, code_label):
+        
+        # HACK: Disable the execution of the node with some feedback for a user until we implement security checks
+        raise SoftPipelineError("Execution of this node is temporarily disabled.")
 
         imports = find_imports_in_custom_code(code_label)
 
