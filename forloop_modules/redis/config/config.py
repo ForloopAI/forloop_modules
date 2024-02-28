@@ -27,12 +27,16 @@ class RedisConfig(BaseSettings):
     JOB_INDEX_NAME: str = "index"
     JOB_LOCK_NAME: str = "jobs:lock"
     JOB_PRIMARY_KEY: str = "jobs:pk"
+    
+    LAST_ACTIVE_DF_NODE_UID_KEY_TEMPLATE: str = "project:{project_uid}:last_active_df_node_uid"
 
     # Redis key for storing temporary scraping results
     SCRAPING_ACTION_KEY_TEMPLATE: str = "pipeline:{pipeline_uid}:scraping:action"
 
     # Redis key for storing password encryption private key
     PASSWORD_ENCRYPTION_KEY_TEMPLATE: str = "project:{project_uid}:password:encryption"
+    
+    LAST_ACTIVE_SCRIPT_KEY_TEMPLATE: str = "project:{project_uid}:last_active_script_uid"
 
 @lru_cache
 def get_redis_config() -> RedisConfig:

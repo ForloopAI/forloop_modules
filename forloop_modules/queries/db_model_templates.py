@@ -684,7 +684,20 @@ class APIButtonName(BaseModel):
     
 
 class LastActiveScriptUid(BaseModel):
+    project_uid: str
     uid: Union[str, None] = None
+    
+class APIInspectNodeCode(BaseModel):
+    uid: str
+    project_uid: str
+    
+class APIPipelineToCode(BaseModel):
+    pipeline_uid: str
+    project_uid: str
+    
+class APICodeToPipeline(BaseModel):
+    pipeline_uid: str
+    project_uid: str
     
 
 

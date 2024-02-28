@@ -12,6 +12,7 @@ from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDict
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler 
+from forloop_modules.errors.errors import SoftPipelineError
 
 class LoadPythonScriptHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -130,7 +131,11 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         
         TODO 1: Solve security issues when running the code.
         TODO 2: Solve scanning for packages used by script and pip installing of the missing ones.
-        """         
+        """    
+        
+        # HACK: Disable the execution of the node with some feedback for a user until we implement security checks
+        raise SoftPipelineError("Execution of this node is temporarily disabled.")
+         
         script = su.get_script_by_name(script_name)
         script_text = script.get("text", "")
         
@@ -199,7 +204,11 @@ class RunJupyterScriptHandler(AbstractFunctionHandler):
         DANGER: The code runs without any checks! 
         
         TODO: Solve security issues when running the code.
-        """    
+        """
+        
+        # HACK: Disable the execution of the node with some feedback for a user until we implement security checks
+        raise SoftPipelineError("Execution of this node is temporarily disabled.")
+    
         script = su.get_script_by_name(script_name)
         script_text = script.get("text", "")
         

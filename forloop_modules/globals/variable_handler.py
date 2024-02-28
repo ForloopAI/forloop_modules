@@ -196,6 +196,8 @@ class DataFrameWizardScanAnalysis:
 # api_variable_handler = VariableHandler()
 variable_handler = LocalVariableHandler()
 
+
+# TODO: Disable ASAP - using global lists and dicts to store values is just wrong
 defined_functions_dict = {}  # used by function handlers
 custom_icons_imports = []
 
