@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 DEVELOPER_MODE=True #originally in thread flags - it is here because of packaging - maybe rename locally to PACKAGING_MODE
+MESSAGE_CATEGORIES=["*"]
 
 if DEVELOPER_MODE:
     from configparser import ConfigParser
@@ -172,7 +173,7 @@ def print_exception_if_raised():
 
 
 @wrap_add_class_name
-def critical(message="", class_instance: object = EmptyClass()):
+def critical(message="", class_instance: object = EmptyClass(), message_category="*"):
     """
     print red colored critical message
     """
@@ -185,11 +186,11 @@ def critical(message="", class_instance: object = EmptyClass()):
     if cls_min_log_level <= FlogLevel.CRITICAL.value:
         if is_error_raised():
             traceback.print_exc()
-        flog(message, class_name, color=LogColor.ERROR)
+        flog(message, class_name, color=LogColor.ERROR, message_category=message_category)
 
 
 @wrap_add_class_name
-def error(message="", class_instance: object = EmptyClass()):
+def error(message="", class_instance: object = EmptyClass(), message_category="*"):
     """
     print red colored error message
     """
@@ -211,11 +212,11 @@ def error(message="", class_instance: object = EmptyClass()):
         #if isinstance(class_instance, AbstractFunctionHandler):
         #    message += f"\nNode's form_dict_list: {class_instance.make_form_dict_list()}"
 
-        flog(message, class_name, color=LogColor.ERROR)
+        flog(message, class_name, color=LogColor.ERROR, message_category=message_category)
 
 
 @wrap_add_class_name
-def warning(message="", class_instance: object = EmptyClass()):
+def warning(message="", class_instance: object = EmptyClass(), message_category="*"):
     """
     print yellow colored warning message
     """
@@ -226,11 +227,11 @@ def warning(message="", class_instance: object = EmptyClass()):
     cls_min_log_level = get_cls_loglevel(class_flog_config_key)
 
     if cls_min_log_level <= FlogLevel.WARNING.value:
-        flog(message, class_name, color=LogColor.WARNING)
+        flog(message, class_name, color=LogColor.WARNING, message_category=message_category)
 
 
 @wrap_add_class_name
-def info(message="", class_instance: object = EmptyClass()):
+def info(message="", class_instance: object = EmptyClass(), message_category="*"):
     """
     print info message
     """
@@ -241,11 +242,11 @@ def info(message="", class_instance: object = EmptyClass()):
     cls_min_log_level = get_cls_loglevel(class_flog_config_key)
 
     if cls_min_log_level <= FlogLevel.INFO.value:
-        flog(message, class_name)
+        flog(message, class_name, message_category=message_category)
 
 
 @wrap_add_class_name
-def minor_info(message="", class_instance: object = EmptyClass()):
+def minor_info(message="", class_instance: object = EmptyClass(), message_category="*"):
     """
     print minor_info message
     """
@@ -256,11 +257,11 @@ def minor_info(message="", class_instance: object = EmptyClass()):
     cls_min_log_level = get_cls_loglevel(class_flog_config_key)
 
     if cls_min_log_level <= FlogLevel.MINORINFO.value:
-        flog(message, class_name)
+        flog(message, class_name, message_category=message_category)
 
 
 @wrap_add_class_name
-def debug(message="", class_instance: object = EmptyClass()):
+def debug(message="", class_instance: object = EmptyClass(), message_category="*"):
     """
     print debug message
     """
@@ -271,10 +272,10 @@ def debug(message="", class_instance: object = EmptyClass()):
     cls_min_log_level = get_cls_loglevel(class_flog_config_key)
 
     if cls_min_log_level <= FlogLevel.DEBUG.value:
-        flog(message, class_name)
+        flog(message, class_name, message_category=message_category)
 
 
-def flog(message: str, class_name: str, color: LogColor = LogColor.COLOROFF):
+def flog(message: str, class_name: str, color: LogColor = LogColor.COLOROFF, message_category="*"):
     """
     print a specified message prepended with datetime and class name(or empty string in case of EmptyClass)
 
@@ -285,9 +286,10 @@ def flog(message: str, class_name: str, color: LogColor = LogColor.COLOROFF):
         header = f"{datetime.now().strftime('%H:%M:%S')} "
         if class_name:
             header += f"{class_name}: "
-
+            
         colored_message = augment_message(message, color, header)
-        print(colored_message, file=OUTPUT)
+        if message_category in MESSAGE_CATEGORIES:
+            print(colored_message, file=OUTPUT)
 
 
 if __name__ == '__main__':
