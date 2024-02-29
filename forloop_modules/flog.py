@@ -155,11 +155,11 @@ def get_callers_class_instance():
 
 def wrap_add_class_name(func):
     # automatically add class instance to flogger method call
-    def add_class_name(message: str, class_instance=None):
+    def add_class_name(message: str, class_instance=None, message_category = "*"):
         if class_instance is None:
             class_instance = get_callers_class_instance()
 
-        return func(message, class_instance)
+        return func(message, class_instance, message_category = message_category)
     return add_class_name
 
 
