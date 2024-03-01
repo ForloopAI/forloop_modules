@@ -2641,7 +2641,7 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
         fdl.label("Column(s)")
         fdl.entry(name="columns", text="", input_types=["str", "list"], required=True, row=2)
         fdl.label("DataFrame")
-        fdl.entry(name="entry_df", text="", input_types=["DataFrame"], required=True, row=3)
+        fdl.entry(name="entry_df", text="", input_types=["DataFrame"], row=3)
         fdl.label("Write mode")
         fdl.combobox(name="write_mode", options=options, row=4)
         fdl.label("New variable")

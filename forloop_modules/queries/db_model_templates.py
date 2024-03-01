@@ -138,6 +138,10 @@ class JobStatusEnum(str, Enum):
     CANCELLING = "CANCELLING"  # Job in the process of being canceled, but not yet canceled
     CANCELED = "CANCELED"
 
+    @classmethod
+    def is_finished(cls, status: 'JobStatusEnum'):
+        """Check if the job status is in a 'finished' subset."""
+        return status in [cls.COMPLETED, cls.FAILED, cls.CANCELED]
 
 class PipelineJobStats(BaseModel):
     webpage_count: int
