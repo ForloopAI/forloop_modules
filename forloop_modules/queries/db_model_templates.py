@@ -717,6 +717,10 @@ class PipelineAdjustmentDict(BaseModel):
 class APIFindSimilarItemsBody(BaseModel):
     selected_elements_xpaths:list
 
+class APIConvertToScrapingNode(BaseModel):
+    selected_elements_xpaths: list
+    pipeline_uid: str
+    project_uid: str
 
 ItemType = TypeVar("ItemType")
 class Paged(BaseModel, Generic[ItemType]):
