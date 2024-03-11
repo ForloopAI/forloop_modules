@@ -123,7 +123,7 @@ def new_factory(resource_name, model):
         #flog.info(f'New {resource_name} response: {response.text}')
         if not response.ok:
             flog.error(response.json())
-            response.raise_for_status()
+            # response.raise_for_status()
         return response
 
     new.__signature__ = Signature(params)
