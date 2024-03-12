@@ -138,6 +138,10 @@ class JobStatusEnum(str, Enum):
     CANCELLING = "CANCELLING"  # Job in the process of being canceled, but not yet canceled
     CANCELED = "CANCELED"
 
+    @classmethod
+    def is_finished(cls, status: 'JobStatusEnum'):
+        """Check if the job status is in a 'finished' subset."""
+        return status in [cls.COMPLETED, cls.FAILED, cls.CANCELED]
 
 class PipelineJobStats(BaseModel):
     webpage_count: int
@@ -190,22 +194,6 @@ class APITrigger(BaseModel):
     first_run_date: UTCDatetime
     frequency: TriggerFrequencyEnum
     pipeline_uid: str
-    project_uid: str
-
-
-class APIDatabase2(BaseModel):
-    """
-    Cleaned up APIDatabase schema used only in ScrapingPipelineBuilders, copied to retain
-    backwards-compatibility of the old version with Desktop.
-    """
-
-    name: str
-    server: str
-    port: int
-    database: str
-    username: str
-    password: str
-    dialect: Literal["mysql", "postgres", "mongo"]
     project_uid: str
 
 
