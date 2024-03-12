@@ -197,22 +197,6 @@ class APITrigger(BaseModel):
     project_uid: str
 
 
-class APIDatabase2(BaseModel):
-    """
-    Cleaned up APIDatabase schema used only in ScrapingPipelineBuilders, copied to retain
-    backwards-compatibility of the old version with Desktop.
-    """
-
-    name: str
-    server: str
-    port: int
-    database: str
-    username: str
-    password: str
-    dialect: Literal["mysql", "postgres", "mongo"]
-    project_uid: str
-
-
 class APIDatabase(BaseModel):
     database_name: str = ""
     server: str = ""
