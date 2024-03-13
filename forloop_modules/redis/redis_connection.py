@@ -109,6 +109,7 @@ else:
     )
     try:
         kv_redis.set("forloop_redis_connection_test_metadata",str(datetime.datetime.now())+", Host: "+kv_redis.host+", Username: "+kv_redis.username)
+        flog.info("Redis connection was successfully established and metadata were inserted")
     except Exception as e:
         flog.warning("forloop_redis_connection_test_metadata couldn't be sent to Redis, check your connection")
     
