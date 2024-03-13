@@ -1,4 +1,5 @@
 from typing import Union
+import datetime
 
 import keepvariable.keepvariable_core as kv
 import redis
@@ -106,6 +107,11 @@ else:
         host=redis_config.HOST, port=redis_config.PORT, username=redis_config.USERNAME,
         password=redis_config.PASSWORD, db=redis_config.DB
     )
+    try:
+        kv_redis.set("forloop_redis_connection_test_metadata",str(datetime.datetime.now())+", Host: "+kv_redis.host+", Username: "+kv_redis.username)
+    except Exception as e:
+        flog.warning("forloop_redis_connection_test_metadata couldn't be sent to Redis, check your connection")
+    
     # check_modules(kv_redis)
     # check_job_primary_key(kv_redis, redis_config)
 
