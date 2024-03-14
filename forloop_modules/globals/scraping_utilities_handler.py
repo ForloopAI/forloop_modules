@@ -609,7 +609,8 @@ class ScrapingUtilitiesHandler:
         self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png'))) #needs to run before the scanner so there is enough time for the parallel thread
         self.webscraping_client.scan_web_page(incl_tables=True, incl_bullets=True, incl_texts=True,
                                        incl_headlines=True, incl_links=True, incl_images=True,
-                                       incl_buttons=True, by_xpath=None, cookies_xpath=xpath) #Duration: ~3s
+                                       incl_buttons=True, by_xpath=None, cookies_xpath=xpath, timeout = 60) #Duration: ~3s
+        
     
         webpage_elements = self.update_webpage_elements(refresh_browser_view_elements=False) #Duration: ~ 0s
 
