@@ -1072,7 +1072,7 @@ def get_all_databases_by_project_uid():
     if response.status_code != 200:
         raise Exception(f'Error {response.status_code}: {response.reason}.')
     
-    databases = response.json().get("result", {}).get("databases")
+    databases = response.json()['databases']
     project_databases = [database for database in databases if database["project_uid"] == aet.project_uid]
     
     return project_databases
