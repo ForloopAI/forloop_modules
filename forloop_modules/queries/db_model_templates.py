@@ -205,6 +205,7 @@ class APIDatabase(BaseModel):
     username: str = ""
     password: str = ""
     dialect: str = ""
+    new: bool = False
     project_uid: str = "0"
 
 
