@@ -1160,8 +1160,8 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
 
     def direct_execute(self,db_name, db_table_name, new_var_name):
         db_table = get_db_table_from_db(table_name=db_table_name, db_name=db_name)
-        column_type_pair_dict = dict(zip(db_table.columns, db_table.types))
-        variable_handler.new_variable(new_var_name, column_type_pair_dict)
+        column_type_dict = db_table.column_type_dict
+        variable_handler.new_variable(new_var_name, column_type_dict)
 
 class CreateMigrationFileHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -1533,7 +1533,7 @@ def _convert_deepdiff_dict_into_migration_list(table_name, deepdiff_dict) -> lis
             if key=="dictionary_item_added":    
                 column_type = deepdiff_dict[key][item_key]
                 migration_list.append({convert_dict[key]: {"table_name": table_name, "column_name": column_name,"column_type": column_type}})
-            elif key=="dictionary_item_removed":    
+            elif key=="dictionary_item_removed":
                 migration_list.append(
                     {"drop_column": {"table_name": table_name, "column_name": column_name}})
             elif key=="values_changed":
