@@ -22,6 +22,7 @@ from docrawl.elements import ElementType
 from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.redis.redis_connection import kv_redis
 
+from forloop_modules.utils import synchronization_flags
 #WARNING!
 #It is forbidden to add imports to popup handlers, pipeline function handlers, or any gui components
 
@@ -104,7 +105,21 @@ class ScrapingUtilitiesHandler:
         }
 
         # For now DocrawlClient should follow singleton pattern, meaning it should be initialised only once and here
-        self.webscraping_client = DocrawlClient(kv_redis=kv_redis, kv_redis_keys=kv_redis_keys, number_of_spawn_browsers=1)
+        
+        if synchronization_flags.IS_MODULE_MAIN_INITIALIZED:
+            redis_key_prefix="FORLOOP_MAIN_DOCRAWL_"
+        elif synchronization_flags.IS_MODULE_FORLOOP_FASTAPI_INITIALIZED:
+            redis_key_prefix="FORLOOP_FASTAPI_DOCRAWL_"
+        elif synchronization_flags.IS_MODULE_EXECUTION_CORE_INITIALIZED:
+            redis_key_prefix="FORLOOP_EXECUTION_CORE_DOCRAWL_"
+        else:
+            redis_key_prefix = None
+            
+        if redis_key_prefix is not None:
+            self.webscraping_client = DocrawlClient(kv_redis=kv_redis, kv_redis_keys=kv_redis_keys, number_of_spawn_browsers=1, redis_key_prefix=redis_key_prefix)
+            
+            
+            
         try:
             config = configparser.ConfigParser()
             config.read(Path(__file__).parent.parent.parent.absolute() / 'config' / 'scraping_conf.ini')

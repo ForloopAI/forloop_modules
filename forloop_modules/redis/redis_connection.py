@@ -99,13 +99,13 @@ def check_job_primary_key(
         flog.info("Jobs PK created")
 
 
-if redis_config.HOST is None:
+if redis_config.FORLOOP_REDIS_HOST is None:
     kv_redis = kv.KeepVariableDummyRedisServer()
     check_job_primary_key(kv_redis, redis_config)
 else:
     kv_redis = kv.KeepVariableRedisServer(
-        host=redis_config.HOST, port=redis_config.PORT, username=redis_config.USERNAME,
-        password=redis_config.PASSWORD, db=redis_config.DB
+        host=redis_config.FORLOOP_REDIS_HOST, port=redis_config.FORLOOP_REDIS_PORT, username=redis_config.FORLOOP_REDIS_USERNAME,
+        password=redis_config.FORLOOP_REDIS_PASSWORD, db=redis_config.FORLOOP_REDIS_DB
     )
     try:
         kv_redis.set("forloop_redis_connection_test_metadata",str(datetime.datetime.now())+", Host: "+kv_redis.host+", Username: "+kv_redis.username)
