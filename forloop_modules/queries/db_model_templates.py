@@ -660,9 +660,14 @@ class APIEmail(BaseModel):
     #email: str #Jakub branch
 
 class APINewDbTable(BaseModel):
+    server: str
+    database_name: str
+    port: int
+    username: str
+    password: str
+    dialect: Literal["MySQL"] # TODO: Enable other dialects like PostgreSQL
     columns: list[str]
     elements: list[dict]
-    dialect: Literal["MySQL"] # TODO: Enable other dialects like PostgreSQL
 
 class APIUrl(BaseModel):
     url: Optional[str]=""
