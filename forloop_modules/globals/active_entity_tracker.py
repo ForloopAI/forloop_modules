@@ -109,7 +109,7 @@ class ActiveEntityTracker:
         self.project_uid = project_uid if project_uid is not None else self.project_uid
         self.active_pipeline_uid = pipeline_uid if pipeline_uid is not None else self.active_pipeline_uid
 
-    def set_pipeline_job_uid(self, pipeline_job_uid: str) -> None:
+    def set_pipeline_job_uid(self, pipeline_job_uid: Optional[str] = None) -> None:
         self.active_pipeline_job_uid = pipeline_job_uid
 
 aet=ActiveEntityTracker()
