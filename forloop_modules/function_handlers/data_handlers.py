@@ -237,7 +237,7 @@ class LoadExcelHandler(AbstractFunctionHandler):
         # fdl.combobox(name="file_name", options=files, row=1)
         fdl.entry(name="file_name", text="", category="arguments", type='file', file_types=file_types, required=True, row=1)
         fdl.label("Load as:")
-        fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=2)
+        fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=2)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", frontend_implementation=True, focused=True)
 
         return fdl

@@ -116,23 +116,18 @@ class WaitHandler(AbstractFunctionHandler):
         fdl.label("Milliseconds:")
         fdl.entry(name="milliseconds",text="1000",row=1, input_types=["int", "float"], show_info=True, required=True)
         fdl.label("Add random ms:")
-        fdl.entry(name="rand_ms",text="0",row=2, input_types=["int", "float"])        
+        fdl.entry(name="rand_ms",text="0",row=2, input_types=["int", "float"])
         return fdl
 
     def direct_execute(self, milliseconds, rand_ms):
-        # def __new__(cls, milliseconds, rand_ms, *args, **kwargs):
         milliseconds = int(milliseconds)
-        rand_ms = int(rand_ms)
-        milliseconds += random.randint(0, int(rand_ms))
-        #milliseconds = str(milliseconds)
 
-        #command = f'Wait({milliseconds})'
-        
+        if rand_ms != "":
+            rand_ms = int(rand_ms)
+            milliseconds += random.randint(0, rand_ms)
+
         time.sleep(milliseconds/1000)
-        #dc.execute_order(command)
 
-        
-        
     def export_code(self,node_detail_form):
         code="""
         time.sleep(milliseconds/1000)
@@ -144,9 +139,6 @@ class WaitHandler(AbstractFunctionHandler):
     def export_imports(self, *args):
         imports = ["import time", "import random"]
         return (imports)
-    
-    
-    
 
 
 class RunPipelineHandler(AbstractFunctionHandler):
