@@ -672,6 +672,17 @@ class APINewDbTable(BaseModel):
     dialect: Literal["MySQL"] # TODO: Enable other dialects like PostgreSQL
     columns: list[str]
     elements: list[dict]
+    
+class APIDbDataPreview(BaseModel):
+    server: str
+    database_name: str
+    port: int
+    table_name: str
+    username: str
+    password: str
+    dialect: Literal["MySQL"] # TODO: Enable other dialects like PostgreSQL
+    data: WebpageData
+    # elements: list[dict]
 
 class APIUrl(BaseModel):
     url: Optional[str]=""
