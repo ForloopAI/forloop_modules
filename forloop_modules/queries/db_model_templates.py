@@ -659,6 +659,10 @@ class APIEmail(BaseModel):
     email: Optional[str] = ""
     #email: str #Jakub branch
 
+class WebpageData(BaseModel):
+    columns: list[str]
+    values: list[list[str]]
+
 class APINewDbTable(BaseModel):
     server: str
     database_name: str
