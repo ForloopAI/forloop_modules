@@ -667,11 +667,13 @@ class APINewDbTable(BaseModel):
     server: str
     database_name: str
     port: int
+    table_name: str
     username: str
     password: str
     dialect: Literal["MySQL"] # TODO: Enable other dialects like PostgreSQL
-    columns: list[str]
-    elements: list[dict]
+    data: WebpageData
+    # columns: list[str]
+    # elements: list[dict]
     
 class APIDbDataPreview(BaseModel):
     server: str
