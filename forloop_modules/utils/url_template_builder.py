@@ -4,21 +4,24 @@ from urllib.parse import urlparse
 
 class UrlTemplateBuilder:
     """
-    A class for building URL template by comparing provided URLs and formatting them with arguments.
-    When initialized, it constructs a URL template string, providing the count of templated
-    arguments and their names.
+    A class for constructing URL templates and formatting them with arguments.
 
     Args:
-        url_1 (str): The first URL. url_2 (str): The second URL.
+    ----
+        url_1 (str): The first URL.
+        url_2 (str): The second URL.
 
     Attributes:
-        url_1 (str): The first URL. url_2 (str): The second URL. templated_count (int): The count of
-        templated arguments in the URL template. template_args (set): A set of argument names used
-        in the URL template. url_template (str): The constructed URL template.
+    ----------
+        templated_count (int): The count of templated arguments in the URL template.
+        template_args (set): A set of argument names used in the URL template.
+        url_template (str): The constructed URL template as a template string with `template_args` as placeholders.
 
     Methods:
+    -------
         format_url: Format the URL template with the given arguments.
     """
+
     def __init__(self, url_1: str, url_2: str) -> None:
         self._url_1 = urlparse(url_1, scheme='http')
         self._url_2 = urlparse(url_2, scheme='http')
@@ -31,7 +34,7 @@ class UrlTemplateBuilder:
     def format_url(self, **kwargs) -> str:
         """Format the URL template with the given arguments."""
         if any(arg not in self.template_args for arg in kwargs):
-            raise ValueError('Invalid argument(s) provided')
+            raise ValueError('One of the provided arguments is not the template argument')
         return self.url_template.format(**kwargs)
 
     def _construct_url_template(self) -> str:
@@ -63,8 +66,8 @@ class UrlTemplateBuilder:
                 if tag == 'equal':
                     final_arg += arg_1[i1:i2]
                 else:
-                    final_arg += f"{{path_{final_arg}}}"
                     self.template_args.add(f'path_{final_arg}')
+                    final_arg += f"{{path_{final_arg}}}"
                     break  # Replace only the first difference in the path argument
 
             template_paths.append(final_arg)
