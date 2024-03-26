@@ -661,7 +661,7 @@ class APIEmail(BaseModel):
 
 class WebpageData(BaseModel):
     columns: list[str]
-    values: list[list[str]]
+    values: list[list[Any]]
 
 class APINewDbTable(BaseModel):
     server: str
