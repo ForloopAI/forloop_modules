@@ -16,6 +16,8 @@ PIPELINE_CLEANING_ICONS = [
     "CategorizeColumn", "SimilarityMatching", "CleanData", "ExtractString"
 ]
 
+DB_ICONS = ["DBSelect", "DBInsert", "DBDelete", "DBUpdate", "AnalyzeDbTable", "MySQLQuery", "CreateDbTable"]
+
 SCRAPING_ICONS = [
     "OpenBrowser", "LoadWebsite", "RefreshPageSource", "ClickXPath", "ScanWebPage", "ExtractXPath",
     "ExtractMultipleXPath", "ExtractTableXPath", "ClickName", "ClickId", "PrintXPath", "GetCurrentURL",
