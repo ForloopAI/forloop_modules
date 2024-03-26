@@ -138,6 +138,10 @@ class JobStatusEnum(str, Enum):
     CANCELLING = "CANCELLING"  # Job in the process of being canceled, but not yet canceled
     CANCELED = "CANCELED"
 
+    @classmethod
+    def is_finished(cls, status: 'JobStatusEnum'):
+        """Check if the job status is in a 'finished' subset."""
+        return status in [cls.COMPLETED, cls.FAILED, cls.CANCELED]
 
 class PipelineJobStats(BaseModel):
     webpage_count: int
@@ -190,22 +194,6 @@ class APITrigger(BaseModel):
     first_run_date: UTCDatetime
     frequency: TriggerFrequencyEnum
     pipeline_uid: str
-    project_uid: str
-
-
-class APIDatabase2(BaseModel):
-    """
-    Cleaned up APIDatabase schema used only in ScrapingPipelineBuilders, copied to retain
-    backwards-compatibility of the old version with Desktop.
-    """
-
-    name: str
-    server: str
-    port: int
-    database: str
-    username: str
-    password: str
-    dialect: Literal["mysql", "postgres", "mongo"]
     project_uid: str
 
 
@@ -684,7 +672,20 @@ class APIButtonName(BaseModel):
     
 
 class LastActiveScriptUid(BaseModel):
+    project_uid: str
     uid: Union[str, None] = None
+    
+class APIInspectNodeCode(BaseModel):
+    uid: str
+    project_uid: str
+    
+class APIPipelineToCode(BaseModel):
+    pipeline_uid: str
+    project_uid: str
+    
+class APICodeToPipeline(BaseModel):
+    pipeline_uid: str
+    project_uid: str
     
 
 
@@ -700,6 +701,10 @@ class PipelineAdjustmentDict(BaseModel):
 class APIFindSimilarItemsBody(BaseModel):
     selected_elements_xpaths:list
 
+class APIConvertToScrapingNode(BaseModel):
+    selected_elements_xpaths: list
+    pipeline_uid: str
+    project_uid: str
 
 ItemType = TypeVar("ItemType")
 class Paged(BaseModel, Generic[ItemType]):

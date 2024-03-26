@@ -142,7 +142,7 @@ class NewDataFrameHandler(AbstractFunctionHandler):
             variable_handler.create_variable(new_var_name, new_df)
 
     def input_execute(self, inp: Input) -> pd.DataFrame:
-        new_df = pd.DataFrame(inp["data"], columns=inp["columns"])
+        new_df = pd.DataFrame(inp("data"), columns=inp("columns"))
         return new_df
 
     def export_imports(self, *args):
@@ -188,7 +188,7 @@ class DropColumnHandler(AbstractFunctionHandler):
         fdl.label("Dataframe")
         fdl.entry(name="df_entry", text="", input_types=["DataFrame"], required=True, row=1)
         fdl.label("Column(s)")
-        fdl.comboentry(name="column_name", text="", options=columns, row=2)
+        fdl.combobox(name="column_name", options=columns, row=2)
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=3)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -207,11 +207,6 @@ class DropColumnHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column_name, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        ###variable_handler.last_active_dataframe_node_uid = node_detail_form.node_uid
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     def execute_with_params(self, params):
@@ -227,8 +222,15 @@ class DropColumnHandler(AbstractFunctionHandler):
         flog.debug(f"COLUMNS = {column_name}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, column_name: List[str], new_var_name: str):
+    def direct_execute(self, df_entry: pd.DataFrame, column_name: str, new_var_name: str):
         self.debug(df_entry, column_name, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not column_name:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("No column selected for drop operation.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
@@ -236,15 +238,9 @@ class DropColumnHandler(AbstractFunctionHandler):
 
         try:
             df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
-        except KeyError:
-            df_new = inp("df_entry").copy()
-            flog.warning(f'Column name {inp("column_name")} is not present in DataFrame')
         except Exception as e:
-            df_new = inp("df_entry").copy()
-            flog.error(f"Undefined error {e} occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         ###variable_handler.update_data_in_variable_explorer(glc)
@@ -257,15 +253,6 @@ class DropColumnHandler(AbstractFunctionHandler):
     def export_imports(self, *args):
         imports = []
         return imports
-
-    """
-    def make_flpl_node_dict(self, line_dict: dict) -> dict:
-        node = {"type": "DropColumn", "params": {"df_entry": {"variable": None, "value": line_dict['var_affected']}, 
-                "column_names": {"variable": None, "value": line_dict['arguments'][0]}, 
-                "new_var_name": {"variable": None, "value": line_dict['new_var']}}}
-        return node
-    """
-
 
 class SelectColumnsHandler(AbstractFunctionHandler):
     """
@@ -309,7 +296,6 @@ class SelectColumnsHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=3)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button": {"function=self.cfh.show_help, "function_args": [self.setup_ui], "text": "Help"}}
 
         return fdl
 
@@ -325,11 +311,7 @@ class SelectColumnsHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column_names, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
-
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
@@ -344,11 +326,17 @@ class SelectColumnsHandler(AbstractFunctionHandler):
         flog.debug(f"COLUMNS = {column_names}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, column_names: list, new_var_name: str):
-        """
-        Select column_names transformation wrapper
-        """
+    def direct_execute(self, df_entry: pd.DataFrame, column_names: Union[list, str], new_var_name: str):
         self.debug(df_entry, column_names, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not column_names:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("No columns entered for a DF selection.")
+        
+        column_names = column_names if isinstance(column_names, list) else [column_names]
 
         inp = Input()
         inp.assign("df_entry", df_entry)
@@ -356,12 +344,9 @@ class SelectColumnsHandler(AbstractFunctionHandler):
 
         try:
             df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            df_new = inp("df_entry").copy()
-            flog.error(f"Undefined error {e} occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         ###variable_handler.update_data_in_variable_explorer(glc)
@@ -419,33 +404,23 @@ class ConstantColumnHandler(AbstractFunctionHandler):
         fdl.label("Value")
         fdl.entry(name="value", text="0", input_types=["int", "float"], row=2)
         fdl.label("Column name")
-        fdl.entry(name="column", text="constant", input_types=["str"], row=3)
+        fdl.entry(name="column_name", text="constant", input_types=["str"], row=3)
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=4)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
-        # {"Button": {"function=self.cfh.show_help, "function_args": [self.setup_ui], "text": "Help"}}
-
         return fdl
 
     def execute(self, node_detail_form):
-        """
-        execution of the constant column transformation
-        """
         df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         value = node_detail_form.get_chosen_value_by_name("value", variable_handler)
-        column = node_detail_form.get_chosen_value_by_name("column", variable_handler)
+        column_name = node_detail_form.get_chosen_value_by_name("column_name", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
         new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
 
-        self.direct_execute(df_entry, value, column, new_var_name)
-
-        # glc.last_active_dataframe_icon = image
-        ###variable_handler.last_active_dataframe_node_uid = node_detail_form.node_uid
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
+        self.direct_execute(df_entry, value, column_name, new_var_name)
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
-
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
@@ -466,24 +441,29 @@ class ConstantColumnHandler(AbstractFunctionHandler):
         value = cast_user_input_to_proper_type(value)
         return value
 
-    def direct_execute(self, df_entry: pd.DataFrame, value, new_colname: str, new_var_name: str):
+    def direct_execute(self, df_entry: pd.DataFrame, value, column_name: str, new_var_name: str):
         # TODO: add inplace=False default parameter
-        self.debug(df_entry, value, new_colname, new_var_name)
+        self.debug(df_entry, value, column_name, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not value or not column_name:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Both 'Value' and 'Column name' must be provided.")
+        
         value = self.parse_input(value)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("value", value)
-        inp.assign("new_colname", new_colname)
+        inp.assign("new_colname", column_name)
 
         try:
             df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            df_new = pd.DataFrame()
-            flog.error(f"Undefined error {e} occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         ##variable_handler.update_data_in_variable_explorer(glc)
@@ -507,8 +487,8 @@ class ConstantColumnHandler(AbstractFunctionHandler):
 
 class RenameColumnHandler(AbstractFunctionHandler):
     """
-    
-    Rename Column Node sets a new name (header) to the selected column."""
+    Rename Column Node sets a new name (header) to the selected column.
+    """
     def __init__(self):
         super().__init__()
         self.icon_type = 'RenameColumn'
@@ -544,13 +524,12 @@ class RenameColumnHandler(AbstractFunctionHandler):
         fdl.label("Dataframe")
         fdl.entry(name="df_entry", text="", input_types=["DataFrame"], required=True, row=1)
         fdl.label("Column")
-        fdl.comboentry(name="old_col_name", text="", options=columns, row=2)
+        fdl.combobox(name="old_col_name", options=columns, row=2)
         fdl.label("New column name")
         fdl.entry(name="new_col_name", text="", input_types=["str"], row=3)
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=4)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function":self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help"}}
 
         return fdl
 
@@ -566,12 +545,7 @@ class RenameColumnHandler(AbstractFunctionHandler):
         new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
 
         self.direct_execute(df_entry, old_col_name, new_col_name, new_var_name)
-
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
-
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
@@ -588,31 +562,29 @@ class RenameColumnHandler(AbstractFunctionHandler):
         flog.debug(f"NEW COLUMN = {new_col_name}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def parse_input(self, old_col_name: List[str]) -> str:
-        return old_col_name[0] if len(old_col_name) > 0 else ""
-
-    def direct_execute(self, df_entry: pd.DataFrame, old_col_name: List[str], new_col_name: str, new_var_name: str,):
+    def direct_execute(self, df_entry: pd.DataFrame, old_col_name: str, new_col_name: str, new_var_name: str):
         self.debug(df_entry, old_col_name, new_col_name, new_var_name)
-        old_col_name: str = self.parse_input(old_col_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not old_col_name or not new_col_name:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Both old and new column names must be filled in.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("old_col_name", old_col_name)
         inp.assign("new_col_name", new_col_name)
 
+        if new_col_name in df_entry.columns:
+            flog.warning("New column name already present in DataFrame")
+            
         try:
-            if new_col_name in df_entry.columns:
-                flog.warning("New column name already present in DataFrame")
             df_new = self.input_execute(inp)
-        except KeyError:
-            df_new = inp("df_entry").copy()
-            flog.warning(f'Column name {old_col_name} is not present in DataFrame')
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            df_new = pd.DataFrame()
-            flog.error(f"Undefined error {e} occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         ##variable_handler.update_data_in_variable_explorer(glc)
@@ -632,15 +604,6 @@ class RenameColumnHandler(AbstractFunctionHandler):
     def export_imports(self, *args):
         imports = []
         return imports
-
-    """
-    def make_flpl_node_dict(self, line_dict: dict) -> dict:
-        node = {"type": "DropColumn", "params": {"df_entry": {"variable": None, "value": line_dict['var_affected']}, 
-                "column_names": {"variable": None, "value": line_dict['arguments'][0]}, 
-                "new_var_name": {"variable": None, "value": line_dict['new_var']}}}
-        return node
-    """
-
 
 class CastColumnTypeHandler(AbstractFunctionHandler):
     """CastColumnType Node changes data type of the selected column."""
@@ -702,7 +665,7 @@ class CastColumnTypeHandler(AbstractFunctionHandler):
         fdl.entry(name="df_entry", text="", input_types=["DataFrame"], required=True, row=1)
 
         fdl.label("Column")
-        fdl.comboentry(name="col_name", text="", options=columns, row=2)
+        fdl.combobox(name="col_name", options=columns, row=2)
 
         # TODO: Multiple columns (pass dict as arg)?
         fdl.label("New column type")
@@ -742,12 +705,19 @@ class CastColumnTypeHandler(AbstractFunctionHandler):
         flog.debug(f"NEW COLUMN TYPE = {new_col_type}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def parse_input(self, old_col_name: List[str]) -> str:
-        return old_col_name[0] if len(old_col_name) > 0 else ""
-
-    def direct_execute(self, df_entry: pd.DataFrame, col_name: List[str], new_col_type: str, new_var_name: str, ):
+    def direct_execute(self, df_entry: pd.DataFrame, col_name: str, new_col_type: str, new_var_name: str, ):
         self.debug(df_entry, col_name, new_col_type, new_var_name)
-        col_name: str = self.parse_input(col_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not col_name or not new_col_type:
+            if not col_name:
+                message = "No column  selected."
+            else:
+                message = "'New column type' argument is required."
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError(message)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
@@ -756,15 +726,9 @@ class CastColumnTypeHandler(AbstractFunctionHandler):
 
         try:
             df_new = self.input_execute(inp)
-        except KeyError:
-            df_new = inp("df_entry").copy()
-            flog.warning(f'Column name {col_name} is not present in DataFrame')
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            flog.error(f"Undefined error {e} occurred")
-            raise SoftPipelineError(f"Can not cast column {col_name} to type {new_col_type}: {e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
 
@@ -786,10 +750,6 @@ class CastColumnTypeHandler(AbstractFunctionHandler):
         return df_new
 
     def export_code(self, node_detail_form):
-        node_detail_form.node_params["col_name"]["value"] = self.parse_input(
-            node_detail_form.node_params["col_name"]["value"]
-        )
-
         code = self.export_code_with_node_params(node_detail_form.node_params)
 
         return code
@@ -797,7 +757,6 @@ class CastColumnTypeHandler(AbstractFunctionHandler):
     def export_imports(self, *args):
         imports = []
         return imports
-
 
 class ExplodeColumnHandler(AbstractFunctionHandler):
     """ExplodeColumn Node flattens (explodes) dict-like values in column to new columns """
@@ -851,7 +810,7 @@ class ExplodeColumnHandler(AbstractFunctionHandler):
 
         fdl.label("Column")
         # TODO: add support for multiple columns
-        fdl.comboentry(name="col_name", text="", options=columns, row=2)
+        fdl.combobox(name="col_name", options=columns, row=2)
 
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=4)
@@ -878,27 +837,19 @@ class ExplodeColumnHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, col_name, new_var_name)
 
-    def parse_input(self, old_col_name: List[str]) -> str:
-        return old_col_name[0] if len(old_col_name) > 0 else ""
-
     def direct_execute(self, df_entry: pd.DataFrame, col_name: List[str], new_var_name: str, ):
-        col_name: str = self.parse_input(col_name)
-
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("col_name", col_name)
 
         try:
             df_new = self.input_execute(inp)
-        except KeyError:
-            df_new = inp("df_entry").copy()
-            flog.warning(f'Column name {col_name} is not present in DataFrame')
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            flog.error(f"Undefined error {e} occurred")
-            raise SoftPipelineError(f"Can not explode column {col_name}: {e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
 
@@ -917,10 +868,6 @@ class ExplodeColumnHandler(AbstractFunctionHandler):
         return df_new
 
     def export_code(self, node_detail_form):
-        node_detail_form.node_params["col_name"]["value"] = self.parse_input(
-            node_detail_form.node_params["col_name"]["value"]
-        )
-
         code = self.export_code_with_node_params(node_detail_form.node_params)
 
         return code
@@ -971,7 +918,7 @@ class RemoveEmptyRowsHandler(AbstractFunctionHandler):
         fdl.label("Mode")
         fdl.combobox(name="mode", options=["detect", "remove"], default="remove", row=2)
         fdl.label("ID Columns")
-        fdl.comboentry(name="id_columns", text="", options=columns, row=3)
+        fdl.combobox(name="id_columns", options=columns, row=3)
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=4)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -991,9 +938,6 @@ class RemoveEmptyRowsHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, mode, id_columns, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     def execute_with_params(self, params):
@@ -1018,6 +962,10 @@ class RemoveEmptyRowsHandler(AbstractFunctionHandler):
 
     def direct_execute(self, df_entry: pd.DataFrame, mode: str, id_columns: List[str], new_var_name: str):
         self.debug(df_entry, mode, id_columns, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
         id_columns = self.parse_input(id_columns)
 
         inp = Input()
@@ -1028,8 +976,8 @@ class RemoveEmptyRowsHandler(AbstractFunctionHandler):
         try:
             df_new = self.input_execute(inp)
         except Exception as e:
-            df_new = pd.DataFrame()
-            flog.error(f"ERROR {e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -1098,7 +1046,7 @@ class RemoveDuplicatesHandler(AbstractFunctionHandler):
         fdl.label("Keep value")
         fdl.combobox(name="keep", options=keep_options, default=keep_options[0], row=2)
         fdl.label("Considered Columns")
-        fdl.comboentry(name="subset", text="", options=columns, row=3)
+        fdl.combobox(name="subset", options=columns, row=3)
         fdl.label("New variable")
         fdl.entry(name="new_var_name", category="new_var", text="", row=4)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -1118,11 +1066,7 @@ class RemoveDuplicatesHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, subset, keep, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
-
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
@@ -1148,6 +1092,10 @@ class RemoveDuplicatesHandler(AbstractFunctionHandler):
 
     def direct_execute(self, df_entry: pd.DataFrame, subset: List[str], keep: str, new_var_name: str):
         self.debug(df_entry, subset, keep, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
         subset, keep = self.parse_input(df_entry, subset, keep)
 
         inp = Input()
@@ -1155,13 +1103,11 @@ class RemoveDuplicatesHandler(AbstractFunctionHandler):
         inp.assign("keep", keep)
         inp.assign("subset", subset)
 
-        df_new = pd.DataFrame()
         try:
             df_new = self.input_execute(inp)
-            flog.debug(f"remove duplicated df new: {df_new}")
         except Exception as e:
-            flog.error(f"remove duplicates exception")
-            flog.error(f"{e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -1247,7 +1193,6 @@ class ReplaceHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", category="new_var",text="", row=7)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button": {"function=self.cfh.show_help, "function_args": [self.setup_ui], "text": "Help")
 
         return fdl
 
@@ -1267,11 +1212,7 @@ class ReplaceHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, columns, match, replace_substring, pattern, replacement, new_var_name)
 
-        # glc.last_active_dataframe_icon = image)
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
-
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
@@ -1284,26 +1225,7 @@ class ReplaceHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, columns, match, replace_substring, pattern, replacement, new_var_name)
 
-    def debug(self, df_entry: pd.DataFrame, search_cols, match: str, replace_substring, pattern: str, replacement: str,
-              new_var_name: str):
-        flog.debug("APPLY REPLACE")
-        flog.debug(f"DF = {df_entry}")
-        flog.debug(f"SEARCH COLUMNS = {search_cols}")
-        flog.debug(f"MATCH = {match}")
-        flog.debug(f"REPLACE SUBSTRING = {replace_substring}")
-        flog.debug(f"PATTERN = {pattern}")
-        flog.debug(f"REPLACEMENT = {replacement}")
-        flog.debug(f"NEW VAR = {new_var_name}")
-
-    def parse_input(self, columns, match: str, replace_substring: bool):
-        if len(columns) == 0:
-            columns = None
-        if replace_substring is True:
-            match = 'pattern'
-
-        return columns, match
-
-    def direct_execute(self, df_entry: pd.DataFrame, search_cols, match: str, replace_substring: bool, pattern: str,
+    def direct_execute(self, df_entry: pd.DataFrame, columns, match: str, replace_substring: bool, pattern: str,
                        replacement: str,
                        new_var_name: str):
         """
@@ -1313,24 +1235,25 @@ class ReplaceHandler(AbstractFunctionHandler):
         User can also search for substrings, if replace substring is True then match is changed to "pattern"
         pd handles substrings as "pattern" -> the input substring is modified internally to pattern
         """
-        self.debug(df_entry, search_cols, match, replace_substring, pattern, replacement, new_var_name)
-        search_cols, match = self.parse_input(search_cols, match, replace_substring)
+        self.debug(df_entry, columns, match, replace_substring, pattern, replacement, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        columns, match = self.parse_input(columns, match, replace_substring)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
-        inp.assign("columns", search_cols)
+        inp.assign("columns", columns)
         inp.assign("match", match)
         inp.assign("pattern", pattern)
         inp.assign("replacement", replacement)
 
         try:
             df_new = self.input_execute(inp)
-        except KeyError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"Column not there: {e}")
         except Exception as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -1356,7 +1279,25 @@ class ReplaceHandler(AbstractFunctionHandler):
                    self.export_internal_function(find_replace),
                    "print('test1')"]
         return imports
+    
+    def debug(self, df_entry: pd.DataFrame, search_cols, match: str, replace_substring, pattern: str, replacement: str,
+              new_var_name: str):
+        flog.debug("APPLY REPLACE")
+        flog.debug(f"DF = {df_entry}")
+        flog.debug(f"SEARCH COLUMNS = {search_cols}")
+        flog.debug(f"MATCH = {match}")
+        flog.debug(f"REPLACE SUBSTRING = {replace_substring}")
+        flog.debug(f"PATTERN = {pattern}")
+        flog.debug(f"REPLACEMENT = {replacement}")
+        flog.debug(f"NEW VAR = {new_var_name}")
 
+    def parse_input(self, columns, match: str, replace_substring: bool):
+        if len(columns) == 0:
+            columns = None
+        if replace_substring is True:
+            match = 'pattern'
+
+        return columns, match
 
 class StripColumnHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -1364,7 +1305,6 @@ class StripColumnHandler(AbstractFunctionHandler):
         self.icon_type = 'StripColumn'
         self.fn_name = 'Strip Column'
 
-        # self.code_import_patterns = ['drop']
         self.type_category = ntcm.categories.cleaning
         self.docs_category = DocsCategories.cleaning
 
@@ -1378,7 +1318,7 @@ class StripColumnHandler(AbstractFunctionHandler):
         fdl.label("Dataframe")
         fdl.entry(name="df_entry", text="", input_types=["DataFrame"], required=True, row=1)
         fdl.label("Column(s)")
-        fdl.comboentry(name="column_name", text="", options=columns, row=2)
+        fdl.combobox(name="column_name", options=columns, row=2)
         fdl.label("Strip mode")
         fdl.combobox(name="strip_mode", options=strip_modes, default="remove all", row=3)
         fdl.label("Remove Specific characters")
@@ -1398,15 +1338,11 @@ class StripColumnHandler(AbstractFunctionHandler):
         flog.debug(f"SPECIFIC CHARACTERS = {specific_characters}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def parse_input(self, columns: list, strip_mode, specific_characters) -> Tuple[str, Optional[str], Optional[str]]:
-        column_name = columns[0] if len(columns) > 0 else ""
-        strip_mode = strip_mode if len(strip_mode) > 0 else None
-        specific_characters = specific_characters if len(specific_characters) > 0 else None
-        return column_name, strip_mode, specific_characters
-
     def direct_execute(self, df_entry: pd.DataFrame, column_name: List[str], strip_mode: str, specific_characters: str, new_var_name: str):
         self.debug(df_entry, column_name, strip_mode, specific_characters, new_var_name)
-        column_name, strip_mode, specific_characters = self.parse_input(column_name, strip_mode, specific_characters)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
@@ -1416,15 +1352,9 @@ class StripColumnHandler(AbstractFunctionHandler):
 
         try:
             df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
-        except KeyError:
-            df_new = df_entry.copy()
-            flog.warning(f"Column name {column_name} is not present in DataFrame")
         except Exception as e:
-            df_new = df_entry.copy()
-            flog.error(f"Undefined error {e} occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -1464,9 +1394,6 @@ class StripColumnHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column_name, strip_mode, specific_characters, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     # TODO: Implement export_code
@@ -1511,7 +1438,6 @@ class SearchHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", row=5)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button": {"function=self.cfh.show_help, "function_args": [self.setup_ui], "text": "Help")
 
         return fdl
 
@@ -1529,9 +1455,6 @@ class SearchHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, columns, match, pattern, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -1552,35 +1475,28 @@ class SearchHandler(AbstractFunctionHandler):
         flog.debug(f"PATTERN = {pattern}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def parse_input(self, columns):
-        if len(columns) == 0:
-            columns = None
-
-        return columns
-
-    def direct_execute(self, df_entry: pd.DataFrame, search_cols, match: str, pattern: str, new_var_name: str):
+    def direct_execute(self, df_entry: pd.DataFrame, columns, match: str, pattern: str, new_var_name: str):
         """
         Search given pattern
         Pattern is searched in search columns
         Match can be either exact or pattern
         """
-        self.debug(df_entry, search_cols, match, pattern, new_var_name)
-        search_cols = self.parse_input(search_cols)
+        self.debug(df_entry, columns, match, pattern, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
 
-        df_new = pd.DataFrame()
+        inp = Input()
+        inp.assign("df_entry", df_entry)
+        inp.assign("columns", columns)
+        inp.assign("match", match)
+        inp.assign("pattern", pattern)
+
         try:
-            inp = Input()
-            inp.assign("df_entry", df_entry)
-            inp.assign("columns", search_cols)
-            inp.assign("match", match)
-            inp.assign("pattern", pattern)
-
             df_new = self.input_execute(inp)
-        except KeyError as e:
-            flog.error('Column not there')
-            flog.error(f"{e}")
         except Exception as e:
-            flog.error(f"{e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -1590,8 +1506,6 @@ class SearchHandler(AbstractFunctionHandler):
         return df_new
 
     def export_code(self, node_detail_form):
-        node_detail_form.node_params["columns"]["value"] = self.parse_input(node_detail_form.node_params["columns"]["value"])
-
         code = self.export_code_with_node_params(node_detail_form.node_params)
 
         return code
@@ -1650,18 +1564,17 @@ class SortHandler(AbstractFunctionHandler):
         fdl.entry(name="df_entry", text="", input_types=["DataFrame"], required=True, row=1)
         fdl.label("First sort")
         fdl.label("Column")
-        fdl.comboentry(name="column_name1", text="", options=columns, row=3)
+        fdl.combobox(name="column_name1", options=columns, row=3)
         fdl.label("Ascending")
         fdl.checkbox(name="ascending1", bool_value=True, row=4)
         fdl.label("Second sort")
         fdl.label("Column")
-        fdl.comboentry(name="column_name2", text="", options=columns, row=6)
+        fdl.combobox(name="column_name2", options=columns, row=6)
         fdl.label("Ascending")
         fdl.checkbox(name="ascending2", bool_value=True, row=7)
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=8)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button": {"function=self.cfh.show_help, "function_args": [self.setup_ui], text="Help")
 
         return fdl
 
@@ -1680,9 +1593,6 @@ class SortHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column_name1, ascending1, column_name2, ascending2, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -1706,65 +1616,31 @@ class SortHandler(AbstractFunctionHandler):
         flog.debug(f"ASCENDING 2 = {ascending2}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    # def parse_input(self, col_names: str, ascending: str) -> Tuple[List[str], List[bool]]:
-    #     # parse value from entry
-    #     if col_names is not None:
-    #         col_names = col_names.replace(', ', ',').replace(' ,', ',').split(',')
-    #
-    #     if ascending is not None:
-    #         ascending = ascending.replace(', ', ',').replace(' ,', ',').split(',')
-    #     else:
-    #         # here true is string so i can always use strtobool
-    #         ascending = ['True']
-    #
-    #     ordering = []
-    #     # TODO: I THINK THAT USER SHOULD BE WARNED THAT HE NEEDS TO EITHER FILL ONLY ONE BOOL OR SAME SIZE LIST OF BOOLS
-    #     # This adds additional ascending values or ignores overflow ascendings
-    #     for i in range(len(col_names)):
-    #         try:
-    #             ordering.append(strtobool(ascending[i]))
-    #         # append True if not all ordering specified
-    #         except IndexError:
-    #             ordering.append(True)
-    #
-    #     return col_names, ordering
-
-    def parse_input(self, col_name1: List[str], col_name2: List[str]) -> Tuple[str, str]:
-        return col_name1[0], col_name2[0] if len(col_name2) > 0 else ""
-
-    def direct_execute(self, df_entry: pd.DataFrame, col_name1: List[str], ascending1: str,
-                       col_name2: List[str], ascending2: str, new_var_name: str, *args):
+    def direct_execute(self, df_entry: pd.DataFrame, column_name1: List[str], ascending1: str,
+                       column_name2: List[str], ascending2: str, new_var_name: str, *args):
         """
         sort transformation wrapper
         """
-        self.debug(df_entry, col_name1, ascending1, col_name2, ascending2, new_var_name)
-        if col_name1:
-            col_name1, col_name2 = self.parse_input(col_name1, col_name2)
+        self.debug(df_entry, column_name1, ascending1, column_name2, ascending2, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not column_name1:
+            raise SoftPipelineError("Missing column to sort.")
+        
+        inp = Input()
+        inp.assign("df_entry", df_entry)
+        inp.assign("col_name1", column_name1)
+        inp.assign("ascending1", ascending1)
+        inp.assign("col_name2", column_name2)
+        inp.assign("ascending2", ascending2)
 
-            inp = Input()
-            inp.assign("df_entry", df_entry)
-            inp.assign("col_name1", col_name1)
-            inp.assign("ascending1", ascending1)
-            inp.assign("col_name2", col_name2)
-            inp.assign("ascending2", ascending2)
-
-            try:
-                df_new = self.input_execute(inp)
-            except ValueError as e:
-                df_new = pd.DataFrame()
-                flog.error(f"{e}")
-            except AttributeError as e:
-                df_new = pd.DataFrame()
-                flog.error(f"{e}")
-            except KeyError as e:
-                df_new = pd.DataFrame()
-                flog.error(f"Column not there, {e}")
-            except Exception as e:
-                df_new = inp("df_entry").copy()
-                flog.error(f"Undefined error {e} occurred")
-        else:
-            df_new = df_entry.copy()
-            flog.error(f"Missing column to sort")
+        try:
+            df_new = self.input_execute(inp)
+        except Exception as e:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -1778,10 +1654,6 @@ class SortHandler(AbstractFunctionHandler):
         return df_new
 
     def export_code(self, node_detail_form):
-        node_detail_form.node_params["col_name1"]["value"], node_detail_form.node_params["col_name2"]["value"] = \
-            self.parse_input(node_detail_form.node_params["col_name1"]["value"], node_detail_form.node_params["col_name2"]["value"])
-
-
         code = self.export_code_with_node_params(node_detail_form.node_params)
 
         return code
@@ -1851,60 +1723,53 @@ class ColumnWiseShiftHandler(AbstractFunctionHandler):
         """
         df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         mode = node_detail_form.get_chosen_value_by_name("mode", variable_handler)
-        complete_col_name = node_detail_form.get_chosen_value_by_name("complete_col", variable_handler)
+        complete_col = node_detail_form.get_chosen_value_by_name("complete_col", variable_handler)
         incomplete_col_name = node_detail_form.get_chosen_value_by_name("incomplete_col", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
         new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
 
-        self.direct_execute(df_entry, complete_col_name, incomplete_col_name, mode, new_var_name)
+        self.direct_execute(df_entry, complete_col, incomplete_col_name, mode, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
         mode = params["mode"]
-        complete_col_name = params["complete_col"]
-        incomplete_col_name = params["incomplete_col"]
+        complete_col = params["complete_col"]
+        incomplete_col = params["incomplete_col"]
         new_var_name = params["new_var_name"]
 
-        self.direct_execute(df_entry, complete_col_name, incomplete_col_name, mode, new_var_name)
+        self.direct_execute(df_entry, complete_col, incomplete_col, mode, new_var_name)
 
-    def debug(self, df_entry: pd.DataFrame, complete_column_name: str, incomplete_column_name: str, mode: str,
+    def debug(self, df_entry: pd.DataFrame, complete_col: str, incomplete_col: str, mode: str,
               new_var_name: str):
         flog.debug("APPLY COLUMN WISE SHIFT")
         flog.debug(f"DF = {df_entry}")
-        flog.debug(f"COMPLETE COLUMN NAME = {complete_column_name}")
-        flog.debug(f"INCOMPLETE COLUMN NAME = {incomplete_column_name}")
+        flog.debug(f"COMPLETE COLUMN NAME = {complete_col}")
+        flog.debug(f"INCOMPLETE COLUMN NAME = {incomplete_col}")
         flog.debug(f"MODE = {mode}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, complete_column_name: str, incomplete_column_name: str, mode: str,
+    def direct_execute(self, df_entry: pd.DataFrame, complete_col: str, incomplete_col: str, mode: str,
                        new_var_name: str, *args):
-        """
-        """
-        self.debug(df_entry, complete_column_name, incomplete_column_name, mode, new_var_name)
+        self.debug(df_entry, complete_col, incomplete_col, mode, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("mode", mode)
-        inp.assign("complete_col", complete_column_name)
-        inp.assign("incomplete_col", incomplete_column_name)
+        inp.assign("complete_col", complete_col)
+        inp.assign("incomplete_col", incomplete_col)
 
-        df_new = pd.DataFrame()
         try:
             df_new = self.input_execute(inp)
-            flog.debug("Result column wise shift")
-            flog.debug(f"{df_new}")
-        except KeyError as e:
-            flog.warning(f"One of columns is not present in DataFrame")
-            flog.warning(f"{e}")
         except Exception as e:
-            flog.error(f"{e}")
-
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
+        
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
 
@@ -1958,7 +1823,6 @@ class DifferenceDataHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=4)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button": {"function=self.cfh.show_help, "function_args": [self.user_help], text="Help")
 
         return fdl
 
@@ -1984,28 +1848,27 @@ class DifferenceDataHandler(AbstractFunctionHandler):
         flog.debug(f"RIGHT DF NAME = {right_df.head()}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, right_df: pd.DataFrame, new_var_name: str, *args):
-        self.debug(df_entry, right_df, new_var_name)
+    def direct_execute(self, df_entry: pd.DataFrame, df_entry2: pd.DataFrame, new_var_name: str, *args):
+        self.debug(df_entry, df_entry2, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Main Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not isinstance(df_entry2, pd.DataFrame):
+            raise CriticalPipelineError("'Subtracted Dataframe' argument must be of type 'DataFrame'.")
+        
+        if len(df_entry.columns) != len(df_entry2.columns):
+            raise SoftPipelineError("Both DataFrames must have the same number of columns.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
-        inp.assign("right_df", right_df)
+        inp.assign("right_df", df_entry2)
 
-        df_new = pd.DataFrame()
         try:
-            if len(inp("df_entry").columns) == len(inp("right_df").columns):
-                # different ordering matters!
-                flag = (inp("df_entry").columns == inp("right_df").columns).all()
-                if not flag:
-                    flog.error("WRONG INPUT: DIFFERENT COLUMNS")
-                    return
-
-                df_new = self.input_execute(inp)
-            else:
-                flog.error(f"Different number of columns")
+            df_new = self.input_execute(inp)
         except Exception as e:
-            flog.error(f"UNKNOWN ERROR")
-            flog.error(f"{e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -2018,7 +1881,6 @@ class DifferenceDataHandler(AbstractFunctionHandler):
     def export_imports(self, *args):
         imports = [self.export_internal_function(df_difference)]
         return imports
-
 
 class OutliersHandler(AbstractFunctionHandler):
     """
@@ -2078,7 +1940,6 @@ class OutliersHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", required=True, row=6)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function=self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help")
 
         return fdl
 
@@ -2097,9 +1958,6 @@ class OutliersHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, mode, columns, top_n, ratio, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -2151,6 +2009,10 @@ class OutliersHandler(AbstractFunctionHandler):
 
     def direct_execute(self, df_entry: pd.DataFrame, mode: str, columns, top_n, ratio, new_var_name: str, *args):
         self.debug(df_entry, mode, columns, top_n, ratio, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
         ratio, top_n, columns = self.parse_input(ratio, top_n, columns)
 
         inp = Input()
@@ -2162,13 +2024,9 @@ class OutliersHandler(AbstractFunctionHandler):
 
         try:
             df_new = self.input_execute(inp)
-            flog.debug(f"df_new: {df_new}")
-        except KeyError:
-            df_new = df_entry.copy()
-            flog.warning(f'One of columns {inp("columns")} is not present in DataFrame')
         except Exception as e:
-            df_new = pd.DataFrame()
-            flog.error(f"ERROR: {e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -2201,13 +2059,8 @@ class OutliersHandler(AbstractFunctionHandler):
 
     def export_imports(self, *args):
         imports = []
-        #  ["from sklearn.preprocessing import MinMaxScaler",
-        # "import rrcf",
-        # self.export_internal_function(KNNImputation),
-        # self.export_internal_function(detect_numeric_outliers),
-# self.export_internal_function(self.remove_outliers)]
+        
         return imports
-
 
 class FilterHandler(AbstractFunctionHandler):
     """
@@ -2253,7 +2106,7 @@ class FilterHandler(AbstractFunctionHandler):
         fdl.label("Dataframe")
         fdl.entry(name="df_entry", text="", category="instance_var", input_types=["DataFrame"], required=True, row=1)
         fdl.label("Column(s)")
-        fdl.comboentry(name="column_name", text="", options=columns, row=2)
+        fdl.combobox(name="column_name", options=columns, row=2)
         fdl.label("Filter by string")
         fdl.entry(name="filtered_str", text="", input_types=["str"], row=3)
         fdl.label("Keep matched or other rows")
@@ -2261,7 +2114,6 @@ class FilterHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=5)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # fdl.button(function=self.cfh.show_help, function_args=[self.setup_ui], text="Help")
 
         return fdl
 
@@ -2279,9 +2131,6 @@ class FilterHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column_name, filtered_str, matched_or_others, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -2303,7 +2152,7 @@ class FilterHandler(AbstractFunctionHandler):
         flog.debug(f"MATCHED OR OTHERS = {matched_or_others}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, column_name: List[str], filtered_str: str, matched_or_others: str,
+    def direct_execute(self, df_entry: pd.DataFrame, column_name: Union[list[str], str], filtered_str: str, matched_or_others: str,
                        new_var_name: str, *args):
         """
         Filter columns text based on a given (sub)string.
@@ -2311,28 +2160,24 @@ class FilterHandler(AbstractFunctionHandler):
         or the filtered rows can be droped and the others preserven when matched_or_others is "others"
         """
         self.debug(df_entry, column_name, filtered_str, matched_or_others, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        if not column_name:
+            raise SoftPipelineError("No column selected for filtering.")
 
-        df_new = pd.DataFrame()
-        if column_name:
-            column_name = column_name[0]
+        inp = Input()
+        inp.assign("df_entry", df_entry)
+        inp.assign("column_name", column_name)
+        inp.assign("filtered_str", filtered_str)
+        inp.assign("matched_or_others", matched_or_others)
 
-            inp = Input()
-            inp.assign("df_entry", df_entry)
-            inp.assign("column_name", column_name)
-            inp.assign("filtered_str", filtered_str)
-            inp.assign("matched_or_others", matched_or_others)
-
-            try:
-                df_new = self.input_execute(inp)
-            except AttributeError as e:
-                df_new = pd.DataFrame()
-                flog.error(f"Attribute error: {e}")
-            except KeyError:
-                df_new = inp("df_entry").copy()
-                flog.warning(f'Column name {inp("column_name")} is not present in DataFrame')
-            except Exception as e:
-                df_new = inp("df_entry").copy()
-                flog.error(f"Undefined error {e} occurred")
+        try:
+            df_new = self.input_execute(inp)
+        except Exception as e:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -2404,7 +2249,6 @@ class ConcatHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=5)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function":self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help"}}
 
         return fdl
 
@@ -2422,9 +2266,6 @@ class ConcatHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, df_entry2, axis, join, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -2446,25 +2287,21 @@ class ConcatHandler(AbstractFunctionHandler):
         flog.debug(f"NEW VAR = {new_var_name}")
 
     
-    def direct_execute(
-            self, df_entry: pd.DataFrame, df_entry2: pd.DataFrame, axis: int, join: str,
-            new_var_name: str, *args
-        ):
+    def direct_execute(self, df_entry: pd.DataFrame, df_entry2: pd.DataFrame, axis: int, join: str,new_var_name: str, *args):
+        if not isinstance(df_entry, pd.DataFrame) or not isinstance(df_entry2, pd.DataFrame):
+            raise SoftPipelineError("Both 'Dataframe' and 'Dataframe 2' arguments must be of type 'DataFrame'.")
+        
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("df_entry2", df_entry2)
         inp.assign("axis", axis)
         inp.assign("join", join)
 
-
         try:
             df_new = self.input_execute(inp)
-        except ValueError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            df_new = inp("df_entry").copy()
-            flog.error(f"Undefined error ({e}) occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         
@@ -2527,7 +2364,6 @@ class JoinHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=5)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function":self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help"}}
 
         return fdl
 
@@ -2535,7 +2371,7 @@ class JoinHandler(AbstractFunctionHandler):
         """
         Execution of the drop column transformation
         """
-        df_entry1 = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
+        df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         df_entry2 = node_detail_form.get_chosen_value_by_name("df_entry2", variable_handler)
         on = node_detail_form.get_chosen_value_by_name("on", variable_handler)
         how = node_detail_form.get_chosen_value_by_name("how", variable_handler)
@@ -2543,22 +2379,18 @@ class JoinHandler(AbstractFunctionHandler):
 
         new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
 
-        self.direct_execute(df_entry1, df_entry2, on, how, new_var_name)
+        self.direct_execute(df_entry, df_entry2, on, how, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
-
     def execute_with_params(self, params):
-        df_entry1 = params["df_entry"]
+        df_entry = params["df_entry"]
         df_entry2 = params["df_entry2"]
         on = params["on"]
         how = params["how"]
         new_var_name = params["new_var_name"]
 
-        self.direct_execute(df_entry1, df_entry2, on, how, new_var_name)
+        self.direct_execute(df_entry, df_entry2, on, how, new_var_name)
 
     def debug(self, df_entry1: Union[str, pd.DataFrame], df_entry2: Union[str, pd.DataFrame],
               on: Optional[str], how: str, new_var_name: str):
@@ -2575,29 +2407,26 @@ class JoinHandler(AbstractFunctionHandler):
 
         return on
 
-    # str can be obtained from form
-    def direct_execute(self, df_entry1: Union[str, pd.DataFrame], df_entry2: Union[str, pd.DataFrame],
+    def direct_execute(self, df_entry: Union[str, pd.DataFrame], df_entry2: Union[str, pd.DataFrame],
                        on: Optional[str], how: str, new_var_name: str, *args):
-        self.debug(df_entry1, df_entry2, on, how, new_var_name)
+        self.debug(df_entry, df_entry2, on, how, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame) or not isinstance(df_entry2, pd.DataFrame):
+            raise SoftPipelineError("Both 'Dataframe' and 'Dataframe 2' arguments must be of type 'DataFrame'.")
+        
         on = self.parse_input(on)
 
         inp = Input()
-        inp.assign("df_entry1", df_entry1)
+        inp.assign("df_entry1", df_entry)
         inp.assign("df_entry2", df_entry2)
         inp.assign("on", on)
         inp.assign("how", how)
 
         try:
             df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
-        except ValueError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            df_new = df_entry1.copy()
-            flog.error(f"Undefined error ({e}) occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -2659,7 +2488,6 @@ class AnalyzeDataFrameHandler(AbstractFunctionHandler):
         self.direct_execute(new_var_name)
 
     def direct_execute(self, new_var_name, *args):
-        #df = glc.tables.elements[0].df #should be replaced by "last_active_df"
         df=pd.DataFrame([1,2,3],columns=["needs_fix"]) #should be replaced by "last_active_df"
 
         inp = Input()
@@ -2750,7 +2578,6 @@ class SplitColumnHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=7)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function":self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help"}}
 
         return fdl
 
@@ -2770,9 +2597,6 @@ class SplitColumnHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column, split_on, select_index, keep_old, new_col_name, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -2813,32 +2637,32 @@ class SplitColumnHandler(AbstractFunctionHandler):
         If keep old is True, keep old column, otherwise delete it
         """
         self.debug(df_entry, column, split_on, select_index, keep_old, new_col_name, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        all_required_fields_filled = column and split_on and select_index
+        if not all_required_fields_filled:
+            raise SoftPipelineError("Some required arguments are missing.")
 
-        if len(df_entry) > 0 and column and split_on and len(select_index) > 0:
-            select_index, new_col_name = self.parse_input(select_index, new_col_name, column)
+        select_index, new_col_name = self.parse_input(select_index, new_col_name, column)
 
-            inp = Input()
-            inp.assign("df_entry", df_entry)
-            inp.assign("column", column)
-            inp.assign("split_on", split_on)
-            inp.assign("select_index", select_index)
-            inp.assign("keep_old", keep_old)
-            inp.assign("new_col_name", new_col_name)
+        inp = Input()
+        inp.assign("df_entry", df_entry)
+        inp.assign("column", column)
+        inp.assign("split_on", split_on)
+        inp.assign("select_index", select_index)
+        inp.assign("keep_old", keep_old)
+        inp.assign("new_col_name", new_col_name)
 
-            try:
-                df_new = self.input_execute(inp)
-            except AttributeError as e:
-                df_new = pd.DataFrame()
-                flog.error(f"{e}")
-            except ValueError as e:
-                df_new = pd.DataFrame()
-                flog.error(f"{e}")
-            except Exception as e:
-                df_new = df_entry.copy()
-                flog.error(f"Undefined error ({e}) occurred")
+        try:
+            df_new = self.input_execute(inp)
+        except Exception as e:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
-            variable_handler.new_variable(new_var_name, df_new)
-            #variable_handler.update_data_in_variable_explorer(glc)
+        variable_handler.new_variable(new_var_name, df_new)
+        #variable_handler.update_data_in_variable_explorer(glc)
 
     def input_execute(self, inp):
         column_index = inp("df_entry").columns.get_loc(inp("column"))
@@ -2905,7 +2729,6 @@ class ExtractStringHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=6)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function":self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help"}}
 
         return fdl
 
@@ -2925,11 +2748,7 @@ class ExtractStringHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column, extract_pattern, keep_old, concat_groups, new_col_name, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
-
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
@@ -2951,7 +2770,7 @@ class ExtractStringHandler(AbstractFunctionHandler):
         flog.debug(f"NEW COL = {new_col_name}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    # str can be obtained from form
+
     def direct_execute(self, df_entry: Union[str, pd.DataFrame], column: str, extract_pattern, keep_old: bool,
                        concat_groups: bool, new_col_name: str, new_var_name: str, *args):
         """
@@ -2960,6 +2779,9 @@ class ExtractStringHandler(AbstractFunctionHandler):
         If keep old is True, keep old column, otherwise delete it
         """
         self.debug(df_entry, column, extract_pattern, keep_old, concat_groups, new_col_name, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
@@ -2971,15 +2793,9 @@ class ExtractStringHandler(AbstractFunctionHandler):
 
         try:
             df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
-        except ValueError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
         except Exception as e:
-            df_new = pd.DataFrame()
-            flog.error(f"Undefined error ({e}) occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -3060,7 +2876,7 @@ class KNNImputationHandler(AbstractFunctionHandler):
         # fdl.label("Directory")
         # fdl.entry(name="directory", text=""),
         fdl.label("Imputed Columns")
-        fdl.comboentry(name="imp_cols", text="", options=columns, row=2)
+        fdl.combobox(name="imp_cols", options=columns, row=2)
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=3)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
@@ -3076,9 +2892,6 @@ class KNNImputationHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, columns, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -3103,17 +2916,21 @@ class KNNImputationHandler(AbstractFunctionHandler):
 
     def direct_execute(self, df_entry: pd.DataFrame, imp_cols: List[str], new_var_name: str, *args):
         self.debug(df_entry, imp_cols, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
         imp_cols = self.parse_input(imp_cols)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("imp_cols", imp_cols)
 
-        df_new = pd.DataFrame()
         try:
             df_new = self.input_execute(inp)
         except Exception as e:
-            flog.error(f"ERROR: {e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -3176,7 +2993,7 @@ class ImputationHandler(AbstractFunctionHandler):
         fdl.label("Dataframe")
         fdl.entry(name="df_entry", text="", input_types=["DataFrame"], required=True, row=1)
         fdl.label("Imputed Columns")
-        fdl.comboentry(name="imp_cols", text="", options=columns, row=2)
+        fdl.combobox(name="columns", options=columns, row=2)
         fdl.label("Impute choice")
         fdl.comboentry(name="imputation", text="", options=impute_options, row=3)
         # TODO: ADD CHOICE TO IMPUTE COLUMNS EITHER SEPARATELY OR TOGETHER
@@ -3188,7 +3005,7 @@ class ImputationHandler(AbstractFunctionHandler):
 
     def execute(self, node_detail_form):
         df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
-        columns = node_detail_form.get_chosen_value_by_name("imp_cols", variable_handler)
+        columns = node_detail_form.get_chosen_value_by_name("columns", variable_handler)
         imput_choice = node_detail_form.get_chosen_value_by_name("imputation", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
@@ -3196,25 +3013,22 @@ class ImputationHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, columns, imput_choice, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
-        columns = params["imp_cols"]
-        imput_choice = params["imputation"]
+        columns = params["columns"]
+        imputation = params["imputation"]
         new_var_name = params["new_var_name"]
 
-        self.direct_execute(df_entry, columns, imput_choice, new_var_name)
+        self.direct_execute(df_entry, columns, imputation, new_var_name)
 
-    def debug(self, df_entry: pd.DataFrame, columns: List[str], imput_choice: List[str], new_var_name: str):
+    def debug(self, df_entry: pd.DataFrame, columns: List[str], imputation: List[str], new_var_name: str):
         flog.debug("APPLY IMPUTATION")
         flog.debug(f"DF = {df_entry}")
         flog.debug(f"COLUMNS = {columns}")
-        flog.debug(f"IMPUTATION CHOICE = {imput_choice}")
+        flog.debug(f"IMPUTATION CHOICE = {imputation}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
     def parse_input(self, imput_choice: List[str]):
@@ -3235,21 +3049,25 @@ class ImputationHandler(AbstractFunctionHandler):
 
         return imput_choice
 
-    def direct_execute(self, df_entry: pd.DataFrame, columns: List[str], imput_choice: List[str], new_var_name: str,
+    def direct_execute(self, df_entry: pd.DataFrame, columns: List[str], imputation: List[str], new_var_name: str,
                        *args):
-        self.debug(df_entry, columns, imput_choice, new_var_name)
-        imput_choice: Union[str, int] = self.parse_input(imput_choice)
+        self.debug(df_entry, columns, imputation, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        imputation: Union[str, int] = self.parse_input(imputation)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("imp_cols", columns)
-        inp.assign("imputation", imput_choice)
+        inp.assign("imputation", imputation)
 
-        df_new = pd.DataFrame()
         try:
             df_new = self.input_execute(inp)
         except Exception as e:
-            flog.error(f"ERROR: {e}")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -3349,7 +3167,6 @@ class AggregateDataHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=6)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # fdl.button(function=self.cfh.show_help, function_args=[self.setup_ui], text="Help")
 
         return fdl
 
@@ -3375,9 +3192,6 @@ class AggregateDataHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, columns_group, columns_aggr, num_aggr, categ_aggr, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -3444,23 +3258,28 @@ class AggregateDataHandler(AbstractFunctionHandler):
 
         return result
 
-    def direct_execute(self, df_entry, groupby_columns, aggregate_columns, numerical_aggregations,
-                       categorical_aggregations, new_var_name):
+    def direct_execute(self, df_entry, columns_group, columns_aggr, num_aggr, categ_aggr, new_var_name):
         # TODO: returns empty columns as well
-        self.debug(df_entry, groupby_columns, aggregate_columns, numerical_aggregations, categorical_aggregations,
-                   new_var_name)
-        aggregate_columns, groupby_columns, numerical_aggregations, categorical_aggregations = self.parse_input(
-            df_entry, groupby_columns, aggregate_columns, numerical_aggregations,
-            categorical_aggregations)
+        self.debug(df_entry, columns_group, columns_aggr, num_aggr, categ_aggr, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        columns_aggr, columns_group, num_aggr, categ_aggr = self.parse_input(df_entry, columns_group, columns_aggr,
+                                                                             num_aggr, categ_aggr)
 
         inp = Input()
         inp.assign("df_entry", df_entry)
-        inp.assign("columns_group", groupby_columns)
-        inp.assign("columns_aggr", aggregate_columns)
-        inp.assign("num_aggr", numerical_aggregations)
-        inp.assign("categ_aggr", categorical_aggregations)
+        inp.assign("columns_group", columns_group)
+        inp.assign("columns_aggr", columns_aggr)
+        inp.assign("num_aggr", num_aggr)
+        inp.assign("categ_aggr", categ_aggr)
 
-        df_new = self.input_execute(inp)
+        try:
+            df_new = self.input_execute(inp)
+        except Exception as e:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -3549,11 +3368,10 @@ class MathOperationHandler(AbstractFunctionHandler):
         fdl.label("Column 1")
         fdl.combobox(name="first_column", options=columns, row=3)
         fdl.label("Column 2")
-        fdl.comboentry(name="second_column", text="", options=columns, row=4)
+        fdl.combobox(name="second_column", options=columns, row=4)
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=5)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # fdl.button(function=self.cfh.show_help, function_args=[self.setup_ui], text="Help")
 
         return fdl
 
@@ -3568,9 +3386,6 @@ class MathOperationHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, mode, first_column, second_column, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -3597,29 +3412,35 @@ class MathOperationHandler(AbstractFunctionHandler):
 
         return second_column
 
-    def direct_execute(self, df_entry, mode, first_column_name, second_column_name: List[str], new_var_name):
+    def direct_execute(self, df_entry, mode, first_column, second_column: List[str], new_var_name):
         # TODO: CHECKBOX TO CREATE NEW DF OR ADD NEW COLUMN TO OLD ONE
         # TODO: COLUMN NAME OPTIONAL
-        self.debug(df_entry, mode, first_column_name, second_column_name, new_var_name)
-        second_column_name: str = self.parse_input(second_column_name)
+        self.debug(df_entry, mode, first_column, second_column, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
+        second_column: str = self.parse_input(second_column)
 
-        result = pd.DataFrame()
-        if mode and first_column_name and second_column_name:
-            inp = Input()
-            inp.assign("df_entry", df_entry)
-            inp.assign("mode", mode)
-            inp.assign("first_column", first_column_name)
-            inp.assign("second_column", second_column_name)
+        all_required_fields_filled = mode and first_column and second_column
+        if not all_required_fields_filled:
+            raise SoftPipelineError("Some required arguments are missing.")
+        
+        inp = Input()
+        inp.assign("df_entry", df_entry)
+        inp.assign("mode", mode)
+        inp.assign("first_column", first_column)
+        inp.assign("second_column", second_column)
 
-            result = self.input_execute(inp)
+        result = self.input_execute(inp)
 
-            # TODO: enable multiple columns when combobox enables entry input
-            # if inp("mode") in ["+", "-"]:
-            #     second_column = inp("df_entry")[inp("second_column_name")].sum(axis=1)
-            # elif inp("mode") in ["*", "/"]:
-            #     second_column = inp("df_entry")[inp("second_column_name")].product(axis=1)
-            #
-            # result = function(first_column, second_column)
+        # TODO: enable multiple columns when combobox enables entry input
+        # if inp("mode") in ["+", "-"]:
+        #     second_column = inp("df_entry")[inp("second_column_name")].sum(axis=1)
+        # elif inp("mode") in ["*", "/"]:
+        #     second_column = inp("df_entry")[inp("second_column_name")].product(axis=1)
+        #
+        # result = function(first_column, second_column)
 
         variable_handler.new_variable(new_var_name, result)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -3684,7 +3505,6 @@ class FindJoinColumnHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=3)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # fdl.button(function=self.cfh.show_help, function_args=[self.setup_ui], text="Help")
 
         return fdl
 
@@ -3697,9 +3517,6 @@ class FindJoinColumnHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, df_entry2, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -3723,13 +3540,20 @@ class FindJoinColumnHandler(AbstractFunctionHandler):
     def direct_execute(self, df_entry, df_entry2, new_var_name):
         # TODO: minimal_overlap could be user input
         self.debug(df_entry, df_entry2, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame) or not isinstance(df_entry2, pd.DataFrame):
+            raise SoftPipelineError("Both 'Main Dataframe' and 'Additional DF' argument must be of type 'DataFrame'.")
 
         inp = Input()
         inp.assign("df_entry", df_entry)
         inp.assign("df_entry2", df_entry2)
         inp.assign("dataframe_column_category_predictions", variable_handler.dataframe_column_category_predictions)
 
-        df_new = self.input_execute(inp)
+        try:
+            df_new = self.input_execute(inp)
+        except Exception as e:
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -3825,7 +3649,6 @@ class RoundToHigherFrequencyHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=8)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # fdl.button(function=self.cfh.show_help, function_args=[self.setup_ui], text="Help")
 
         return fdl
 
@@ -3844,60 +3667,53 @@ class RoundToHigherFrequencyHandler(AbstractFunctionHandler):
         self.direct_execute(df_entry, column, initial_freq, df_entry2, final_freq, round_type, new_colname,
                             new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
     def execute_with_params(self, params):
         df_entry = params["df_entry"]
-        column = params["round_column"]
-        initial_freq = params["lower_freq_col"]
+        round_column = params["round_column"]
+        lower_freq_col = params["lower_freq_col"]
         df_entry2 = params["df_entry2"]
-        final_freq = params["higher_freq_col"]
+        higher_freq_col = params["higher_freq_col"]
         round_type = params["round_type"]
         new_colname = params["new_colname"]
         new_var_name = params["new_var_name"]
 
-        self.direct_execute(df_entry, column, initial_freq, df_entry2, final_freq, round_type, new_colname,
+        self.direct_execute(df_entry, round_column, lower_freq_col, df_entry2, higher_freq_col, round_type, new_colname,
                             new_var_name)
 
-    def debug(self, df_entry, column, initial_freq, df_entry2, final_freq: List[str], round_type, new_colname,
+    def debug(self, df_entry, round_column, lower_freq_col, df_entry2, higher_freq_col: List[str], round_type, new_colname,
               new_var_name):
         flog.debug("APPLY FREQUENCY ROUND")
         flog.debug(f"DF = {df_entry}")
-        flog.debug(f"COLUMN = {column}")
-        flog.debug(f"INIT FREQ = {initial_freq}")
+        flog.debug(f"COLUMN = {round_column}")
+        flog.debug(f"INIT FREQ = {lower_freq_col}")
         flog.debug(f"DF2 = {df_entry2}")
-        flog.debug(f"FINAL FREQ = {final_freq}")
+        flog.debug(f"FINAL FREQ = {higher_freq_col}")
         flog.debug(f"ROUND TYPE = {round_type}")
         flog.debug(f"NEW COL = {new_colname}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry, column, initial_freq, df_entry2, final_freq: List[str], round_type, new_colname,
+    def direct_execute(self, df_entry, round_column, lower_freq_col, df_entry2, higher_freq_col: List[str], round_type, new_colname,
                        new_var_name):
-        self.debug(df_entry, column, initial_freq, df_entry2, final_freq, round_type, new_colname, new_var_name)
+        self.debug(df_entry, round_column, lower_freq_col, df_entry2, higher_freq_col, round_type, new_colname, new_var_name)
         final_freq: str = final_freq[0]
 
         inp = Input()
         inp.assign("df_entry", df_entry)
-        inp.assign("round_column", column)
-        inp.assign("lower_freq_col", initial_freq)
+        inp.assign("round_column", round_column)
+        inp.assign("lower_freq_col", lower_freq_col)
         inp.assign("df_entry2", df_entry2)
-        inp.assign("higher_freq_col", final_freq)
+        inp.assign("higher_freq_col", higher_freq_col)
         inp.assign("round_type", round_type)
         inp.assign("new_colname", new_colname)
 
         try:
-            # TODO: Add inplace parameter as optional
             df_new = self.input_execute(inp)
-        except KeyError:
-            df_new = df_entry.copy()
-            flog.warning(f"Column is not present in DataFrame")
         except Exception as e:
-            df_new = df_entry.copy()
-            flog.error(f"Undefined error {e} occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -3941,7 +3757,7 @@ class CategorizeColumnHandler(AbstractFunctionHandler):
         fdl.label("Dataframe")
         fdl.entry(name="df_entry", text=" ", input_types=["DataFrame"], required=True, row=1)
         fdl.label("Column")
-        fdl.comboentry(name="column_name", text="", options=columns, row=2)
+        fdl.combobox(name="column_name", options=columns, row=2)
         fdl.label("Separator")
         fdl.comboentry(name="separator", text="",
                        options=["tab", "semicolon", "semicolon and space", "comma", "comma and space", "space"], row=3)
@@ -3964,8 +3780,6 @@ class CategorizeColumnHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, column_name, separator, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 
@@ -4006,6 +3820,10 @@ class CategorizeColumnHandler(AbstractFunctionHandler):
     def direct_execute(self, df_entry: pd.DataFrame, column_name: List[str], separator: List[str], new_var_name: str,
                        *args):
         self.debug(df_entry, column_name, separator, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
+        
         column_name: str
         separator: str
         column_name, separator = self.parse_input(column_name, separator)
@@ -4015,18 +3833,12 @@ class CategorizeColumnHandler(AbstractFunctionHandler):
         inp.assign("column_name", column_name)
         inp.assign("separator", separator)
 
+        # TODO: should deal with not empty data only
         try:
-            # TODO: should deal with not empty data only
             df_new = self.input_execute(inp)
-        except AttributeError as e:
-            df_new = pd.DataFrame()
-            flog.error(f"{e}")
-        except KeyError:
-            df_new = df_entry.copy()
-            flog.warning(f"Column name {column_name} is not present in DataFrame")
         except Exception as e:
-            df_new = df_entry.copy()
-            flog.error(f"Undefined error {e} occurred")
+            variable_handler.new_variable(new_var_name, df_entry.copy())
+            raise SoftPipelineError("Unexpected internal error occured during execution.") from e
 
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
@@ -4057,7 +3869,6 @@ class CategorizeColumnHandler(AbstractFunctionHandler):
     def export_imports(self, *args):
         imports = []
         return imports
-
 
 class SimilarityMatchingHandler(AbstractFunctionHandler):
     def __init__(self):
@@ -4095,17 +3906,10 @@ class SimilarityMatchingHandler(AbstractFunctionHandler):
         fdl.label("New variable")
         fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=8)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
-        # {"Button":{"function":self.cfh.show_help, "function_args":[self.setup_ui], "text":"Help"}}
 
         return fdl
 
     def execute(self, node_detail_form):
-        """
-        Execution of the drop column transformation
-        """
-        # image = args[0]
-        # item_detail_form = image.item_detail_form
-
         df_entry = node_detail_form.get_chosen_value_by_name("df_entry", variable_handler)
         reference_record_index = node_detail_form.get_chosen_value_by_name("reference_record_index", variable_handler)
         categorical_columns = node_detail_form.get_chosen_value_by_name("categorical_columns", variable_handler)
@@ -4114,12 +3918,8 @@ class SimilarityMatchingHandler(AbstractFunctionHandler):
         new_col_name = node_detail_form.get_chosen_value_by_name("new_col_name", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
-        # image.item_detail_form.node_option_form = self.make_node_option_form(new_var_name)
-
         self.direct_execute(df_entry, reference_record_index, categorical_columns, text_columns, numerical_columns, new_col_name, new_var_name)
 
-        # TODO Daniel: Ask Dominik about this --> Does it have to be here? How to replace it?
-        # glc.last_active_dataframe_icon = image
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     def execute_with_params(self, params):
@@ -4343,6 +4143,9 @@ class CleanDataHandler(AbstractFunctionHandler):
 
     def direct_execute(self, df_entry: pd.DataFrame, new_var_name: str, *args):
         self.debug(df_entry, new_var_name)
+        
+        if not isinstance(df_entry, pd.DataFrame):
+            raise CriticalPipelineError("'Dataframe' argument must be of type 'DataFrame'.")
 
         df_new = df_entry.copy()
         try:
@@ -4511,7 +4314,6 @@ class CleanDataHandler(AbstractFunctionHandler):
         except Exception as e:
             flog.error(f"Undefined error {e} occurred")
 
-        print(df_new)
         variable_handler.new_variable(new_var_name, df_new)
         #variable_handler.update_data_in_variable_explorer(glc)
 
@@ -4532,9 +4334,6 @@ class CleanDataHandler(AbstractFunctionHandler):
 
         self.direct_execute(df_entry, new_var_name)
 
-        # glc.last_active_dataframe_icon = image
-
-        # variable_handler.last_active_dataframe_node_uid = item_detail_form.node_detail_form.node_uid
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
 

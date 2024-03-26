@@ -8,7 +8,7 @@ from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDict
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.globals.variable_handler import variable_handler, defined_functions_dict, custom_icons_imports
 from forloop_modules.globals.docs_categories import DocsCategories
-
+from forloop_modules.errors.errors import SoftPipelineError
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
 import forloop_modules.function_handlers.auxilliary.forloop_code_eval as fce
 
@@ -416,6 +416,9 @@ class RunFunctionHandler(AbstractFunctionHandler):
         self.direct_execute(selected_function, new_var_name, args_list)
 
     def direct_execute(self, selected_function, new_var_name, *args):
+        
+        # HACK: Disable the execution of the node with some feedback for a user until we implement security checks
+        raise SoftPipelineError("Execution of this node is temporarily disabled.")
         
         args = args[0]
 
