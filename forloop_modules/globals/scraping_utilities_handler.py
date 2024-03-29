@@ -604,7 +604,7 @@ class ScrapingUtilitiesHandler:
     
         return generalised_xpaths, optimal_xpath_index
 
-    def scan_web_page_API(self, output_folder):
+    def scan_web_page_API(self, output_folder, scraping_options: dict):
         """
         Function only to use in "Getting Started" tutorial on web app !!!
         Combines ScanWebPage (all elements) with Cookies Detection
@@ -622,9 +622,7 @@ class ScrapingUtilitiesHandler:
         xpath = self.detect_cookies_xpath_preparation()
     
         self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png'))) #needs to run before the scanner so there is enough time for the parallel thread
-        self.webscraping_client.scan_web_page(incl_tables=True, incl_bullets=True, incl_texts=True,
-                                       incl_headlines=True, incl_links=True, incl_images=True,
-                                       incl_buttons=True, by_xpath=None, cookies_xpath=xpath, timeout = 60) #Duration: ~3s
+        self.webscraping_client.scan_web_page(**scraping_options, timeout = 60) #Duration: ~3s
         
     
         webpage_elements = self.update_webpage_elements(refresh_browser_view_elements=False) #Duration: ~ 0s
