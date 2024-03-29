@@ -5,6 +5,7 @@ from typing import Union
 from PIL import Image
 
 import forloop_modules.queries.node_context_requests_backend as ncrb
+from forloop_modules.errors.errors import CriticalPipelineError
 from forloop_modules.flog import flog
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import (
     AbstractFunctionHandler,
@@ -30,7 +31,14 @@ class FindSimilarItemsHandler(AbstractFunctionHandler):
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+        fdl.entry(name="elements", text="Elements", input_types=["list"], row=1)
+
         return fdl
+
+    def execute(self, node_detail_form):
+        elements = node_detail_form.get_chosen_value_by_name("elements", variable_handler)
+
+        self.direct_execute(elements)
 
     def direct_execute_old(self, elements: list[dict]):
         # Get XPaths of selected elements
@@ -223,7 +231,14 @@ class ConvertToScrapingNodesHandler(AbstractFunctionHandler):
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+        fdl.entry(name="xpaths", text="", input_types=["str", "list"], row=1)
+
         return fdl
+
+    def execute(self, node_detail_form):
+        xpaths = node_detail_form.get_chosen_value_by_name("xpaths", variable_handler)
+
+        self.direct_execute(xpaths)
 
     def direct_execute(self, xpaths: list[Union[str, list[str]]]):
         columns = [f"column_{i}" for i, _ in enumerate(xpaths)]
@@ -255,6 +270,9 @@ class RefreshBrowserViewHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         return fdl
 
+    def execute(self, node_detail_form):
+        self.direct_execute()
+
     def direct_execute(self):
         suh.refresh_browser_view()
         redis_action_key = redis_config.SCRAPING_ACTION_KEY_TEMPLATE.format(
@@ -275,25 +293,61 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
 
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList()
+        fdl.entry(name="url", text="", input_types=["str"], row=1)
+        fdl.entry(
+            name="incl_tables", text="Include tables", input_types=["bool"], row=2
+        )
+        fdl.entry(
+            name="incl_bullets", text="Include bullets", input_types=["bool"], row=3
+        )
+        fdl.entry(
+            name="incl_texts", text="Include texts", input_types=["bool"], row=4
+        )
+        fdl.entry(
+            name="incl_headlines", text="Include headlines", input_types=["bool"], row=5
+        )
+        fdl.entry(
+            name="incl_links", text="Include links", input_types=["bool"], row=6
+        )
+        fdl.entry(
+            name="incl_images", text="Include images", input_types=["bool"], row=7
+        )
+        fdl.entry(
+            name="incl_buttons", text="Include buttons", input_types=["bool"], row=8
+        )
+        fdl.entry(name="xpath", text="By XPath", input_types=["str"], row=9)
+
         return fdl
 
-    def direct_execute_old(
-        self, incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images,
-        incl_buttons, by_xpath, context_xpath=''
-    ):
-        suh.scan_web_page(
-            incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images,
-            incl_buttons, by_xpath, context_xpath, refresh_bv_elements=False
+    def execute(self, node_detail_form):
+        url = node_detail_form.get_chosen_value_by_name("url", variable_handler)
+        incl_tables = node_detail_form.get_chosen_value_by_name("incl_tables", variable_handler)
+        incl_bullets = node_detail_form.get_chosen_value_by_name("incl_bullets", variable_handler)
+        incl_texts = node_detail_form.get_chosen_value_by_name("incl_texts", variable_handler)
+        incl_headlines = node_detail_form.get_chosen_value_by_name("incl_headlines", variable_handler)
+        incl_links = node_detail_form.get_chosen_value_by_name("incl_links", variable_handler)
+        incl_images = node_detail_form.get_chosen_value_by_name("incl_images", variable_handler)
+        incl_buttons = node_detail_form.get_chosen_value_by_name("incl_buttons", variable_handler)
+        xpath = node_detail_form.get_chosen_value_by_name("xpath", variable_handler)
+
+        self.direct_execute(
+            url, incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images, incl_buttons, xpath
         )
-        redis_action_key = redis_config.SCRAPING_ACTION_KEY_TEMPLATE.format(
-            pipeline_uid=aet.active_pipeline_uid
-        )
-        kv_redis.set(redis_action_key, suh.webpage_elements)
 
     def direct_execute(
         self, url: str, incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links,
         incl_images, incl_buttons, xpath
     ):
+        scraping_options = {
+            'incl_tables': incl_tables,
+            'incl_bullets': incl_bullets,
+            'incl_texts': incl_texts,
+            'incl_headlines': incl_headlines,
+            'incl_links': incl_links,
+            'incl_images': incl_images,
+            'incl_buttons': incl_buttons,
+            'by_xpath': xpath
+        }
         # start_time = time.perf_counter()
         # a_time = time.perf_counter() - start_time
 
@@ -355,7 +409,7 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         # e_time = time.perf_counter() - start_time #12.5s
 
         suh.webscraping_client.load_website(url, timeout=30)
-        elements = suh.scan_web_page_API(output_folder)  #9 seconds
+        elements = suh.scan_web_page_API(output_folder, scraping_options)  #9 seconds
         # with open(output_folder / "website.png", "rb") as file:
         #     screenshot = file.read()
         #     screenshot = base64.b64encode(screenshot).decode("utf-8")
@@ -451,11 +505,21 @@ class FilterWebpageElementsWithAIHandler(AbstractFunctionHandler):
         super().__init__()
 
     def make_form_dict_list(self, node_detail_form=None):
-        return FormDictList()
+        fdl = FormDictList()
+        fdl.entry(name="elements", text="Elements", input_types=["list"], row=1)
+        fdl.entry(name="objective", text="Objective", input_types=["str"], row=2)
+
+        return fdl
+
+    def execute(self, node_detail_form):
+        elements = node_detail_form.get_chosen_value_by_name("elements", variable_handler)
+        objective = node_detail_form.get_chosen_value_by_name("objective", variable_handler)
+
+        self.direct_execute(elements, objective)
 
     def direct_execute(self, elements, objective):
         response = ncrb.filter_webpage_elements_based_on_objective(elements=elements, objective=objective)
-            
+
         if response.status_code in [200, 201]:
             result = response.json()
             redis_action_key = redis_config.SCRAPING_ACTION_KEY_TEMPLATE.format(pipeline_uid=aet.active_pipeline_uid)
