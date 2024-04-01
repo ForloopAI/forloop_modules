@@ -93,7 +93,19 @@ class ScrapingUtilitiesHandler:
 
         # TODO: for now hardcoded, user_id, project_id and pipeline_id should be passed later
         # All kv_redis scraping keys should be stored only here to avoid
-        self._scraping_data_redis_key_prefix = 'test_user:test_project:test_pipeline:scraping'
+        
+        if synchronization_flags.IS_MODULE_MAIN_INITIALIZED:
+            redis_key_prefix="FORLOOP_MAIN_DOCRAWL_"
+        elif synchronization_flags.IS_MODULE_FORLOOP_FASTAPI_INITIALIZED:
+            redis_key_prefix="FORLOOP_FASTAPI_DOCRAWL_"
+        elif synchronization_flags.IS_MODULE_EXECUTION_CORE_INITIALIZED:
+            redis_key_prefix="FORLOOP_EXECUTION_CORE_DOCRAWL_"
+        else:
+            redis_key_prefix = None
+            
+        
+        
+        self._scraping_data_redis_key_prefix = redis_key_prefix #older approach: 'test_user:test_project:test_pipeline:scraping'
         self._kv_redis_key_browser_meta_data = f'{self._scraping_data_redis_key_prefix}:browser_meta_data'
         self._kv_redis_key_screenshot = f'{self._scraping_data_redis_key_prefix}:screenshot'
         self._kv_redis_key_elements = f'{self._scraping_data_redis_key_prefix}:elements'
@@ -106,16 +118,10 @@ class ScrapingUtilitiesHandler:
 
         # For now DocrawlClient should follow singleton pattern, meaning it should be initialised only once and here
         
-        if synchronization_flags.IS_MODULE_MAIN_INITIALIZED:
-            redis_key_prefix="FORLOOP_MAIN_DOCRAWL_"
-        elif synchronization_flags.IS_MODULE_FORLOOP_FASTAPI_INITIALIZED:
-            redis_key_prefix="FORLOOP_FASTAPI_DOCRAWL_"
-        elif synchronization_flags.IS_MODULE_EXECUTION_CORE_INITIALIZED:
-            redis_key_prefix="FORLOOP_EXECUTION_CORE_DOCRAWL_"
-        else:
-            redis_key_prefix = None
-            
+        
+        
         if redis_key_prefix is not None:
+            redis_key_prefix="" # to be deprecated
             self.webscraping_client = DocrawlClient(kv_redis=kv_redis, kv_redis_keys=kv_redis_keys, number_of_spawn_browsers=1, redis_key_prefix=redis_key_prefix)
             
             
@@ -154,7 +160,7 @@ class ScrapingUtilitiesHandler:
         """
 
         try:
-            flog.warning('REFRESHING ELEMENTS')
+            flog.warning('Refreshing elements')
 
             # Reset (remove) highlighted and selected rectangles
             self.reset_browser_view_elements()
