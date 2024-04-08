@@ -22,6 +22,7 @@ from docrawl.elements import ElementType
 from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.redis.redis_connection import kv_redis
 
+from forloop_modules.utils import synchronization_flags
 #WARNING!
 #It is forbidden to add imports to popup handlers, pipeline function handlers, or any gui components
 
@@ -92,7 +93,19 @@ class ScrapingUtilitiesHandler:
 
         # TODO: for now hardcoded, user_id, project_id and pipeline_id should be passed later
         # All kv_redis scraping keys should be stored only here to avoid
-        self._scraping_data_redis_key_prefix = 'test_user:test_project:test_pipeline:scraping'
+        
+        if synchronization_flags.IS_MODULE_MAIN_INITIALIZED:
+            redis_key_prefix="FORLOOP_MAIN_DOCRAWL_"
+        elif synchronization_flags.IS_MODULE_FORLOOP_FASTAPI_INITIALIZED:
+            redis_key_prefix="FORLOOP_FASTAPI_DOCRAWL_"
+        elif synchronization_flags.IS_MODULE_EXECUTION_CORE_INITIALIZED:
+            redis_key_prefix="FORLOOP_EXECUTION_CORE_DOCRAWL_"
+        else:
+            redis_key_prefix = None
+            
+        
+        
+        self._scraping_data_redis_key_prefix = redis_key_prefix #older approach: 'test_user:test_project:test_pipeline:scraping'
         self._kv_redis_key_browser_meta_data = f'{self._scraping_data_redis_key_prefix}:browser_meta_data'
         self._kv_redis_key_screenshot = f'{self._scraping_data_redis_key_prefix}:screenshot'
         self._kv_redis_key_elements = f'{self._scraping_data_redis_key_prefix}:elements'
@@ -104,7 +117,15 @@ class ScrapingUtilitiesHandler:
         }
 
         # For now DocrawlClient should follow singleton pattern, meaning it should be initialised only once and here
-        self.webscraping_client = DocrawlClient(kv_redis=kv_redis, kv_redis_keys=kv_redis_keys, number_of_spawn_browsers=1)
+        
+        
+        
+        if redis_key_prefix is not None:
+            redis_key_prefix="" # to be deprecated
+            self.webscraping_client = DocrawlClient(kv_redis=kv_redis, kv_redis_keys=kv_redis_keys, number_of_spawn_browsers=1, redis_key_prefix=redis_key_prefix)
+            
+            
+            
         try:
             config = configparser.ConfigParser()
             config.read(Path(__file__).parent.parent.parent.absolute() / 'config' / 'scraping_conf.ini')
@@ -139,7 +160,7 @@ class ScrapingUtilitiesHandler:
         """
 
         try:
-            flog.warning('REFRESHING ELEMENTS')
+            flog.warning('Refreshing elements')
 
             # Reset (remove) highlighted and selected rectangles
             self.reset_browser_view_elements()
@@ -609,7 +630,8 @@ class ScrapingUtilitiesHandler:
         self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png'))) #needs to run before the scanner so there is enough time for the parallel thread
         self.webscraping_client.scan_web_page(incl_tables=True, incl_bullets=True, incl_texts=True,
                                        incl_headlines=True, incl_links=True, incl_images=True,
-                                       incl_buttons=True, by_xpath=None, cookies_xpath=xpath) #Duration: ~3s
+                                       incl_buttons=True, by_xpath=None, cookies_xpath=xpath, timeout = 60) #Duration: ~3s
+        
     
         webpage_elements = self.update_webpage_elements(refresh_browser_view_elements=False) #Duration: ~ 0s
 
