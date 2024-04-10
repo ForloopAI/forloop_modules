@@ -294,6 +294,16 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         self, url: str, incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links,
         incl_images, incl_buttons, xpath
     ):
+        scraping_options = {
+            'incl_tables': incl_tables,
+            'incl_bullets': incl_bullets,
+            'incl_texts': incl_texts,
+            'incl_headlines': incl_headlines,
+            'incl_links': incl_links,
+            'incl_images': incl_images,
+            'incl_buttons': incl_buttons,
+            'by_xpath': xpath
+        }
         # start_time = time.perf_counter()
         # a_time = time.perf_counter() - start_time
 
@@ -355,7 +365,7 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         # e_time = time.perf_counter() - start_time #12.5s
 
         suh.webscraping_client.load_website(url, timeout=30)
-        elements = suh.scan_web_page_API(output_folder)  #9 seconds
+        elements = suh.scan_web_page_API(output_folder, scraping_options)  #9 seconds
         # with open(output_folder / "website.png", "rb") as file:
         #     screenshot = file.read()
         #     screenshot = base64.b64encode(screenshot).decode("utf-8")
