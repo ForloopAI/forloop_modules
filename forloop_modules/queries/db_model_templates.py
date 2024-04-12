@@ -151,7 +151,7 @@ class PipelineJobStats(BaseModel):
 
 
 class APINodeJob(BaseModel):
-    uid: str
+    uid: Optional[str] = None  # Used for both POST & PUT requests, hence optional
     status: JobStatusEnum
     created_at: UTCDatetime
     completed_at: Optional[UTCDatetime] = None
@@ -161,7 +161,7 @@ class APINodeJob(BaseModel):
 
 
 class APIOperationJob(BaseModel):
-    uid: str
+    uid: Optional[str] = None  # Used for both POST & PUT requests, hence optional
     status: JobStatusEnum
     created_at: UTCDatetime
     completed_at: Optional[UTCDatetime] = None
@@ -170,7 +170,7 @@ class APIOperationJob(BaseModel):
 
 
 class APIPipelineJob(BaseModel):
-    uid: str
+    uid: Optional[str] = None  # Used for both POST & PUT requests, hence optional
     machine_uid: Optional[str] = None
     status: JobStatusEnum
     created_at: UTCDatetime
@@ -180,6 +180,16 @@ class APIPipelineJob(BaseModel):
     pipeline_uid: str
     jobs: list[APINodeJob] = Field(default_factory=list)
     stats: Optional[PipelineJobStats] = None
+
+
+class APIPrototypeJob(BaseModel):
+    uid: Optional[str] = None  # Used for both POST & PUT requests, hence optional
+    machine_uid: Optional[str] = None
+    status: JobStatusEnum
+    created_at: UTCDatetime
+    started_at: Optional[UTCDatetime] = None
+    completed_at: Optional[UTCDatetime] = None
+    pipeline_uid: str
 
 
 class TriggerFrequencyEnum(str, Enum):

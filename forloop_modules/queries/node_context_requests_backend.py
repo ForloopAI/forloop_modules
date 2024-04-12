@@ -1,20 +1,31 @@
 #### GLC, GOM dependencies forbidden !!!
 """In this file all functions should have response-like return value"""
 
-import requests
 import json
-from inspect import Parameter, Signature
-from pydantic import BaseModel
-from typing import Optional, Any
 import sys
-
+from inspect import Parameter, Signature
 from pathlib import Path
+from typing import Any, Optional
+
+import requests
+from pydantic import BaseModel
 
 import forloop_modules.flog as flog
-
 from forloop_modules.globals.active_entity_tracker import aet
-
-from forloop_modules.queries.db_model_templates import APIProject, APITrigger, APIDataset, APIDbTable, APIScript, APIFile, APIDatabase, APIPipeline, APIEdge, APIVariable, APIPopup, APIInitialVariable
+from forloop_modules.queries.db_model_templates import (
+    APIDatabase,
+    APIDataset,
+    APIDbTable,
+    APIEdge,
+    APIFile,
+    APIInitialVariable,
+    APIPipeline,
+    APIPopup,
+    APIProject,
+    APIScript,
+    APITrigger,
+    APIVariable,
+)
 
 if sys.platform == "darwin":  # MAC OS
     config_path = 'config/server_config_remote.ini'
@@ -557,8 +568,6 @@ def get_variable_by_name(variable_name: str):
 #
 #     return response
 
-
-    
 
 def delete_variable_by_uid(variable_uid):
     url = f'{BASE_API}/variables/{variable_uid}'
@@ -1324,3 +1333,116 @@ def filter_webpage_elements_based_on_objective(elements: list[dict], objective: 
     response = requests.post(url=url, json=payload)
     
     return response
+
+
+# EXECUTION_CORE NCRB
+# Ncrb methods used exclusively in ExecCore
+
+
+def get_latest_operation_job(prototype_job_uid: str) -> dict | None:
+    try:
+        response = requests.get(f'{BASE_API}/prototype_jobs/{prototype_job_uid}/operation_job/latest')
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        if response.status_code == 404:
+            return None
+        raise
+    return response.json()
+
+
+def create_or_update_node_job(node_job: dict) -> dict:
+    try:
+        response = requests.put(f'{BASE_API}/node_jobs', payload=node_job)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise
+    return response.json()
+
+
+def create_or_update_operation_job(operation_job: dict) -> dict:
+    try:
+        response = requests.put(f'{BASE_API}/operation_jobs', payload=operation_job)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise
+    return response.json()
+
+
+def create_or_update_pipeline_job(pipeline_job: dict) -> dict:
+    try:
+        response = requests.put(f'{BASE_API}/pipeline_jobs', payload=pipeline_job)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise
+    return response.json()
+
+
+def create_or_update_prototype_job(prototype_job: dict) -> dict:
+    try:
+        response = requests.put(f'{BASE_API}/prototype_jobs', payload=prototype_job)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise
+    return response.json()
+
+def new_variable(self, variable: dict):
+    project_uid = aet.project_uid
+    pipeline_uid = aet.active_pipeline_uid
+
+    try:
+        response = requests.post(f'{BASE_API}/variables', json=={**variable, "project_uid": project_uid, "pipeline_uid": pipeline_uid})
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise
+    return response.json()
+
+
+def get_initial_variables() -> dict:
+    try:
+        response = requests.get(f'{BASE_API}/initial_variables')
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise
+    return response.json()['initial_variables']
+
+
+def get_pipeline(pipeline_uid: str) -> dict:
+    pipeline_uid = aet.active_pipeline_uid
+
+    try:
+        response = requests.get(f'{BASE_API}/pipelines/{pipeline_uid}')
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise
+    return response.json()
+
+
+def get_pipeline_job(pipeline_job_uid: str) -> dict:
+    pipeline_job_uid = aet.active_pipeline_job_uid
+
+    try:
+        response = requests.get(f'{BASE_API}/jobs/{pipeline_job_uid}')
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise
+    return response.json()
+
+
+def get_prototype_job(prototype_job_uid: str) -> dict:
+    prototype_job_uid = aet.active_prototype_job_uid
+
+    try:
+        response = requests.get(f'{BASE_API}/jobs/{prototype_job_uid}')
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise
+    return response.json()
+
+def get_next_job() -> Optional[dict]:
+    try:
+        response = requests.get(f"{BASE_API}/jobs/next")
+    except requests.exceptions.HTTPError:
+        if response.status_code == 404:
+            return None
+        raise
+    return response.json()

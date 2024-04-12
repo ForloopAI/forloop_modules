@@ -190,8 +190,7 @@ class LocalVariableHandler:
 
         return variable, is_new_variable
 
-    def create_variable(self, name, value, additional_params: dict = None, project_uid=None):
-        #self.variable_uid_project_uid_dict[variable.uid]=project_uid #is used in API call
+    def create_variable(self, name, value, additional_params: dict = None):
         if additional_params is None:
             additional_params = {}
 
