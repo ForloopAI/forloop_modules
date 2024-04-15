@@ -237,7 +237,7 @@ class LoadExcelHandler(AbstractFunctionHandler):
         # fdl.combobox(name="file_name", options=files, row=1)
         fdl.entry(name="file_name", text="", category="arguments", type='file', file_types=file_types, required=True, row=1)
         fdl.label("Load as:")
-        fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=2)
+        fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=2)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", frontend_implementation=True, focused=True)
 
         return fdl
@@ -271,8 +271,12 @@ class LoadExcelHandler(AbstractFunctionHandler):
     def execute(self, node_detail_form):
         file_name = node_detail_form.get_chosen_value_by_name("file_name", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
+        
+        new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
 
         self.direct_execute(file_name, new_var_name)
+        
+        ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
         # TODO: WONT WORK IF VARIABLE WITH NEW VAR NAME ALREADY EXISTS AND LOAD EXCEL FAILED
         # HAD TO BE CHANGED BECAUSE DIRECT EXECUTE DOES NOT RETURN THE VALUE

@@ -1046,21 +1046,21 @@ def update_popup_by_uid(popup_uid, pos=None, typ=None, params_dict=None):
 
 def update_last_active_script(script_uid: Optional[str] = None):
     payload = {
-        "script_uid": script_uid
+        "project_uid": aet.project_uid,
+        "uid": script_uid
     }
-
     flog.info(f'Last active Script payload: {payload}')
 
     url = f'{BASE_API}/last_active_script'
-
     response = requests.put(url, json=payload)
+    
     flog.info(f'Last active Script response: {response.text}')
 
     return response
 
 
 def get_last_active_script():
-    url = f'{BASE_API}/last_active_script'
+    url = f'{BASE_API}/last_active_script?project_uid={aet.project_uid}'
 
     response = requests.get(url)
     flog.info(f'GET Last active Script response: {response.text}')
@@ -1070,15 +1070,32 @@ def get_last_active_script():
 #~#~#~#~#~##~#~#~#~# SCRIPTS END #~#~#~#~#~##~#~#~#~#
 
 def run_pipeline_to_code_conversion():
-    response = requests.post(SERVER+":"+str(PORT)+"/api/v1/pipeline_to_code")
+    payload = {
+        "pipeline_uid": aet.active_pipeline_uid,
+        "project_uid": aet.project_uid
+    }
+    url = f"{BASE_API}/pipeline_to_code"
+    response = requests.post(url=url, json=payload)
+    
     return response
 
 def run_code_to_pipeline_conversion():
-    response = requests.get(SERVER+":"+str(PORT)+"/api/v1/code_to_pipeline")
+    payload = {
+        "pipeline_uid": aet.active_pipeline_uid,
+        "project_uid": aet.project_uid
+    }
+    url = f"{BASE_API}/code_to_pipeline"
+    response = requests.post(url=url, json=payload)
+    
     return response
 
 def run_inspect_node_code(node_uid:str):
-    response = requests.get(SERVER+":"+str(PORT)+"/api/v1/inspect_node_code/" + str(node_uid))
+    payload = {
+        "uid": node_uid,
+        "project_uid": aet.project_uid
+    }
+    url = f"{BASE_API}/inspect_node_code"
+    response = requests.post(url=url, json=payload)
     return response
 
 def get_all_databases_by_project_uid():
@@ -1087,7 +1104,7 @@ def get_all_databases_by_project_uid():
     if response.status_code != 200:
         raise Exception(f'Error {response.status_code}: {response.reason}.')
     
-    databases = response.json().get("result", {}).get("databases")
+    databases = response.json()['databases']
     project_databases = [database for database in databases if database["project_uid"] == aet.project_uid]
     
     return project_databases
