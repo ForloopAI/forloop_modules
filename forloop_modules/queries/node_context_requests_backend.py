@@ -12,7 +12,7 @@ import httpx
 import forloop_modules.flog as flog
 import json
 
-from forloop_modules.queries.sse_parser import SSEParser
+from forloop_modules.utils.sse_parser import SSEParser
 from forloop_modules.globals.active_entity_tracker import aet
 
 from forloop_modules.queries.db_model_templates import APIProject, APITrigger, APIDataset, APIDbTable, APIScript, APIFile, APIDatabase, APIPipeline, APIEdge, APIVariable, APIPopup, APIInitialVariable

@@ -253,11 +253,12 @@ class LocalVariableHandler:
             flog.warning(f"Variable '{name}' was not found in LocalVariableHandler.")
 
         if variable is not None:
+            is_result = is_result if is_result is not None else variable["is_result"]
             ncrb_fn_kwargs = {
                 "variable_uid": variable["uid"],
                 "name": name,
                 "value": value,
-                "is_result": is_result if is_result is not None else variable["is_result"]  # TODO: Remove when PrototypeJobs are implemented
+                "is_result": is_result  # TODO: Remove when PrototypeJobs are implemented
             }
 
             if is_value_serializable(value):
