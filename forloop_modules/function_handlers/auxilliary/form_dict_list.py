@@ -62,7 +62,7 @@ class FormDictList(UserList):
         value = text
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def entry(self, name, text, category=None, input_types=None, required=None, type='text', file_types=None, show_info=None, row=None, desktop_only=False):
+    def entry(self, name, text, category=None, input_types=None, required=None, type='text', file_types=None, show_info=None, desktop_only=False, row=None):
         """
         Entry is a text element with a name and a text
         args:
@@ -96,7 +96,7 @@ class FormDictList(UserList):
 
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def combobox(self, name, options, multiselect_indices=None, default=None, show_info=None, row=None, desktop_only=False):
+    def combobox(self, name, options, multiselect_indices=None, default=None, show_info=None, desktop_only=False, row=None):
         """
         Combobox is a dropdown list with options
 
@@ -111,7 +111,7 @@ class FormDictList(UserList):
         value = {"name": name, "options": options, "default": default, "multiselect_indices": multiselect_indices, "show_info":show_info, 'desktop_only': desktop_only}
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def comboentry(self, name, text, options, show_info=None, row=None, desktop_only=False):
+    def comboentry(self, name, text, options, show_info=None, desktop_only=False, row=None):
         """
         Comboentry is a dropdown list with options and a text field
         
@@ -125,7 +125,7 @@ class FormDictList(UserList):
         value = {"name": name, "text": text, "options": options, "show_info": show_info, 'desktop_only': desktop_only}
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def button(self, function, function_args, text, focused: bool = False, enforce_required: bool = None, frontend_implementation=False, name=None, row=None, desktop_only=False):
+    def button(self, function, function_args, text, focused: bool = False, enforce_required: bool = None, frontend_implementation=False, name=None, desktop_only=False, row=None):
         """
         Button is a button with a function and arguments
 
@@ -141,7 +141,7 @@ class FormDictList(UserList):
         value = {"name": name, "function": function, "function_args": function_args, "text": text, "focused": focused, "enforce_required": enforce_required, "frontend_implementation": frontend_implementation, 'desktop_only': desktop_only}
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def button_image(self, image, x_size, y_size, x_offset, function, function_args=None, row=None, desktop_only=False):
+    def button_image(self, image, x_size, y_size, x_offset, function, function_args=None, desktop_only=False, row=None):
         """
         Button is an image with or without function and arguments
 
@@ -159,7 +159,7 @@ class FormDictList(UserList):
         value = {"image": image, "function": function, "function_args": function_args, "x_size": x_size, "y_size": y_size, "x_offset": x_offset, 'desktop_only': desktop_only}
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def checkbox(self, name, bool_value: bool = False, row=None, desktop_only=False):
+    def checkbox(self, name, bool_value: bool = False, desktop_only=False, row=None):
         """
         CheckBox is an element for storing True/False values
 
