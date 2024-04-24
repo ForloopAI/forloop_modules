@@ -1428,25 +1428,25 @@ def create_or_update_prototype_job(prototype_job: dict) -> dict:
         raise
     return response.json()
 
-def new_variable(self, variable: dict):
-    project_uid = aet.project_uid
-    pipeline_uid = aet.active_pipeline_uid
+# def new_variable(self, variable: dict):
+#     project_uid = aet.project_uid
+#     pipeline_uid = aet.active_pipeline_uid
 
-    try:
-        response = requests.post(f'{BASE_API}/variables', json=={**variable, "project_uid": project_uid, "pipeline_uid": pipeline_uid})
-        response.raise_for_status()
-    except requests.exceptions.HTTPError:
-        raise
-    return response.json()
+#     try:
+#         response = requests.post(f'{BASE_API}/variables', json=={**variable, "project_uid": project_uid, "pipeline_uid": pipeline_uid})
+#         response.raise_for_status()
+#     except requests.exceptions.HTTPError:
+#         raise
+#     return response.json()
 
 
-def get_initial_variables() -> dict:
-    try:
-        response = requests.get(f'{BASE_API}/initial_variables')
-        response.raise_for_status()
-    except requests.exceptions.HTTPError:
-        raise
-    return response.json()['initial_variables']
+# def get_initial_variables() -> dict:
+#     try:
+#         response = requests.get(f'{BASE_API}/initial_variables')
+#         response.raise_for_status()
+#     except requests.exceptions.HTTPError:
+#         raise
+#     return response.json()['initial_variables']
 
 
 def get_pipeline(pipeline_uid: str) -> dict:

@@ -182,6 +182,17 @@ class APIPipelineJob(BaseModel):
     stats: Optional[PipelineJobStats] = None
 
 
+class APIPrototypeJob(BaseModel):
+    uid: str
+    machine_uid: Optional[str] = None
+    status: JobStatusEnum
+    created_at: UTCDatetime
+    started_at: Optional[UTCDatetime] = None
+    completed_at: Optional[UTCDatetime] = None
+    message: Optional[str] = None
+    pipeline_uid: str
+
+
 class TriggerFrequencyEnum(str, Enum):
     HOURLY = "hourly"
     DAILY = "daily"

@@ -27,7 +27,7 @@ def is_list_of_strings(var) -> bool:
 
 def serialize_if_dataframe_to_api(variable_series: pd.Series) -> Any:
     """
-    Cast a DF into a dict format used by the API if the input Variable/Result is of type 'DataFrame'
+    Cast a DF into a dict format used by the API if the input Variable is of type 'DataFrame'
     This functions is to be used only with pd.DataFrame.apply() method, hence the input is a
     pd.Series.
 
@@ -57,7 +57,7 @@ def serialize_dataframe_to_api(variable_value_df: pd.DataFrame) -> dict:
 
 def parse_if_dataframe_from_db(variable_series: pd.Series) -> Any:
     """
-    Parse a DF from a dict format used in the DB if the input Variable/Result is of type 'DataFrame'
+    Parse a DF from a dict format used in the DB if the input Variable is of type 'DataFrame'
     This functions is to be used only with pd.DataFrame.apply() method, hence the input is a
     pd.Series.
 
@@ -76,7 +76,7 @@ def parse_if_dataframe_from_db(variable_series: pd.Series) -> Any:
 
 def serialize_if_dataframe_to_db(variable_series: pd.Series) -> Any:
     """
-    Cast a DF into a dict format used in the DB if the input Variable/Result is of type 'DataFrame'.
+    Cast a DF into a dict format used in the DB if the input Variable is of type 'DataFrame'.
     This functions is to be used only with pd.DataFrame.apply() method, hence the input is a
     pd.Series.
 
