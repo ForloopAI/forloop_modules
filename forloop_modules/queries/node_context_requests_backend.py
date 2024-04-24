@@ -1484,6 +1484,7 @@ def get_prototype_job(prototype_job_uid: str) -> dict:
 def get_next_job() -> Optional[dict]:
     try:
         response = requests.get(f"{BASE_API}/jobs/next")
+        response.raise_for_status()
     except requests.exceptions.HTTPError:
         if response.status_code == 404:
             return None
