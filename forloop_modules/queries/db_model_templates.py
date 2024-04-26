@@ -663,16 +663,6 @@ class APIDataFrame(BaseModel):
     columns: list[str]
     values: list[list[Any]]
 
-class APINewDbTable(BaseModel):
-    server: str
-    database_name: str
-    port: int
-    table_name: str
-    username: str
-    password: str
-    dialect: Literal["MySQL"] # TODO: Enable other dialects like PostgreSQL
-
-
 class APIToggleStatus(BaseModel):
     status: bool = False
 
