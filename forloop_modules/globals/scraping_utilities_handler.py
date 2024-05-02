@@ -12,6 +12,8 @@ import time
 import configparser
 from contextlib import suppress
 from itertools import product
+import uuid
+from typing import Optional
 
 import forloop_modules.queries.node_context_requests_backend as ncrb #questionable import - potential problems - should be rather called from pfh
 
@@ -75,7 +77,10 @@ class ScrapingUtilitiesHandler:
 
     """
 
-    def __init__(self):
+    def __init__(self, uid: Optional[str] = None, init_docrawl = False):
+        if not init_docrawl:
+            return
+
         self.webpage_elements = []
         self.browser_view_elements = []
         self.browser_view_selected_elements = []
@@ -94,18 +99,21 @@ class ScrapingUtilitiesHandler:
         # TODO: for now hardcoded, user_id, project_id and pipeline_id should be passed later
         # All kv_redis scraping keys should be stored only here to avoid
         
-        if synchronization_flags.IS_MODULE_MAIN_INITIALIZED:
-            redis_key_prefix="FORLOOP_MAIN_DOCRAWL_"
-        elif synchronization_flags.IS_MODULE_FORLOOP_FASTAPI_INITIALIZED:
-            redis_key_prefix="FORLOOP_FASTAPI_DOCRAWL_"
-        elif synchronization_flags.IS_MODULE_EXECUTION_CORE_INITIALIZED:
-            redis_key_prefix="FORLOOP_EXECUTION_CORE_DOCRAWL_"
+        # if synchronization_flags.IS_MODULE_MAIN_INITIALIZED:
+        #     redis_key_prefix="FORLOOP_MAIN_DOCRAWL_"
+        # elif synchronization_flags.IS_MODULE_FORLOOP_FASTAPI_INITIALIZED:
+        #     redis_key_prefix="FORLOOP_FASTAPI_DOCRAWL_"
+        # elif synchronization_flags.IS_MODULE_EXECUTION_CORE_INITIALIZED:
+        #     redis_key_prefix="FORLOOP_EXECUTION_CORE_DOCRAWL_"
+        # else:
+        #     redis_key_prefix = None
+
+        if uid is not None:
+            redis_key_prefix = f'docrawl:{uid}'
         else:
-            redis_key_prefix = None
-            
-        
-        
-        self._scraping_data_redis_key_prefix = redis_key_prefix #older approach: 'test_user:test_project:test_pipeline:scraping'
+            redis_key_prefix = f'docrawl:{str(uuid.uuid4())[:8]}'
+
+        self._scraping_data_redis_key_prefix = redis_key_prefix
         self._kv_redis_key_browser_meta_data = f'{self._scraping_data_redis_key_prefix}:browser_meta_data'
         self._kv_redis_key_screenshot = f'{self._scraping_data_redis_key_prefix}:screenshot'
         self._kv_redis_key_elements = f'{self._scraping_data_redis_key_prefix}:elements'
@@ -117,15 +125,8 @@ class ScrapingUtilitiesHandler:
         }
 
         # For now DocrawlClient should follow singleton pattern, meaning it should be initialised only once and here
-        
-        
-        
-        if redis_key_prefix is not None:
-            redis_key_prefix="" # to be deprecated
-            self.webscraping_client = DocrawlClient(kv_redis=kv_redis, kv_redis_keys=kv_redis_keys, number_of_spawn_browsers=1, redis_key_prefix=redis_key_prefix)
-            
-            
-            
+        self.webscraping_client = DocrawlClient(kv_redis=kv_redis, kv_redis_keys=kv_redis_keys, number_of_spawn_browsers=1, redis_key_prefix=redis_key_prefix)
+
         try:
             config = configparser.ConfigParser()
             config.read(Path(__file__).parent.parent.parent.absolute() / 'config' / 'scraping_conf.ini')
@@ -627,7 +628,8 @@ class ScrapingUtilitiesHandler:
 
         xpath = self.detect_cookies_xpath_preparation()
     
-        self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png'))) #needs to run before the scanner so there is enough time for the parallel thread
+        # self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png'))) #needs to run before the scanner so there is enough time for the parallel thread
+        self.webscraping_client.take_screenshot()
         self.webscraping_client.scan_web_page(**scraping_options, timeout = 60) #Duration: ~3s
         
     
@@ -648,11 +650,12 @@ class ScrapingUtilitiesHandler:
 
             # Close cookies popup
             self.webscraping_client.click_xpath(button_xpath)
-            self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png'))) #TODO: The scanning finishes before the screenshot thread - need to either 1) refresh screenshot multiple times in FE (optimal), or 2) run this not in thread when cookies detected
+            # self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png'))) #TODO: The scanning finishes before the screenshot thread - need to either 1) refresh screenshot multiple times in FE (optimal), or 2) run this not in thread when cookies detected
+            self.webscraping_client.take_screenshot()
 
 
         # [::-1] needed to ensure that FE rectangles are not overlapped (bigger elements do not cover smaller)
-        return rest_elements[::-1]
+        return rest_elements[::-1], self.webscraping_client.get_browser_screenshot()
 
     def scan_web_page(self, incl_tables, incl_bullets, incl_texts, incl_headlines, incl_links, incl_images,
                       incl_buttons, by_xpath, context_xpath='', refresh_bv_elements=True):
@@ -665,7 +668,7 @@ class ScrapingUtilitiesHandler:
         webpage_elements = self.update_webpage_elements(refresh_browser_view_elements=refresh_bv_elements)
 
         return webpage_elements
-    
+
     def find_nth_substring_occurence(self, string, substring, n):
         #TODO: potentially could hit recursive limit
         if (n == 1) or n == 0:
@@ -762,6 +765,17 @@ class ScrapingUtilitiesHandler:
             flog.warning(self.browser_view_elements)
 
 
+# HACK: Without passing `init_docrawl=True`, `suh` variable acts as uninitialized, empty proxy.
+# This is necessary as the whole codebase imports `suh` from this file.
 
+# On the other hand, if `docrawl` gets initialized here, ExecCore workers are failing to spin up
+# their own event loops on which their `docrawl` instances relies. This is due to the fact that when
+# workers are spawned from the parent process, `docrawl` is already initialized (alongside with it's
+# event loop). The spawned process inherits `docrawls` event loop state without the actual event
+# loop thread running. This leads to the inconsistent state in every worker.
+
+# `suh` must only be used inside of processes which have `docrawl` event loop initialized -
+# currently it means only  `ExecutionCore` workers. As long as the process WILL NOT spawn child
+# processes, it is safe to initialize `docrawl` in it.
 suh = ScrapingUtilitiesHandler()
 
