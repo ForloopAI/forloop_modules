@@ -1,3 +1,4 @@
+from io import BytesIO
 import base64
 from pathlib import Path
 from typing import Union
@@ -409,18 +410,23 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         # e_time = time.perf_counter() - start_time #12.5s
 
         suh.webscraping_client.load_website(url, timeout=30)
-        elements = suh.scan_web_page_API(output_folder, scraping_options)  #9 seconds
-        # with open(output_folder / "website.png", "rb") as file:
+        elements, screenshot_base64 = suh.scan_web_page_API(output_folder, scraping_options)  #9 seconds
+
+        # # Convert PNG file to WEBP
+        # img = Image.open(output_folder / "website.png")
+        # img.save(output_folder / "website.webp", quality=85)
+        # (output_folder / "website.png").unlink()
+        # with open(output_folder / "website.webp", "rb") as file:
         #     screenshot = file.read()
         #     screenshot = base64.b64encode(screenshot).decode("utf-8")
 
-        # Convert to WEBP
-        img = Image.open(output_folder / "website.png")
-        img.save(output_folder / "website.webp", quality=85)
-        (output_folder / "website.png").unlink()
-        with open(output_folder / "website.webp", "rb") as file:
-            screenshot = file.read()
-            screenshot = base64.b64encode(screenshot).decode("utf-8")
+        # Convert Base64 to WEBP
+        png_img_data = BytesIO(base64.b64decode(screenshot_base64))
+        webp_img_data = BytesIO()
+        Image.open(png_img_data).save(webp_img_data, 'WEBP', quality=70)
+        webp_img_data.seek(0)
+        screenshot = base64.b64encode(webp_img_data.getvalue()).decode("utf-8")
+
 
         # f_time = time.perf_counter() - start_time #21.5s
         # request_thread.join()
