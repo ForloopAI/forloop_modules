@@ -76,9 +76,9 @@ class OpenBrowserHandler(AbstractFunctionHandler):
 
         fdl.label(self.fn_name)
         fdl.label("Show browser:")
-        fdl.checkbox(name="in_browser", bool_value=True, row=1)
+        fdl.checkbox(name="in_browser", bool_value=False, row=1, desktop_only=True)
         fdl.label("Driver:")
-        fdl.combobox(name="driver", options=['Firefox', 'Chrome'], default='Firefox', show_info=True, row=2)
+        fdl.combobox(name="driver", options=['Firefox', 'Chrome'], default='Firefox', show_info=True, row=2, desktop_only=True)
 
         return fdl
 
@@ -249,7 +249,7 @@ class LoadWebsiteHandler(AbstractFunctionHandler):
         fdl.label("URL")
         fdl.entry(name="url", text="", input_types=["str"], required=True, show_info=True, row=1)
         fdl.label("Take screenshot")
-        fdl.checkbox(name="take_screenshot", bool_value=True, row=2)
+        fdl.checkbox(name="take_screenshot", bool_value=False, row=2, desktop_only=True)
         fdl.label("Screenshot will be shown in Browser View", row=3)
 
         return fdl
