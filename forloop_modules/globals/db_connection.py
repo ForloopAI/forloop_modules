@@ -1,11 +1,21 @@
-import dbhydra.dbhydra_core as dh
-import forloop_modules.flog as flog
+from typing import Literal, Optional, Union
 
 from pydantic import BaseModel
-from typing import Literal, Union, Optional
+
+import dbhydra.dbhydra_core as dh
+import forloop_modules.flog as flog
+from forloop_modules.redis.redis_connection import (
+    create_redis_key_for_project_db_private_key,
+    kv_redis,
+)
+from forloop_modules.utils.encryption import (
+    convert_base64_private_key_to_rsa_private_key,
+    decrypt_text,
+)
 
 DbDialect = Literal["MySQL", "SQL Server", "PostgreSQL", "Xlsx structure", "MongoDB", "BigQuery"]
 DBInstance = Union[dh.MysqlDb, dh.SqlServerDb, dh.PostgresDb, dh.XlsxDB, dh.MongoDb, dh.BigQueryDb]
+
 
 class DbDetails(BaseModel):
     DB_SERVER: str
@@ -15,18 +25,20 @@ class DbDetails(BaseModel):
     DB_DATABASE: str
     LOCALLY: bool
     DIALECT: DbDialect
-    
+
     def __getitem__(self, key):
         return getattr(self, key)
 
+
 class DbConnection:
     def __init__(self, db_details: Union[DbDetails, dict], is_stored: bool = False):
-        self.db_details = db_details.model_dump() if isinstance(db_details, DbDetails) else db_details
+        self.db_details = db_details.model_dump(
+        ) if isinstance(db_details, DbDetails) else db_details
         self.server = db_details["DB_SERVER"]
         self.database = db_details["DB_DATABASE"]
         self.is_stored = is_stored
         self.is_valid_db_connection: bool = False
-        
+
         # Assigned after testing the connection
         self.db_instance: Optional[DBInstance] = None
         self.is_connected: bool = False
@@ -35,7 +47,6 @@ class DbConnection:
 
         # TODO: This should not be here. Examine the code and delete it everywhere.
         self.images = []  # icons covering this DbConnection
-
 
     def create_new_db(self):
         if self.db_details["DIALECT"] == "MySQL":
@@ -88,7 +99,7 @@ class DbConnection:
             # self._store_db_details_if_valid()
             return True
         except Exception:
-            self.db_instance=None
+            self.db_instance = None
             self.is_valid_db_connection = False
             flog.error("Database Connection Failed!")
 
@@ -97,7 +108,7 @@ class DbConnection:
     def test_database_connection(self) -> bool:
         """
         Test connection to database
-        if connected successfully, get database tables
+        if connected successfully, get database tables.
         """
         is_connected = self._test_connection_dbhydra_db()
 
@@ -114,19 +125,45 @@ class DbConnection:
             else:
                 self.foreign_keys = []
         return (self.table_dict, self.foreign_keys)
-    
+
     def get_db_table(self, db_table_name: str):
         if self.table_dict is None:
             return
-        
+
         for table_name, table in self.table_dict.items():
             if table_name == db_table_name:
                 return table
-            
+
+
 def create_db_details_from_database_dict(db_dict: dict):
-    db_details = DbDetails(DB_SERVER=db_dict["server"], DB_PASSWORD=db_dict["password"], DB_PORT=db_dict["port"],
-                           DB_USERNAME=db_dict["username"], DB_DATABASE=db_dict["database_name"], LOCALLY=False,
-                           DIALECT=db_dict["dialect"])
-    
+    db_details = DbDetails(
+        DB_SERVER=db_dict["server"],
+        DB_PASSWORD=db_dict["password"],
+        DB_PORT=db_dict["port"],
+        DB_USERNAME=db_dict["username"],
+        DB_DATABASE=db_dict["database"],
+        LOCALLY=False,
+        DIALECT=db_dict["dialect"],
+    )
+
     return db_details
-    
+
+
+def decrypt_db_details(database: dict) -> DbDetails:
+    """Decrypt the password of the database using the private key stored in Redis."""
+    redis_key = create_redis_key_for_project_db_private_key(project_uid=database['project_uid'])
+    private_key_base64 = kv_redis.get(redis_key)
+
+    if private_key_base64 is not None:
+        private_key = convert_base64_private_key_to_rsa_private_key(
+            private_key_base64=private_key_base64
+        )
+
+        encrypted_password = database["password"]
+        decrypted_password = decrypt_text(text=encrypted_password, private_key=private_key)
+
+        database["password"] = decrypted_password
+
+        return create_db_details_from_database_dict(db_dict=database)
+    else:
+        raise ValueError("Private key not found in Redis.")

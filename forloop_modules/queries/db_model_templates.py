@@ -659,36 +659,9 @@ class APIEmail(BaseModel):
     email: Optional[str] = ""
     #email: str #Jakub branch
 
-class WebpageData(BaseModel):
+class APIDataFrame(BaseModel):
     columns: list[str]
     values: list[list[Any]]
-
-class APINewDbTable(BaseModel):
-    server: str
-    database_name: str
-    port: int
-    table_name: str
-    username: str
-    password: str
-    dialect: Literal["MySQL"] # TODO: Enable other dialects like PostgreSQL
-    data: WebpageData
-    # columns: list[str]
-    # elements: list[dict]
-    
-class APIDbDataPreview(BaseModel):
-    server: str
-    database_name: str
-    port: int
-    table_name: str
-    username: str
-    password: str
-    dialect: Literal["MySQL"] # TODO: Enable other dialects like PostgreSQL
-    data: WebpageData
-    # elements: list[dict]
-
-class APIUrl(BaseModel):
-    url: Optional[str]=""
-
 
 class APIToggleStatus(BaseModel):
     status: bool = False
