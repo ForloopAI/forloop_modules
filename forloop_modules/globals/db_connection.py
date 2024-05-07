@@ -166,4 +166,4 @@ def decrypt_db_details(database: dict) -> DbDetails:
 
         return create_db_details_from_database_dict(db_dict=database)
     else:
-        raise ValueError("Private key not found in Redis.")
+        raise ValueError(f"Private key not found for Project:{database['project_uid']} in Redis.")
