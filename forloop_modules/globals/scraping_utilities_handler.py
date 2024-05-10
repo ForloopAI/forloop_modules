@@ -777,5 +777,8 @@ class ScrapingUtilitiesHandler:
 # `suh` must only be used inside of processes which have `docrawl` event loop initialized -
 # currently it means only  `ExecutionCore` workers. As long as the process WILL NOT spawn child
 # processes, it is safe to initialize `docrawl` in it.
-suh = ScrapingUtilitiesHandler()
+if synchronization_flags.IS_MODULE_MAIN_INITIALIZED:
+    suh = ScrapingUtilitiesHandler(init_docrawl=True)
+else:
+    suh = ScrapingUtilitiesHandler()
 

@@ -166,4 +166,41 @@ def decrypt_db_details(database: dict) -> DbDetails:
 
         return create_db_details_from_database_dict(db_dict=database)
     else:
-        raise ValueError("Private key not found in Redis.")
+        raise ValueError(f"Private key not found for Project:{database['project_uid']} in Redis.")
+
+
+def instantiate_db(db_details: DbDetails) -> dh.AbstractDb:
+    # TODO: Allow other dialects as well (PostgreSQL)
+    if db_details.DIALECT == "MySQL":
+        db = dh.MysqlDb(db_details=db_details.model_dump())
+    else:
+        raise ValueError("Only MySQL is supported at the moment")
+
+    return db
+
+
+def instantiate_db_table(table_name: str, columns: dict, db: dh.AbstractDb) -> dh.AbstractTable:
+    """
+    Create a table instance, provided it's name, underlying DB object and columns.
+
+    :param table_name: specified table name
+    :type table_name: str
+    :param columns: mapping of {column_name: column_type}
+    :type columns: dict
+    :param db: underlying DB object
+    :type db: dh.AbstractDb
+    :return: _description_
+    :rtype: dh.AbstractDb
+    """
+    types = [
+        db.python_database_type_mapping.get(python_type, "nvarchar(2047)")
+        for python_type in columns.values()
+    ]
+
+    # DBHydra expects ID to be the first column
+    column_names = list(columns.keys()) if 'id' in columns.keys() else ['id', *columns.keys()]
+    column_types = types if 'id' in columns.values() else ['int', *types]
+
+    return db.matching_table_class(
+        db1=db, name=table_name, columns=column_names, types=column_types
+    )
