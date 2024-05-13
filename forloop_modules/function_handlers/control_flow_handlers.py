@@ -33,6 +33,9 @@ class StartHandler(AbstractFunctionHandler):
         fdl.label(self.fn_name)
         return fdl
 
+    def execute(self, node_detail_form):
+        self.direct_execute()
+
     def direct_execute(self):
         """Do nothing"""
         pass
