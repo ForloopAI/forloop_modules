@@ -14,14 +14,14 @@ class RedisConfig(BaseSettings):
 
     # None values for Host and Password are correct options:
     # in-memory local caching will be used instead of a Redis server
-    FORLOOP_REDIS_HOST: Optional[str] = None # "localhost" #localhost doesn't work for devs with DummyKVRedis
+    FORLOOP_REDIS_HOST: Optional[str] = 'localhost' # localhost doesn't work for devs with DummyKVRedis
     FORLOOP_REDIS_USERNAME: str = "default"
     FORLOOP_REDIS_PASSWORD: Optional[str] = None
     FORLOOP_REDIS_PORT: int = 6379
     FORLOOP_REDIS_DB: int = 0
 
-    VARIABLE_KEY: str = "stored_variable_"  # key prefix to be concatenated with variable name
-    INITIAL_VARIABLE_KEY: str = "stored_initial_variable_"  # key prefix to be concatenated with variable name
+    VARIABLE_KEY: str = "pipeline_job:{pipeline_job_uid}:variable:{variable_name}"
+    INITIAL_VARIABLE_KEY: str = "pipeline:{pipeline_uid}:initial_variable:{variable_name}"
 
     JOB_KEY: str = "jobs"
     JOB_INDEX_NAME: str = "index"
