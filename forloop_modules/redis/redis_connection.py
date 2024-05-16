@@ -133,3 +133,9 @@ def create_redis_key_for_project_db_private_key(project_uid: str):
     redis_key = redis_config.PASSWORD_ENCRYPTION_KEY_TEMPLATE.format(project_uid=project_uid)
     
     return redis_key
+
+def get_variable_redis_name(name: str, pipeline_job_uid: str) -> str:
+    return redis_config.VARIABLE_KEY.format(pipeline_job_uid=pipeline_job_uid, variable_name=name)
+
+def get_initial_variable_redis_name(name: str, pipeline_uid: str) -> str:
+    return redis_config.INITIAL_VARIABLE_KEY.format(pipeline_uid=pipeline_uid, variable_name=name)

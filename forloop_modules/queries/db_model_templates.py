@@ -156,8 +156,7 @@ class APINodeJob(BaseModel):
     created_at: UTCDatetime
     completed_at: Optional[UTCDatetime] = None
     message: Optional[str] = None
-    pipeline_uid: str  # TODO: Remove when PrototypeJobs are implemented
-    pipeline_job_uid: Optional[str] = None # TODO: Change to required when PrototypeJobs are implemented
+    pipeline_uid: str
 
 
 class APIOperationJob(BaseModel):
@@ -399,7 +398,6 @@ class VariableModel(BaseModel):
     type: Optional[str] = None # Type can be enforced or autoinferred
     size: Optional[int] = None
     is_result: bool = False
-    pipeline_uid: str = "0"
     project_uid: str = "0" # TODO: Is this necessary? Node is indirectly linked to a project via pipeline
     pipeline_job_uid: str = "0"
 
@@ -433,7 +431,7 @@ class InitialVariableModel(BaseModel):
     uid: str = "0"
     name: str = ""
     value: Any = "" # strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None (anything evaluatable by ast.literal_eval)
-    is_result: bool = False  # TODO: Remove when PrototypeJobs are implemented
+    is_result: bool = False
     type: Optional[str] = None # Type can be enforced or autoinferred
     size: Optional[int] = None
     pipeline_uid: str = "0"
