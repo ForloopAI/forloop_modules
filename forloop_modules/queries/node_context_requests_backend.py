@@ -545,8 +545,8 @@ def get_last_active_dataframe_node_uid():
 
 
 def get_variable_by_name(variable_name: str):
-    pipeline_uid = aet.active_pipeline_uid
-    url = f'{BASE_API}/variables?name={variable_name}&pipeline_uid={pipeline_uid}'
+    pipeline_job_uid = aet.active_pipeline_job_uid
+    url = f'{BASE_API}/variables?name={variable_name}&pipeline_job_uid={pipeline_job_uid}'
 
     response = requests.get(url)
     response.raise_for_status()
@@ -680,7 +680,7 @@ def delete_all_initial_variables():
 
 
 def update_initial_variable_by_uid(
-    variable_uid: str, name: str, value: Any, is_result: bool, type=None, size: Optional[int] = None  # TODO: Remove when PrototypeJobs are implemented
+    variable_uid: str, name: str, value: Any, is_result: bool, type=None, size: Optional[int] = None
 ):
     project_uid = aet.project_uid
     pipeline_uid = aet.active_pipeline_uid
@@ -693,7 +693,7 @@ def update_initial_variable_by_uid(
 
     payload = {
         "name": name, "value": value, "type": type, "size": size, "project_uid": project_uid,
-        "pipeline_uid": pipeline_uid, "pipeline_job_uid": pipeline_job_uid, "is_result": is_result  # TODO: Remove when PrototypeJobs are implemented
+        "pipeline_uid": pipeline_uid, "pipeline_job_uid": pipeline_job_uid, "is_result": is_result
     }
     response = requests.put(f"{BASE_API}/initial_variables/{variable_uid}", json=payload)
     response.raise_for_status()

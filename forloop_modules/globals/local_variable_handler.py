@@ -121,7 +121,7 @@ class LocalVariableHandler:
             value.attrs["name"] = local_variable.name
 
             variable = self.get_variable_by_name(name)
-            local_variable = LocalVariable(variable["uid"], variable["name"], value, variable["is_result"])  # TODO: Remove when PrototypeJobs are implemented
+            local_variable = LocalVariable(variable["uid"], variable["name"], value, variable["is_result"])
             return local_variable
         else:
             return local_variable
@@ -200,10 +200,11 @@ class LocalVariableHandler:
         elif self.handler_mode == "variable":
             ncrb_fn = ncrb.new_variable
 
+        optional_args = {"is_result": is_result} if is_result is not None else {}
         #serialization for objects
         # TODO: FFS FIXME:
         if is_value_serializable(value):
-            response = ncrb_fn(name=name, value=value)
+            response = ncrb_fn(name=name, value=value, **optional_args)
         else:
             if is_value_redis_compatible(value):
                 kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
@@ -214,17 +215,15 @@ class LocalVariableHandler:
                 save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
             #TODO: FILE TRANSFER MISSING
 
-            optional_args = {"is_result": is_result} if is_result is not None else {}
             response = ncrb_fn(name=name, value="", type=type(value).__name__, **optional_args)
 
         result = response.json()
         self.create_local_variable(
-            result["uid"], result["name"], result["value"], result["is_result"],
-            result["type"]
-        )  # TODO: Remove when PrototypeJobs are implemented
+            result["uid"], result["name"], result["value"], result["is_result"], result["type"]
+        )
         return result
 
-    def create_local_variable(self, uid: str, name, value, is_result: bool, type=None):  # TODO: Change when PrototypeJobs are implemented
+    def create_local_variable(self, uid: str, name, value, is_result: bool, type=None):
         if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
             value=ast.literal_eval(str(value))
         elif type in REDIS_STORED_TYPES_AS_STRINGS:
@@ -233,7 +232,7 @@ class LocalVariableHandler:
             if isinstance(value, pd.DataFrame):
                 value = self.process_dataframe_variable_on_initialization(name, value)
 
-        variable=LocalVariable(uid, name, value, is_result) # TODO: Remove when PrototypeJobs are implemented
+        variable=LocalVariable(uid, name, value, is_result)
         self.variables[name]=variable
         return(variable)
 
@@ -258,7 +257,7 @@ class LocalVariableHandler:
                 "variable_uid": variable["uid"],
                 "name": name,
                 "value": value,
-                "is_result": is_result  # TODO: Remove when PrototypeJobs are implemented
+                "is_result": is_result
             }
 
             if is_value_serializable(value):
@@ -278,7 +277,7 @@ class LocalVariableHandler:
             result = response.json()
             self.update_local_variable(
                 result["name"], result["value"], result["is_result"], result["type"]
-            )  # TODO: Remove when PrototypeJobs are implemented
+            )
             return result
 
 
@@ -298,7 +297,7 @@ class LocalVariableHandler:
 
         variable=self.variables[name]
         self.variables[name].value=value #Update
-        self.variables[name].is_result = is_result  # TODO: Remove when PrototypeJobs are implemented
+        self.variables[name].is_result = is_result
 
         return(variable)
 
