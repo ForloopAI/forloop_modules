@@ -14,7 +14,7 @@ class RedisConfig(BaseSettings):
 
     # None values for Host and Password are correct options:
     # in-memory local caching will be used instead of a Redis server
-    FORLOOP_REDIS_HOST: Optional[str] = 'localhost' # localhost doesn't work for devs with DummyKVRedis
+    FORLOOP_REDIS_HOST: Optional[str] = None # localhost doesn't work for devs with DummyKVRedis
     FORLOOP_REDIS_USERNAME: str = "default"
     FORLOOP_REDIS_PASSWORD: Optional[str] = None
     FORLOOP_REDIS_PORT: int = 6379
