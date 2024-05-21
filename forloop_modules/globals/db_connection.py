@@ -1,5 +1,6 @@
 from typing import Literal, Optional, Union
 
+import rsa
 from pydantic import BaseModel
 
 import dbhydra.dbhydra_core as dh
@@ -10,7 +11,9 @@ from forloop_modules.redis.redis_connection import (
 )
 from forloop_modules.utils.encryption import (
     convert_base64_private_key_to_rsa_private_key,
+    convert_rsa_private_to_base64_private_key,
     decrypt_text,
+    encrypt_text,
 )
 
 DbDialect = Literal["MySQL", "SQL Server", "PostgreSQL", "Xlsx structure", "MongoDB", "BigQuery"]
@@ -147,6 +150,26 @@ def create_db_details_from_database_dict(db_dict: dict):
     )
 
     return db_details
+
+
+def encrypt_db_password(password: str, project_uid: str) -> str:
+    redis_key = create_redis_key_for_project_db_private_key(project_uid=project_uid)
+    private_key_base64 = kv_redis.get(redis_key)
+
+    if private_key_base64 is None:
+        # If no private key for project exists, create a new one and store it into Redis
+        public_key, private_key = rsa.newkeys(512)
+        redis_key = create_redis_key_for_project_db_private_key(project_uid=project_uid)
+        private_key_base64 = convert_rsa_private_to_base64_private_key(private_key=private_key)
+        kv_redis.set(redis_key, private_key_base64)
+    else:
+        # Else decode the private key to bytes and use it to create encryption (public) key
+        private_key = convert_base64_private_key_to_rsa_private_key(
+            private_key_base64=private_key_base64
+        )
+        public_key = rsa.PublicKey(private_key.n, private_key.e)
+
+    return encrypt_text(text=password, public_key=public_key)
 
 
 def decrypt_db_details(database: dict) -> DbDetails:

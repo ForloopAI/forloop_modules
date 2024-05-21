@@ -1114,7 +1114,7 @@ def get_all_databases_by_project_uid():
 #     return(response)
 
 # def delete_database_by_uid(database_uid):
-#     response=requests.delete(SERVER+":"+str(PORT)+"/api/v1/database/"+str(database_uid))
+#     response=requests.delete(SERVER+":"+str(PORT)+"/api/v1/databases/"+str(database_uid))
 #     flog.info(f'DELETE Database response: {response.text}')
 #     return(response)
 
@@ -1149,7 +1149,7 @@ def get_all_databases_by_project_uid():
 #         }
 #     flog.info(f'New Dataset payload: {payload}')
 #
-#     url = f'{SERVER}:{PORT}/api/v1/database/{database_uid}'
+#     url = f'{SERVER}:{PORT}/api/v1/databases/{database_uid}'
 #
 #     response = requests.put(url, json=payload)
 #     flog.info(f'New Database response: {response.text}')
