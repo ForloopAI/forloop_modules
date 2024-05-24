@@ -764,6 +764,8 @@ class ScrapingUtilitiesHandler:
     
             flog.warning(self.browser_view_elements)
 
+    def refresh_page_source(self):
+        self.webscraping_client.refresh_page_source()
 
 # HACK: Without passing `init_docrawl=True`, `suh` variable acts as uninitialized, empty proxy.
 # This is necessary as the whole codebase imports `suh` from this file.

@@ -1831,11 +1831,13 @@ class RefreshPageSourceHandler(AbstractFunctionHandler):
         self.direct_execute()
 
     def direct_execute(self):
-        function = "exec"
-        inp = "self.browser.page_source"
+        # function = "exec"
+        # inp = "self.browser.page_source"
 
-        spider_functions = Var({"function": function, "input": inp, "done": False})
-        save_variables(kept_variables)
+        # spider_functions = Var({"function": function, "input": inp, "done": False})
+        # save_variables(kept_variables)
+        suh.refresh_page_source()
+
 
     def export_code(self, node_detail_form):
         code = f"""

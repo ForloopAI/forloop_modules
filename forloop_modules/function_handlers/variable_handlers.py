@@ -435,7 +435,7 @@ class StringModifyVariableHandler(AbstractFunctionHandler):
 
         self.type_category = ntcm.categories.variable
         self.docs_category = DocsCategories.control
-        self.operation_options = ["Concatenate", "Split", "Replace", "Strip", "Lower", "Upper"]
+        self.operation_options = ["Concatenate", "Split", "Replace", "Strip", "Lower", "Upper", 'Endswith']
         
         self._init_docs()
         
@@ -527,7 +527,9 @@ class StringModifyVariableHandler(AbstractFunctionHandler):
             new_value = local_variable.value.lower()
         elif str_operation == "Upper":
             new_value = local_variable.value.upper()
-            
+        elif str_operation == "Endswith":
+            new_value = local_variable.value.endswith(argument)
+
         if len(new_variable_name) > 0:
             variable_handler.new_variable(new_variable_name, new_value)
         else:
@@ -714,7 +716,7 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
         self, variable_name: str, list_operation: str, argument: str, new_variable_name: str
     ) -> None:
         if variable_name not in variable_handler.variables:
-            return
+            raise CriticalPipelineError(f"Variable '{variable_name}' not found in Variables.")
 
         variable = variable_handler.variables[variable_name]
         variable_value = deepcopy(variable.value)
