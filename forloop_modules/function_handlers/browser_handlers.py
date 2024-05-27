@@ -409,7 +409,7 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         #slack_notif.send_slack_notification(api_scan_webpage.url,user_email=api_scan_webpage.email)  #2 seconds
         # e_time = time.perf_counter() - start_time #12.5s
 
-        suh.webscraping_client.load_website(url, timeout=30)
+        suh.webscraping_client.load_website(url, timeout=50)
         elements, screenshot_base64 = suh.scan_web_page_API(output_folder, scraping_options)  #9 seconds
 
         # # Convert PNG file to WEBP
