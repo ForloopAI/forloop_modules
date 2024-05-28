@@ -607,11 +607,12 @@ class APIUserFlowStep(BaseModel):
     
 
 class APIUser(BaseModel):
-    email: str #auth0 response - email
     auth0_subject_id: str #auth0 response - auth_method_id
-    given_name: str #auth0 response - given_name
-    family_name: str #auth0 response - family_name
-    picture_url: str #auth0 response - picture
+    email: str #auth0 response - email
+    name: Optional[str] = None # normalized name from various OAuth providers
+    given_name: Optional[str] = None #auth0 response - given_name
+    family_name: Optional[str] = None #auth0 response - family_name
+    picture_url: Optional[str] = None #auth0 response - picture
 
 
 # Commented out fields are internal REST API fields, not used on frontend
