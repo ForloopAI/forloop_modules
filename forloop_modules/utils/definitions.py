@@ -151,4 +151,4 @@ REDIS_STORED_TYPES_AS_STRINGS = [typ.__name__ for typ in REDIS_STORED_TYPES] + [
 #    hyphens, ending with a top-level domain of at least two letters.
 # 3. Port Numbers: Optionally includes port numbers, specified with a colon and digits.
 # 4. Additional Parameters: Accommodates extra path or query parameters in the URL.
-URL_VALIDATION_REGEX = r"(https?://)?(([a-z\d][a-z\d\-]*[a-z\d])\.)+[a-z]{2,}(:\d*)?(.*)?"
+URL_VALIDATION_REGEX = r"(https?://)?(([a-z\d][a-z\d\-]*[a-z\d]*)\.)+[a-z]{2,}(:\d*)?(.*)?"

@@ -1558,7 +1558,7 @@ class InsertIntoSheetHandler(AbstractFunctionHandler):
 
         try:
             self.input_execute(inp)
-        except gspread.exceptions.APIError as e:
+        except (gspread.exceptions.APIError, PermissionError) as e:
             raise SoftPipelineError("No permissions to open/modify the provided Google Sheets") from e
         except gspread.exceptions.SpreadsheetNotFound as e:
             raise SoftPipelineError("No Google Sheet found under the provided url") from e
