@@ -604,7 +604,9 @@ class APIUserFlowStep(BaseModel):
 #     text: str=""
 #     project_uid:str="0"
     
-    
+class APIFeedback(BaseModel):
+    step: str
+    feedback: str
 
 class APIUser(BaseModel):
     auth0_subject_id: str #auth0 response - auth_method_id
