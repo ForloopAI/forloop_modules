@@ -201,6 +201,7 @@ class TriggerFrequencyEnum(str, Enum):
 class APITrigger(BaseModel):
     name: Optional[str] = None
     first_run_date: UTCDatetime
+    last_run_date: Optional[UTCDatetime] = None
     frequency: TriggerFrequencyEnum
     pipeline_uid: str
     project_uid: str
