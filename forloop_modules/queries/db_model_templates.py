@@ -179,7 +179,7 @@ class APIPipelineJob(BaseModel):
     pipeline_uid: str
     jobs: list[APINodeJob] = Field(default_factory=list)
     stats: Optional[PipelineJobStats] = None
-
+    trigger_mode: Literal['trigger', 'manual'] = 'manual'
 
 class APIPrototypeJob(BaseModel):
     uid: str
@@ -201,6 +201,7 @@ class TriggerFrequencyEnum(str, Enum):
 class APITrigger(BaseModel):
     name: Optional[str] = None
     first_run_date: UTCDatetime
+    last_run_date: Optional[UTCDatetime] = None
     frequency: TriggerFrequencyEnum
     pipeline_uid: str
     project_uid: str
