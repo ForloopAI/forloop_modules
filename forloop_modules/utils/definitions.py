@@ -29,7 +29,7 @@ ROLLABLE_ICONS = ["DefineFunction"] #* Can be unrolled into sub-block of nodes (
 DIRECT_EXECUTE_CORE_HANDLERS = ["ConvertVariableType", "NewVariable"] #! Temporary information holder for testing of an experimental approach in codeview
 
 # Nodes for which a 'websites_scraped' param in PipelineJobStats should be incremented
-WEBSITES_SCRAPED_NODES = ["LoadWebsite", "NextPage"]
+WEBSITES_SCRAPED_NODES = ["LoadWebsite", "NextPage", "RefreshPageSource"]
 
 # Folders with icons
 WEBSCRAPING_RPA_ICONS_FOLDER = 'web_scraping_and_rpa'
