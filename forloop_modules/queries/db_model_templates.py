@@ -156,6 +156,7 @@ class APINodeJob(BaseModel):
     created_at: UTCDatetime
     completed_at: Optional[UTCDatetime] = None
     message: Optional[str] = None
+    node_uid: str
     pipeline_uid: str
 
 
