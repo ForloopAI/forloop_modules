@@ -121,6 +121,20 @@ class DeleteUidObject(BaseModel):
 #     project_uid: str = ""
 #     last_active_pipeline_uid: Optional[str] = None
 
+
+class APINode(BaseModel):
+    pos: Optional[list[int]] = [0, 0]  # Should be a tuple[int, int] but dbhydra doesn't support tuples
+    typ: Optional[str] = "Custom"
+    params: Optional[dict] = {}
+    fields: Optional[list] = []
+    is_active: bool = False
+    pipeline_uid: str = "0"
+    project_uid: str = "0" # TODO: Is this necessary? Node is indirectly linked to a project via pipeline
+    visible: bool = True
+    is_breakpoint_enabled: bool = False
+    is_disabled: bool = False
+
+
 class JobSortableColumnsEnum(str, Enum):
     STATUS = "status"
     CREATED_AT = "created_at"
@@ -156,7 +170,7 @@ class APINodeJob(BaseModel):
     created_at: UTCDatetime
     completed_at: Optional[UTCDatetime] = None
     message: Optional[str] = None
-    node: 'APINode'
+    node: APINode
     pipeline_uid: str
 
 
@@ -361,19 +375,6 @@ class APIFormDictList(BaseModel):
     typ:str="Custom"
     form_dict_list:dict[str, Any]
     stage:str="default"
-
-
-class APINode(BaseModel):
-    pos: Optional[list[int]] = [0, 0]  # Should be a tuple[int, int] but dbhydra doesn't support tuples
-    typ: Optional[str] = "Custom"
-    params: Optional[dict] = {}
-    fields: Optional[list] = []
-    is_active: bool = False
-    pipeline_uid: str = "0"
-    project_uid: str = "0" # TODO: Is this necessary? Node is indirectly linked to a project via pipeline
-    visible: bool = True
-    is_breakpoint_enabled: bool = False
-    is_disabled: bool = False
 
 
 class APINodeExecute(BaseModel):
