@@ -169,22 +169,6 @@ class APIOperationJob(BaseModel):
     prototype_job_uid: str
 
 
-class APIFullPipelineJob(BaseModel):
-    """Full representation of a pipeline job - holding data about the main job and all sub-jobs."""
-
-    uid: str
-    machine_uid: Optional[str] = None
-    status: JobStatusEnum
-    created_at: UTCDatetime
-    started_at: Optional[UTCDatetime] = None
-    completed_at: Optional[UTCDatetime] = None
-    message: Optional[str] = None
-    pipeline_uid: str
-    jobs: list[APINodeJob] = Field(default_factory=list)
-    stats: Optional[PipelineJobStats] = None
-    trigger_mode: Literal['trigger', 'manual'] = 'manual'
-
-
 class APISummaryPipelineJob(BaseModel):
     """Short summary of a pipeline job - holding only data about the main job."""
 
@@ -198,6 +182,12 @@ class APISummaryPipelineJob(BaseModel):
     pipeline_uid: str
     stats: Optional[PipelineJobStats] = None
     trigger_mode: Literal['trigger', 'manual'] = 'manual'
+
+
+class APIFullPipelineJob(APISummaryPipelineJob):
+    """Full representation of a pipeline job - holding data about the main job and all sub-jobs."""
+
+    jobs: list[APINodeJob] = Field(default_factory=list)
 
 
 class APIPrototypeJob(BaseModel):
