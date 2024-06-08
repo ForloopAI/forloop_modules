@@ -209,6 +209,28 @@ class FindSimilarItemsHandler(AbstractFunctionHandler):
             #     selected_elements_xpaths_new
             # ) + ", Error occured in finding matching elements"
 
+        ##### FIND SIMILAR ITEMS X,Y POSITION ALGORITHMIC CORRECTION #####
+        print("MATCHING GROUPS", matching_elements_groups)
+        
+        for k,v in matching_elements_groups.items():
+            print("K,V", k,v)
+            print(v[0])
+            x_positions=[x["rect"]["x"] for x in v]
+            y_positions=[x["rect"]["y"] for x in v]
+            print("X POSITIONS", x_positions)
+            print("Y POSITIONS", y_positions)
+            print("ELEMENT_GROUP_LEN",len(v))
+            
+            x_positions_differences=[x_positions[i+1]-x_positions[i] for i,item in enumerate(x_positions) if i+1<len(x_positions)]
+            y_positions_differences=[y_positions[i+1]-y_positions[i] for i,item in enumerate(y_positions) if i+1<len(y_positions)]
+            print("X POSITIONS_DIFF", x_positions_differences)
+            print("Y POSITIONS_DIFF", y_positions_differences)
+            
+            most_common_rounded_shift_in_x=[round(x/10)*10 for x in x_positions_differences]
+            most_common_rounded_shift_in_y=[round(y/10)*10 for y in y_positions_differences]
+            ##### TODO: Finish this!
+        
+        
         data = {
             # "message": message,
             # "ok": True,
