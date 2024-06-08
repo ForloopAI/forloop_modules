@@ -96,8 +96,8 @@ class OpenBrowserHandler(AbstractFunctionHandler):
 
     def direct_execute(self, in_browser, driver):
         flog.info(f'ARGS OPEN BROWSER: {str([in_browser, driver])}')
-
-        suh.webscraping_client.run_spider(driver=driver, in_browser=in_browser)
+        # suh.webscraping_client.run_spider(driver=driver, in_browser=in_browser)
+        suh.webscraping_client.restart_browser(driver=driver, in_browser=in_browser, as_new=True)
 
     def export_code(self, node_detail_form):
         """TODO"""

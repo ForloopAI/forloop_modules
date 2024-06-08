@@ -441,7 +441,7 @@ class ScrapingUtilitiesHandler:
         #if glc.browser_view1.img is None:
         #    return
     
-        flog.warning('Trying to detect cookies popup window')
+        # flog.warning('Trying to detect cookies popup window')
     
         # In which attributes to search in
         attributes = ('class', 'id', 'name', 'value', 'href')
@@ -478,7 +478,7 @@ class ScrapingUtilitiesHandler:
     
         xpath += '(self::button or self::a)]'
     
-        flog.warning(xpath)
+        # flog.warning(xpath)
         return(xpath)
     
     def detect_cookies_popup(self):
