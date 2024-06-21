@@ -77,6 +77,9 @@ class ActiveEntityTracker:
         self.active_pipeline_uid: str = None
         self.active_script_uid: str = None
         self.active_pipeline_job_uid: Optional[str] = None
+        self.active_user_subscription_plan_uid: Optional[str] = None
+        self.active_subscription_plan: Optional[dict] = None
+
         self.home_folder = None     # To be refactored to another location (should be stores as user metadata) - refactored to AET for now
  
     
@@ -99,9 +102,6 @@ class ActiveEntityTracker:
         self.active_pipeline_uid= json.loads(pipeline_response.content.decode('utf-8'))["uid"]
         #user_response = refresh_user_and_session_heartbeat(email)
         #self.active_user_uid = json.loads(user_response.content.decode('utf-8'))["uid"] #TODO problem with payload, line 52 here
-        
-        
-        
 
     def set_project_and_pipeline_uid(
         self, project_uid: Optional[str] = None, pipeline_uid: Optional[str] = None
@@ -111,5 +111,12 @@ class ActiveEntityTracker:
 
     def set_pipeline_job_uid(self, pipeline_job_uid: Optional[str] = None) -> None:
         self.active_pipeline_job_uid = pipeline_job_uid
+
+    def set_user_subscription_plan_uid(self, user_subscription_plan_uid: str) -> None:
+        self.active_user_subscription_plan_uid = user_subscription_plan_uid
+
+    def set_subscription_plan(self, subscription_plan: dict) -> None:
+        self.active_subscription_plan = subscription_plan
+
 
 aet=ActiveEntityTracker()
