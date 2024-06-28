@@ -288,12 +288,6 @@ class APIScript(BaseModel):
     text: str = ""
     project_uid: str = "0"
 
-class UserSubscriptionPlanPaymentStatusEnum(Enum):
-    PENDING = "PENDING"
-    PAID = "PAID"
-    FAILED = "FAILED"
-
-
 # class APIUser(BaseModel):
 #     email: str = ""  # auth0 response - email
 #     auth0_subject_id: str = ""  # auth0 response - auth_method_id
