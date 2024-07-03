@@ -32,7 +32,7 @@ DIRECT_EXECUTE_CORE_HANDLERS = ["ConvertVariableType", "NewVariable"] #! Tempora
 WEBSITES_SCRAPED_NODES = ["LoadWebsite", "NextPage", "RefreshPageSource"]
 
 # Nodes which execution is billed to the project owner
-BILLABLE_NODES = ["LoadWebsite", 'NextPage', 'RefreshPageSource']
+BILLABLE_NODES = ["LoadWebsite", 'NextPage', 'RefreshPageSource', 'ScanBrowserWebpage']
 
 # Folders with icons
 WEBSCRAPING_RPA_ICONS_FOLDER = 'web_scraping_and_rpa'
