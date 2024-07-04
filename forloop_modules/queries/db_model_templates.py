@@ -26,6 +26,11 @@ UTCDatetime = Annotated[
     ) # Serialize Timestamps to zulu format
 ]
 
+class UserSubscriptionPlanStatusEnum(str, Enum):
+    PAID = "PAID"
+    UNPAID = "UNPAID" # During a grace period
+    CANCELED = "CANCELED"
+
 
 ##### DO NOT DELETE THIS SECTION -> Dominik will do it later
 
