@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-from typing import Annotated, Any, Dict, Generic, List, Literal, Optional, TypeVar, Union
+from typing import Annotated, Any, Dict, Generic, List, Literal, Optional, TypeVar, Union, TypedDict
 
 from pydantic import AfterValidator, BaseModel, Field, PlainSerializer, model_validator
 from pydantic.functional_validators import field_validator
