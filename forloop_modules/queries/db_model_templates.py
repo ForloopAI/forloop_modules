@@ -185,12 +185,6 @@ class APIOperationJob(BaseModel):
     prototype_job_uid: str
 
 
-class CreatedBy(TypedDict):
-    trigger_type: Literal['USER', 'PIPELINE', 'TRIGGER']
-    uid: str
-
-
-
 class APISummaryPipelineJob(BaseModel):
     """Short summary of a pipeline job - holding only data about the main job."""
 
@@ -204,7 +198,7 @@ class APISummaryPipelineJob(BaseModel):
     pipeline_uid: str
     stats: Optional[PipelineJobStats] = None
     trigger_mode: Literal['trigger', 'manual'] = 'manual'
-    created_by: CreatedBy
+
 
 class APIFullPipelineJob(APISummaryPipelineJob):
     """Full representation of a pipeline job - holding data about the main job and all sub-jobs."""
