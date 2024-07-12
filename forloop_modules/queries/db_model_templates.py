@@ -186,9 +186,8 @@ class APIOperationJob(BaseModel):
 
 
 class CreatedBy(TypedDict):
-    trigger_type: Literal['USER', 'PIPELINE', 'TRIGGER']
+    trigger_type: Literal['USER', "PIPELINE_JOB", 'TRIGGER']
     uid: str
-
 
 
 class APISummaryPipelineJob(BaseModel):
