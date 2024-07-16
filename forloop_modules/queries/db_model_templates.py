@@ -1,6 +1,7 @@
 import datetime
 from enum import Enum
-from typing import Annotated, Any, Dict, Generic, List, Literal, Optional, TypeVar, Union, TypedDict
+from typing import Annotated, Any, Dict, Generic, List, Literal, Optional, TypeVar, Union
+from typing_extensions import TypedDict
 
 from pydantic import AfterValidator, BaseModel, Field, PlainSerializer, model_validator
 from pydantic.functional_validators import field_validator
@@ -228,11 +229,25 @@ class TriggerFrequencyEnum(str, Enum):
     MONTHLY = "monthly"
 
 
+class TriggerType(str, Enum):
+    TIME = "time"
+    PIPELINE = "pipeline"
+
+
+class TimeTriggerParams(TypedDict):
+    first_run_date: UTCDatetime
+    frequency: TriggerFrequencyEnum
+
+
+class PipelineTriggerParams(TypedDict):
+    triggering_pipeline_uid: str
+
+
 class APITrigger(BaseModel):
     name: Optional[str] = None
-    first_run_date: UTCDatetime
+    type: TriggerType
     last_run_date: Optional[UTCDatetime] = None
-    frequency: TriggerFrequencyEnum
+    params: Union[TimeTriggerParams, PipelineTriggerParams]
     pipeline_uid: str
     project_uid: str
 
@@ -544,6 +559,7 @@ class APIPipeline(BaseModel):
     #variables_uids:list[int]
     active_nodes_uids: list[int] = [] # TODO: to be deprecated after introducing ExecCore for local execution
     remaining_nodes_uids: list[int] = [] # TODO: to be deprecated after introducing ExecCore for local execution
+    # triggering_pipeline_uid: Optional[str] = None
     project_uid: str = "0"
 
 class APIExecutePipelineSchema(BaseModel):
