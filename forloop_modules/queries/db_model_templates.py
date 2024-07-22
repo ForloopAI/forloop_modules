@@ -187,8 +187,21 @@ class APIOperationJob(BaseModel):
 
 
 class CreatedBy(TypedDict):
-    trigger_type: Literal['USER', "PIPELINE_JOB", 'TRIGGER']
+    type: Literal['user', 'pipeline_job', 'trigger']
     uid: str
+
+
+class APIPipelineDirectExecute(BaseModel):
+    triggered_by: Literal['user', 'pipeline_job', 'trigger']
+    uid: Optional[str] = None
+    variable_uids: list[str] = []
+
+    @model_validator(mode='after')
+    @classmethod
+    def check_uid_provided_if_not_user(cls, data: 'APIPipelineDirectExecute') -> 'APIPipelineDirectExecute':
+        if data.triggered_by != 'user' and data.uid is None:
+            raise ValueError('`uid` must be provided for `pipeline_job` and `trigger` choice')
+        return data
 
 
 class APISummaryPipelineJob(BaseModel):

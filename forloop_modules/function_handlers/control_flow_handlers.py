@@ -2,14 +2,19 @@ import ast
 import operator
 import random
 import time
+
 import forloop_modules.flog as flog
-
-from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
-from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
+import forloop_modules.queries.node_context_requests_backend as ncrb
+from forloop_modules.errors.errors import SoftPipelineError
+from forloop_modules.function_handlers.auxilliary.abstract_function_handler import (
+    AbstractFunctionHandler,
+)
 from forloop_modules.function_handlers.auxilliary.docs import Docs
+from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
+from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
+from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.globals.docs_categories import DocsCategories
-
-from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
+from forloop_modules.globals.variable_handler import variable_handler
 
 
 class StartHandler(AbstractFunctionHandler):
@@ -144,31 +149,46 @@ class WaitHandler(AbstractFunctionHandler):
         return (imports)
 
 
-class RunPipelineHandler(AbstractFunctionHandler):
+class SchedulePipelineHandler(AbstractFunctionHandler):
     def __init__(self):
-        self.icon_type = "RunPipeline"
-        self.fn_name = "Run Pipeline"
+        self.icon_type = "SchedulePipeline"
+        self.fn_name = "Schedule Pipeline"
         self.type_category = ntcm.categories.control_flow
 
     def make_form_dict_list(self, *args, node_detail_form=None):
-    
-        fdl=FormDictList()
+        fdl = FormDictList()
         fdl.label(self.fn_name)
-        fdl.label("Pipeline ID:")
-        fdl.entry(name="pipeline_id",text="",row=1)
-        fdl.label("Runs:")
-        fdl.entry(name="runs",text="1",row=2)
-        
+        fdl.label("Pipeline to trigger")
+        fdl.combobox(name="pipeline_to_trigger", options=[], row=1)
+        fdl.label("Variables to export")
+        fdl.combobox(name="variable_names", options=[], multiselect_indices={}, row=2)
         return fdl
-    
 
-    def direct_execute(self):
-        """TODO"""
-        pass
+    def execute(self, node_detail_form):
+        pipeline_to_trigger = node_detail_form.get_chosen_value_by_name(
+            "pipeline_to_trigger", variable_handler
+        )
+        variable_names = node_detail_form.get_chosen_value_by_name(
+            "variable_names", variable_handler
+        )
+        self.direct_execute(pipeline_to_trigger, variable_names)
 
-    def execute(self, args):
-        """TODO"""
-        pass
+    def direct_execute(self, pipeline_to_trigger, variable_names):
+        var_uids = []
+        for var_name in variable_names:
+            var = variable_handler.get_local_variable_by_name(var_name)
+            if not var:
+                raise SoftPipelineError(f"Variable {var_name} was not found during exporting.")
+            var_uids.append(var.uid)
+
+        ncrb.pipeline_direct_execute(
+            pipeline_to_trigger,
+            {
+                "triggered_by": "pipeline_job",
+                "uid": aet.active_pipeline_job_uid,
+                "variable_uids": var_uids,
+            },
+        )
 
 
 class IfConditionHandler(AbstractFunctionHandler):
@@ -352,7 +372,7 @@ control_flow_handlers_dict = {
     'Start': StartHandler(), 
     'Finish': FinishHandler(), 
     'Wait': WaitHandler(), 
-    'RunPipeline': RunPipelineHandler(), 
+    'SchedulePipeline': SchedulePipelineHandler(), 
     'IfCondition': IfConditionHandler(), 
     'WhileLoop': WhileLoopHandler(), 
     'ForLoop': ForLoopHandler(), 

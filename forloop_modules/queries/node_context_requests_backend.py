@@ -1338,8 +1338,7 @@ def finalize_pipeline(project_uid):
     return response
 
 
-def pipeline_direct_execute(pipeline_uid):
-    payload = {"pipeline_uid": pipeline_uid}
+def pipeline_direct_execute(pipeline_uid: str, payload: dict):
     url = f'{BASE_API}/pipelines/{pipeline_uid}/direct_execute'
     response = requests.post(url=url, json=payload)
     response.raise_for_status()
