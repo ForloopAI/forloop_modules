@@ -1,6 +1,7 @@
 import datetime
 from enum import Enum
 from typing import Annotated, Any, Dict, Generic, List, Literal, Optional, TypeVar, Union
+from typing_extensions import TypedDict
 
 from pydantic import AfterValidator, BaseModel, Field, PlainSerializer, model_validator
 from pydantic.functional_validators import field_validator
@@ -185,6 +186,24 @@ class APIOperationJob(BaseModel):
     prototype_job_uid: str
 
 
+class CreatedBy(TypedDict):
+    type: Literal['user', 'pipeline_job', 'trigger']
+    uid: str
+
+
+class APIPipelineDirectExecute(BaseModel):
+    triggered_by: Literal['user', 'pipeline_job', 'trigger']
+    uid: Optional[str] = None
+    variable_uids: list[str] = []
+
+    @model_validator(mode='after')
+    @classmethod
+    def check_uid_provided_if_not_user(cls, data: 'APIPipelineDirectExecute') -> 'APIPipelineDirectExecute':
+        if data.triggered_by != 'user' and data.uid is None:
+            raise ValueError('`uid` must be provided for `pipeline_job` and `trigger` choice')
+        return data
+
+
 class APISummaryPipelineJob(BaseModel):
     """Short summary of a pipeline job - holding only data about the main job."""
 
@@ -198,7 +217,7 @@ class APISummaryPipelineJob(BaseModel):
     pipeline_uid: str
     stats: Optional[PipelineJobStats] = None
     trigger_mode: Literal['trigger', 'manual'] = 'manual'
-
+    created_by: CreatedBy
 
 class APIFullPipelineJob(APISummaryPipelineJob):
     """Full representation of a pipeline job - holding data about the main job and all sub-jobs."""
@@ -224,11 +243,26 @@ class TriggerFrequencyEnum(str, Enum):
     MONTHLY = "monthly"
 
 
+class TriggerType(str, Enum):
+    TIME = "time"
+    PIPELINE = "pipeline"
+
+
+class TimeTriggerParams(TypedDict):
+    first_run_date: UTCDatetime
+    frequency: TriggerFrequencyEnum
+
+
+class PipelineTriggerParams(TypedDict):
+    triggering_pipeline_uid: str
+    variable_uids: list[str]
+
+
 class APITrigger(BaseModel):
     name: Optional[str] = None
-    first_run_date: UTCDatetime
+    type: TriggerType
     last_run_date: Optional[UTCDatetime] = None
-    frequency: TriggerFrequencyEnum
+    params: Union[TimeTriggerParams, PipelineTriggerParams]
     pipeline_uid: str
     project_uid: str
 
@@ -540,6 +574,7 @@ class APIPipeline(BaseModel):
     #variables_uids:list[int]
     active_nodes_uids: list[int] = [] # TODO: to be deprecated after introducing ExecCore for local execution
     remaining_nodes_uids: list[int] = [] # TODO: to be deprecated after introducing ExecCore for local execution
+    # triggering_pipeline_uid: Optional[str] = None
     project_uid: str = "0"
 
 class APIExecutePipelineSchema(BaseModel):
