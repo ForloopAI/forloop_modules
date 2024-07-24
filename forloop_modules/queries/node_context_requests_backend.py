@@ -544,6 +544,18 @@ def get_last_active_dataframe_node_uid():
 #     return response
 
 
+def get_variable(uid: str) -> Optional[dict]:
+    url = f'{BASE_API}/variables/{uid}'
+    response = requests.get(url)
+    try:
+        response.raise_for_status()
+    except Exception:
+        if response.status_code == 404:
+            return None
+        raise
+    return response.json()
+
+
 def get_variable_by_name(variable_name: str):
     pipeline_job_uid = aet.active_pipeline_job_uid
     url = f'{BASE_API}/variables?name={variable_name}&pipeline_job_uid={pipeline_job_uid}'
@@ -1338,8 +1350,7 @@ def finalize_pipeline(project_uid):
     return response
 
 
-def pipeline_direct_execute(pipeline_uid):
-    payload = {"pipeline_uid": pipeline_uid}
+def pipeline_direct_execute(pipeline_uid: str, payload: dict):
     url = f'{BASE_API}/pipelines/{pipeline_uid}/direct_execute'
     response = requests.post(url=url, json=payload)
     response.raise_for_status()

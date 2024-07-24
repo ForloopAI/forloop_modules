@@ -72,7 +72,6 @@ class ActiveEntityTracker:
     """
     def __init__(self):
         self.project_uid: str = None #Todo: rename to active
-        self.active_user_uid: str = None
         self.active_session_uid: str = None
         self.active_pipeline_uid: str = None
         self.active_script_uid: str = None
