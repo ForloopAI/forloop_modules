@@ -254,6 +254,7 @@ class TimeTriggerParams(TypedDict):
 
 class PipelineTriggerParams(TypedDict):
     triggering_pipeline_uid: str
+    variable_uids: list[str]
 
 
 class APITrigger(BaseModel):
