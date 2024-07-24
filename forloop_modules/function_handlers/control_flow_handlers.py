@@ -161,25 +161,25 @@ class SchedulePipelineHandler(AbstractFunctionHandler):
         fdl.label("Pipeline to trigger")
         fdl.combobox(name="pipeline_to_trigger", options=[], row=1)
         fdl.label("Variables to export")
-        fdl.combobox(name="variable_names", options=[], multiselect_indices={}, row=2)
+        fdl.combobox(name="variable_uids", options=[], multiselect_indices={}, row=2)
         return fdl
 
     def execute(self, node_detail_form):
         pipeline_to_trigger = node_detail_form.get_chosen_value_by_name(
             "pipeline_to_trigger", variable_handler
         )
-        variable_names = node_detail_form.get_chosen_value_by_name(
-            "variable_names", variable_handler
+        variable_uids = node_detail_form.get_chosen_value_by_name(
+            "variable_uids", variable_handler
         )
-        self.direct_execute(pipeline_to_trigger, variable_names)
+        self.direct_execute(pipeline_to_trigger, variable_uids)
 
-    def direct_execute(self, pipeline_to_trigger, variable_names):
+    def direct_execute(self, pipeline_to_trigger, variable_uids):
         var_uids = []
-        for var_name in variable_names:
-            var = variable_handler.get_local_variable_by_name(var_name)
+        for var_uid in variable_uids:
+            var = ncrb.get_variable(var_uid)
             if not var:
-                raise SoftPipelineError(f"Variable {var_name} was not found during exporting.")
-            var_uids.append(var.uid)
+                raise SoftPipelineError(f"Variable {var_uid} was not found during exporting.")
+            var_uids.append(var["uid"])
 
         ncrb.pipeline_direct_execute(
             pipeline_to_trigger,
