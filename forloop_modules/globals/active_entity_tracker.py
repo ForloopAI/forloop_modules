@@ -76,6 +76,9 @@ class ActiveEntityTracker:
         self.active_pipeline_uid: str = None
         self.active_script_uid: str = None
         self.active_pipeline_job_uid: Optional[str] = None
+        self.active_user_subscription_plan_uid: Optional[str] = None
+        self.active_subscription_plan: Optional[dict] = None
+
         self.home_folder = None     # To be refactored to another location (should be stores as user metadata) - refactored to AET for now
  
     
@@ -107,6 +110,12 @@ class ActiveEntityTracker:
 
     def set_pipeline_job_uid(self, pipeline_job_uid: Optional[str] = None) -> None:
         self.active_pipeline_job_uid = pipeline_job_uid
+
+    def set_user_subscription_plan_uid(self, user_subscription_plan_uid: str) -> None:
+        self.active_user_subscription_plan_uid = user_subscription_plan_uid
+
+    def set_subscription_plan(self, subscription_plan: dict) -> None:
+        self.active_subscription_plan = subscription_plan
 
 
 aet=ActiveEntityTracker()
