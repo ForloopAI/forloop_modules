@@ -573,6 +573,7 @@ class APIPipeline(BaseModel):
     name: Optional[str] = None
     start_node_uid: str = "0" # TODO: to be deprecated after introducing ExecCore for local execution
     is_active: bool = False # TODO: to be deprecated after introducing ExecCore for local execution
+    system_reactivation_status: Optional[str] = None
     #nodes_uids:list[int]
     #edges_uids:list[int]
     #variables_uids:list[int]
