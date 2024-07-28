@@ -149,10 +149,10 @@ class WaitHandler(AbstractFunctionHandler):
         return (imports)
 
 
-class SchedulePipelineHandler(AbstractFunctionHandler):
+class RunPipelineHandler(AbstractFunctionHandler):
     def __init__(self):
-        self.icon_type = "SchedulePipeline"
-        self.fn_name = "Schedule Pipeline"
+        self.icon_type = "RunPipeline"
+        self.fn_name = "Run Pipeline"
         self.type_category = ntcm.categories.control_flow
 
     def make_form_dict_list(self, *args, node_detail_form=None):
@@ -372,7 +372,7 @@ control_flow_handlers_dict = {
     'Start': StartHandler(), 
     'Finish': FinishHandler(), 
     'Wait': WaitHandler(), 
-    'SchedulePipeline': SchedulePipelineHandler(), 
+    'RunPipeline': RunPipelineHandler(), 
     'IfCondition': IfConditionHandler(), 
     'WhileLoop': WhileLoopHandler(), 
     'ForLoop': ForLoopHandler(), 

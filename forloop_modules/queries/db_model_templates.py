@@ -238,7 +238,7 @@ class APIPrototypeJob(BaseModel):
     started_at: Optional[UTCDatetime] = None
     completed_at: Optional[UTCDatetime] = None
     pipeline_uid: str
-    trigger_mode: str
+    trigger_mode: Literal['trigger', 'manual', 'system']
 
 
 class TriggerFrequencyEnum(str, Enum):
