@@ -656,6 +656,12 @@ def cancel_pipeline_job():
     response.raise_for_status()
     return response
 
+def cancel_prototype_job(uid: str) -> requests.Response:
+    url = f'{BASE_API}/prototype_jobs/{uid}/cancel'
+    response = requests.post(url=url)
+    
+    return response
+
 def consume_execution_stream(job_uid: str) -> Generator[dict, None, None]:
     """Run in a separate thread as this is a blocking operation."""
     url = f'{BASE_API}/jobs/{job_uid}/execution_stream'
