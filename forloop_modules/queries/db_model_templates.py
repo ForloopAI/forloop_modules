@@ -192,12 +192,12 @@ class APIOperationJob(BaseModel):
 
 
 class CreatedBy(TypedDict):
-    type: Literal['user', 'pipeline_job', 'trigger']
+    type: Literal['USER', 'PIPELINE_JOB', 'TRIGGER']
     uid: str
 
 
 class APIPipelineDirectExecute(BaseModel):
-    triggered_by: Literal['user', 'pipeline_job', 'trigger']
+    triggered_by: Literal['USER', 'PIPELINE_JOB', 'TRIGGER']
     uid: Optional[str] = None
     variable_uids: list[str] = []
 
@@ -242,10 +242,11 @@ class APIPrototypeJob(BaseModel):
 
 
 class TriggerFrequencyEnum(str, Enum):
-    HOURLY = "hourly"
-    DAILY = "daily"
-    WEEKLY = "weekly"
-    MONTHLY = "monthly"
+    MINUTELY = 'MINUTELY'
+    HOURLY = "HOURLY"
+    DAILY = "DAILY"
+    WEEKLY = "WEEKLY"
+    MONTHLY = "MONTHLY"
 
 
 class TriggerType(str, Enum):
