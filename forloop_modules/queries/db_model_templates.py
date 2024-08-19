@@ -255,6 +255,12 @@ class TriggerType(str, Enum):
 
 class TimeTriggerParams(TypedDict):
     first_run_date: UTCDatetime
+    multiplier: int
+    frequency: TriggerFrequencyEnum
+
+class APITimeTriggerParams(BaseModel):
+    first_run_date: UTCDatetime
+    multiplier: int = Field(..., gt=0, le=1000)
     frequency: TriggerFrequencyEnum
 
 
@@ -263,11 +269,16 @@ class PipelineTriggerParams(TypedDict):
     variable_uids: list[str]
 
 
+class APIPipelineTriggerParams(BaseModel):
+    triggering_pipeline_uid: str
+    variable_uids: list[str]
+
+
 class APITrigger(BaseModel):
     name: Optional[str] = None
     type: TriggerType
     last_run_date: Optional[UTCDatetime] = None
-    params: Union[TimeTriggerParams, PipelineTriggerParams]
+    params: Union[APITimeTriggerParams, APIPipelineTriggerParams]
     pipeline_uid: str
     project_uid: str
 
