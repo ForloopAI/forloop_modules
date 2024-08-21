@@ -192,12 +192,12 @@ class APIOperationJob(BaseModel):
 
 
 class CreatedBy(TypedDict):
-    type: Literal['user', 'pipeline_job', 'trigger']
+    type: Literal['USER', 'PIPELINE_JOB', 'TRIGGER']
     uid: str
 
 
 class APIPipelineDirectExecute(BaseModel):
-    triggered_by: Literal['user', 'pipeline_job', 'trigger']
+    triggered_by: Literal['USER', 'PIPELINE_JOB', 'TRIGGER']
     uid: Optional[str] = None
     variable_uids: list[str] = []
 
@@ -242,10 +242,11 @@ class APIPrototypeJob(BaseModel):
 
 
 class TriggerFrequencyEnum(str, Enum):
-    HOURLY = "hourly"
-    DAILY = "daily"
-    WEEKLY = "weekly"
-    MONTHLY = "monthly"
+    MINUTELY = 'MINUTELY'
+    HOURLY = "HOURLY"
+    DAILY = "DAILY"
+    WEEKLY = "WEEKLY"
+    MONTHLY = "MONTHLY"
 
 
 class TriggerType(str, Enum):
@@ -255,6 +256,12 @@ class TriggerType(str, Enum):
 
 class TimeTriggerParams(TypedDict):
     first_run_date: UTCDatetime
+    multiplier: int
+    frequency: TriggerFrequencyEnum
+
+class APITimeTriggerParams(BaseModel):
+    first_run_date: UTCDatetime
+    multiplier: int = Field(..., gt=0, le=1000)
     frequency: TriggerFrequencyEnum
 
 
@@ -263,11 +270,16 @@ class PipelineTriggerParams(TypedDict):
     variable_uids: list[str]
 
 
+class APIPipelineTriggerParams(BaseModel):
+    triggering_pipeline_uid: str
+    variable_uids: list[str]
+
+
 class APITrigger(BaseModel):
     name: Optional[str] = None
     type: TriggerType
     last_run_date: Optional[UTCDatetime] = None
-    params: Union[TimeTriggerParams, PipelineTriggerParams]
+    params: Union[APITimeTriggerParams, APIPipelineTriggerParams]
     pipeline_uid: str
     project_uid: str
 
