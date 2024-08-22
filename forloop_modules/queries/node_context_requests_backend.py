@@ -1,18 +1,16 @@
 #### GLC, GOM dependencies forbidden !!!
 """In this file all functions should have response-like return value"""
 
-import requests
 import json
 from inspect import Parameter, Signature
 from pydantic import BaseModel
 from typing import Optional, Any, Generator
 import sys
 from pathlib import Path
-import httpx
 import forloop_modules.flog as flog
 import json
 
-from forloop_modules.utils.sse_parser import SSEParser
+from forloop_modules.utils.http_client import HttpClient
 from forloop_modules.globals.active_entity_tracker import aet
 
 from forloop_modules.queries.db_model_templates import APIProject, APITrigger, APIDataset, APIDbTable, APIScript, APIFile, APIDatabase, APIPipeline, APIEdge, APIVariable, APIPopup, APIInitialVariable
@@ -25,10 +23,10 @@ else:
 with Path(config_path).open(mode='r') as f:
     rows = f.readlines()
 
-
 SERVER = rows[0].split("=")[1].strip()
 PORT = rows[1].split("=")[1].strip()
 BASE_API = f'{SERVER}:{PORT}/api/v1'
+http_client = HttpClient()
 
 resources = {
     "databases": ["get_all", "get", "new", "delete", "update"],
@@ -76,7 +74,7 @@ def set_stored_project_uid_and_pipeline_uid_to_factory_payload(payload: dict):
 def get_all_factory(resource_name):
     resource_url = f'{SERVER}:{str(PORT)}/api/v1/{resource_name}'
     def get_all():
-        response = requests.get(resource_url)
+        response = http_client.get(resource_url)
         #flog.info(f'GET all response: {response.text}')
         return response
     get_all.__name__ = f'get_all_{resource_name}'
@@ -85,7 +83,7 @@ def get_all_factory(resource_name):
 def get_factory(resource_name):
     def get(resource_uid):
         resource_url = f'{BASE_API}/{resource_name}/{resource_uid}'
-        response = requests.get(resource_url)
+        response = http_client.get(resource_url)
         #flog.info(f'GET response: {response.text}')
         return response
     get.__name__ = f'get_{resource_name}_by_uid'
@@ -94,7 +92,7 @@ def get_factory(resource_name):
 def delete_factory(resource_name):
     def delete(resource_uid):
         resource_url = f'{BASE_API}/{resource_name}/{resource_uid}'
-        response = requests.delete(resource_url)
+        response = http_client.delete(resource_url)
         #flog.info(f'DELETE response: {response.text}')
         return response
     delete.__name__ = f'delete_{resource_name}_by_uid'
@@ -123,7 +121,7 @@ def new_factory(resource_name, model):
         #flog.info(f'New {resource_name} payload: {payload}')
         resource_url = f'{BASE_API}/{resource_name}'
 
-        response = requests.post(resource_url, json=payload)
+        response = http_client.post(resource_url, json=payload)
         #flog.info(f'New {resource_name} response: {response.text}')
         if not response.ok:
             flog.error(response.json())
@@ -155,7 +153,7 @@ def update_factory(resource_name, model):
         #flog.info(f'Update {resource_name} payload: {payload}')
         resource_url = f'{BASE_API}/{resource_name}/{uid}'
 
-        response = requests.put(resource_url, json=payload)
+        response = http_client.put(resource_url, json=payload)
         #flog.info(f'Update {resource_name} response: {response.text}')
         if not response.ok:
             flog.error(response.json())
@@ -237,7 +235,7 @@ def new_node(pos, typ, params_dict: Optional[dict] = None, fields: Optional[list
 
     url = f'{BASE_API}/nodes'
 
-    response = requests.post(url, json=payload)
+    response = http_client.post(url, json=payload)
     flog.info(f'New Node response: {response.text}')
 
     return response
@@ -251,7 +249,7 @@ def direct_execute_node(node_uid):
 
     url = f'{BASE_API}/node_direct_execute/{node_uid}'
 
-    response = requests.post(url, json=payload)
+    response = http_client.post(url, json=payload)
     flog.info(f'Direct execute Node response: {response.text}')
     
     return response
@@ -267,7 +265,7 @@ def export_node_code(node_uid):
 
     url = f'{BASE_API}/nodes/{node_uid}/export_code'
 
-    response = requests.post(url, json=payload)
+    response = http_client.post(url, json=payload)
     flog.info(f'Export Node code response: {response.text}')
     
     return response
@@ -277,7 +275,7 @@ def export_node_code(node_uid):
 def get_node_by_uid(node_uid):
     url = f'{BASE_API}/nodes/{node_uid}'
 
-    response = requests.get(url)
+    response = http_client.get(url)
     flog.info(f'GET Node response: {response.text}')
     
     return response
@@ -285,14 +283,14 @@ def get_node_by_uid(node_uid):
 
 def get_all_nodes():
     url = f'{BASE_API}/nodes'
-    response = requests.get(url)
+    response = http_client.get(url)
     flog.debug(f'GET all Nodes response: {response.text}')
 
     return response
     
 def delete_node_by_uid(node_uid):
     url = f'{BASE_API}/nodes/{node_uid}'
-    response = requests.delete(url)
+    response = http_client.delete(url)
     flog.info(f'DELETE Node response: {response.text}')
 
     return response
@@ -300,7 +298,7 @@ def delete_node_by_uid(node_uid):
 # def delete_node_by_uid(node_uid):
 #     url = f'{BASE_API}/node/{node_uid}'
 #
-#     response = requests.delete(url)
+#     response = http_client.delete(url)
 #     flog.info(f'DELETE Node response: {response.text}')
 #
 #     return response
@@ -309,7 +307,7 @@ def delete_node_by_uid(node_uid):
 def delete_all_nodes():
     pipeline_uid = aet.active_pipeline_uid
     url = f'{BASE_API}/pipelines/{pipeline_uid}/nodes'
-    response = requests.delete(url)
+    response = http_client.delete(url)
     response.raise_for_status()
     return response
 
@@ -322,7 +320,7 @@ def move_node_by_uid(node_uid, new_pos):
 
     flog.info(f'Move Node payload: {payload}')
     url = f'{BASE_API}/nodes/{node_uid}/move'
-    response = requests.put(url, json=payload)
+    response = http_client.put(url, json=payload)
     flog.info(f'Move Node response: {response.text}')
     return response
 
@@ -334,7 +332,7 @@ def node_breakpoint_status(node_uid, breakpoint_status):
 
     flog.info(f'Node breakpoint status: {payload}')
     url = f'{BASE_API}/nodes/{node_uid}/breakpoint'
-    response = requests.put(url, json=payload)
+    response = http_client.put(url, json=payload)
     flog.info(f'Node breakpoint status: {response.text}')
     return response
 
@@ -346,7 +344,7 @@ def node_disabled_status(node_uid, disabled_status):
 
     flog.info(f'Node disabled status: {payload}')
     url = f'{BASE_API}/nodes/{node_uid}/status'
-    response = requests.put(url, json=payload)
+    response = http_client.put(url, json=payload)
     flog.info(f'Node disabled status: {response.text}')
     return response
 
@@ -368,7 +366,7 @@ def update_node_by_uid(node_uid, pos=None, typ=None, params=None, fields=None):
     #if '"' in payload_pos: #Remove apostrophes from list:
     #    payload_pos=payload_pos.replace('"','')
     #payload='{"pos":'+payload_pos+',"typ":'+json.dumps(typ)+',"params":'+json.dumps(params)+',"fields":'+json.dumps(fields)+',"project_uid":"'+project_uid+'"}'#+'}' #
-    #response=requests.put(SERVER+":"+str(PORT)+"/api/v1/nodes/"+str(node_uid),data=payload)
+    #response=http_client.put(SERVER+":"+str(PORT)+"/api/v1/nodes/"+str(node_uid),data=payload)
     #return(response)
 
     # type=None has to be send, otherwise the icon type changes to "Custom"
@@ -385,7 +383,7 @@ def update_node_by_uid(node_uid, pos=None, typ=None, params=None, fields=None):
 
     url = f'{BASE_API}/nodes/{node_uid}'
 
-    response = requests.put(url, json=payload)
+    response = http_client.put(url, json=payload)
     flog.info(f'Updated Node response: {response.text}')
 
     return response
@@ -403,7 +401,7 @@ def node_button_click(node_uid, button_name):
 
     url = f'{BASE_API}/node_click_button/{node_uid}'
 
-    response = requests.post(url, json=payload)
+    response = http_client.post(url, json=payload)
     flog.info(f'Direct execute Node response: {response.text}')
     
     return response
@@ -441,7 +439,7 @@ def node_button_click_wrapper(args):
 #
 #     url = f'{BASE_API}/edges'
 #
-#     response = requests.post(url, json=payload)
+#     response = http_client.post(url, json=payload)
 #     flog.info(f'New Edge response: {response.text}')
 #
 #     return response
@@ -450,21 +448,21 @@ def node_button_click_wrapper(args):
 # def get_all_edges():
 #     url = f'{BASE_API}/edges'
 #
-#     response = requests.get(url)
+#     response = http_client.get(url)
 #     flog.info(f'GET all Edges response: {response.text}')
 #
 #     return response
 
 def get_edges_by_node_uid(node_uid:str):
     url = f'{BASE_API}/nodes/{node_uid}/edges'
-    response = requests.get(url)
+    response = http_client.get(url)
     flog.debug(f'GET Edges by Node Uid response: {response.text}')
 
     return response
 
 def get_edge_by_connected_node_uids(from_node_uid:str, to_node_uid:str):
     url = f'{BASE_API}/edges/?from_node_uid={from_node_uid}&to_node_uid={to_node_uid}'
-    response = requests.get(url)
+    response = http_client.get(url)
     flog.info(f'GET Edge by Connected Node Uids response: {response.text}')
 
     return response
@@ -474,7 +472,7 @@ def get_edge_by_connected_node_uids(from_node_uid:str, to_node_uid:str):
 def delete_edge_by_uid(uid):
     url = f'{BASE_API}/edges/{uid}'
 
-    response = requests.delete(url)
+    response = http_client.delete(url)
     flog.info(f'DELETE Edge response: {response.text}')
 
     return response
@@ -483,7 +481,7 @@ def delete_edge_by_uid(uid):
 def delete_all_edges():
     pipeline_uid = aet.active_pipeline_uid
     url = f'{BASE_API}/pipelines/{pipeline_uid}/edges'
-    response = requests.delete(url)
+    response = http_client.delete(url)
     response.raise_for_status()
     return response
 
@@ -500,7 +498,7 @@ def update_last_active_dataframe_node_uid(last_active_dataframe_node_uid: Option
 
     url = f'{BASE_API}/last_active_dataframe_node_uid'
 
-    response = requests.put(url, json=payload)
+    response = http_client.put(url, json=payload)
     flog.info(f'Last active DF node_uid response: {response.text}')
 
     return response
@@ -508,7 +506,7 @@ def update_last_active_dataframe_node_uid(last_active_dataframe_node_uid: Option
 
 def get_last_active_dataframe_node_uid():
     url = f'{BASE_API}/last_active_dataframe_node_uid?project_uid={aet.project_uid}'
-    response = requests.get(url)
+    response = http_client.get(url)
     flog.debug(f'GET Last active DF node_uid response: {response.text}')
 
     return response
@@ -538,7 +536,7 @@ def get_last_active_dataframe_node_uid():
 #
 #     url = f'{BASE_API}/variables'
 #
-#     response = requests.post(url, json=payload)
+#     response = http_client.post(url, json=payload)
 #     flog.info(f'New Variable response: {response.text}')
 #
 #     return response
@@ -546,7 +544,7 @@ def get_last_active_dataframe_node_uid():
 
 def get_variable(uid: str) -> Optional[dict]:
     url = f'{BASE_API}/variables/{uid}'
-    response = requests.get(url)
+    response = http_client.get(url)
     try:
         response.raise_for_status()
     except Exception:
@@ -560,7 +558,7 @@ def get_variable_by_name(variable_name: str):
     pipeline_job_uid = aet.active_pipeline_job_uid
     url = f'{BASE_API}/variables?name={variable_name}&pipeline_job_uid={pipeline_job_uid}'
 
-    response = requests.get(url)
+    response = http_client.get(url)
     response.raise_for_status()
     flog.info(f'GET Variable by name response: {response.text}')
 
@@ -570,7 +568,7 @@ def get_variable_by_name(variable_name: str):
 # def get_all_variables():
 #     url = f'{BASE_API}/variables'
 #
-#     response = requests.get(url)
+#     response = http_client.get(url)
 #     flog.info(f'GET all Variables response: {response.text}')
 #
 #     return response
@@ -581,7 +579,7 @@ def get_variable_by_name(variable_name: str):
 def delete_variable_by_uid(variable_uid):
     url = f'{BASE_API}/variables/{variable_uid}'
 
-    response = requests.delete(url)
+    response = http_client.delete(url)
     response.raise_for_status()
     flog.info(f'DELETE Variable response: {response.text}')
 
@@ -591,7 +589,7 @@ def delete_variable_by_uid(variable_uid):
 def delete_all_variables():
     pipeline_uid = aet.active_pipeline_uid
     url = f'{BASE_API}/pipelines/{pipeline_uid}/variables'
-    response = requests.delete(url)
+    response = http_client.delete(url)
     response.raise_for_status()
     return response
 
@@ -618,7 +616,7 @@ def update_variable_by_uid(variable_uid: str, name: str, value: Any, is_result: 
     if is_result is not None:
         payload["is_result"] = is_result
 
-    response=requests.put(f"{BASE_API}/variables/{variable_uid}",json=payload)
+    response=http_client.put(f"{BASE_API}/variables/{variable_uid}",json=payload)
     result=json.loads(response.content.decode('utf-8'))
     return(response)
 
@@ -636,7 +634,7 @@ def update_variable_by_uid(variable_uid: str, name: str, value: Any, is_result: 
 #     flog.info(f'Updated Variable payload: {payload}')
 #     url = f'{BASE_API}/variable/{variable_uid}'
     
-#     response = requests.put(url, json=payload)
+#     response = http_client.put(url, json=payload)
 #     flog.info(f'Updated Variable response: {response.text}')
 
 #     return response
@@ -645,31 +643,27 @@ def update_variable_by_uid(variable_uid: str, name: str, value: Any, is_result: 
 def get_job_variables():
     job_uid = aet.active_pipeline_job_uid
     url = f'{BASE_API}/jobs/{job_uid}/variables'
-    response = requests.get(url)
+    response = http_client.get(url)
     response.raise_for_status()
     return response
 
 def cancel_pipeline_job():
     job_uid = aet.active_pipeline_job_uid
     url = f'{BASE_API}/jobs/{job_uid}/cancel'
-    response = requests.post(url)
+    response = http_client.post(url)
     response.raise_for_status()
     return response
 
-def cancel_prototype_job(uid: str) -> requests.Response:
+def cancel_prototype_job(uid: str):
     url = f'{BASE_API}/prototype_jobs/{uid}/cancel'
-    response = requests.post(url=url)
+    response = http_client.post(url=url)
     
     return response
 
 def consume_execution_stream(job_uid: str) -> Generator[dict, None, None]:
     """Run in a separate thread as this is a blocking operation."""
     url = f'{BASE_API}/jobs/{job_uid}/execution_stream'
-
-    with (httpx.Client(timeout=300) as client):
-        sse_handler = SSEParser(client)
-        for message in sse_handler.stream("GET", url, as_dict=True):
-            yield from message
+    yield from http_client.sse_stream("GET", url, as_dict=True)
 
 
 ##### INITIAL VARIABLES #####
@@ -679,20 +673,20 @@ def get_initial_variable_by_name(uid: str):
     pipeline_uid = aet.active_pipeline_uid
     url = f'{BASE_API}/initial_variables?name={uid}&pipeline_uid={pipeline_uid}'
 
-    response = requests.get(url)
+    response = http_client.get(url)
     response.raise_for_status()
     return response
 
 
 def delete_initial_variable_by_uid(uid):
-    response = requests.delete(f'{BASE_API}/initial_variables/{uid}')
+    response = http_client.delete(f'{BASE_API}/initial_variables/{uid}')
     response.raise_for_status()
     return response
 
 
 def delete_all_initial_variables():
     pipeline_uid = aet.active_pipeline_uid
-    response = requests.delete(f'{BASE_API}/pipelines/{pipeline_uid}/initial_variables')
+    response = http_client.delete(f'{BASE_API}/pipelines/{pipeline_uid}/initial_variables')
     response.raise_for_status()
     return response
 
@@ -713,7 +707,7 @@ def update_initial_variable_by_uid(
         "name": name, "value": value, "type": type, "size": size, "project_uid": project_uid,
         "pipeline_uid": pipeline_uid, "pipeline_job_uid": pipeline_job_uid, "is_result": is_result
     }
-    response = requests.put(f"{BASE_API}/initial_variables/{variable_uid}", json=payload)
+    response = http_client.put(f"{BASE_API}/initial_variables/{variable_uid}", json=payload)
     response.raise_for_status()
     return response
 
@@ -734,16 +728,16 @@ def update_initial_variable_by_uid(
 #         "project_uid": project_uid
 #     }
 #     flog.info(payload)
-#     response = requests.post(SERVER + ":" + str(PORT) + "/api/v1/dbtables", json=payload)
+#     response = http_client.post(SERVER + ":" + str(PORT) + "/api/v1/dbtables", json=payload)
 #     return (response)
 
 
 # def get_all_dbtables():
-#     response=requests.get(SERVER+":"+str(PORT)+"/api/v1/dbtables")
+#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/dbtables")
 #     return(response)
 
 # def get_dbtable_by_uid(dbtable_uid):
-#     response=requests.get(SERVER+":"+str(PORT)+"/api/v1/dbtable/"+str(dbtable_uid))
+#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/dbtable/"+str(dbtable_uid))
 #     return(response)
 #
 # def update_dbtable_by_uid(dbtable_uid, name, pos, columns, is_rolled, database_uid, project_uid):
@@ -759,7 +753,7 @@ def update_initial_variable_by_uid(
 #         "project_uid": project_uid
 #     }
 #     flog.info(payload)
-#     response = requests.put(SERVER + ":" + str(PORT) + "/api/v1/dbtable/"+str(dbtable_uid), json=payload)
+#     response = http_client.put(SERVER + ":" + str(PORT) + "/api/v1/dbtable/"+str(dbtable_uid), json=payload)
 #     return (response)
 
 ##### files #####
@@ -780,31 +774,31 @@ def update_initial_variable_by_uid(
 #     }
 #     flog.info(f'New File payload: {payload}')
 #     print("REQUEST", SERVER, PORT, payload)
-#     response=requests.post(SERVER+":"+str(PORT)+"/api/v1/files",json=payload)
+#     response=http_client.post(SERVER+":"+str(PORT)+"/api/v1/files",json=payload)
 #     flog.info(f'New File response: {response.text}')
 #
 #     return(response)
 
 def upload_urls_from_file(path:str):
     file = {'file': open(path, 'rb')}
-    response = requests.post(SERVER+":"+str(PORT)+"/api/v1/upload_urls_from_file", files=file)
+    response = http_client.post(SERVER+":"+str(PORT)+"/api/v1/upload_urls_from_file", files=file)
     flog.info(f"file upload response: {response.text}")
 
     return response
 
 
 # def get_file_by_name(file_name):
-#     response=requests.get(SERVER+":"+str(PORT)+"/api/v1/get_file_by_name/"+str(file_name))
+#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/get_file_by_name/"+str(file_name))
 #     return(response)
 
 
 # def get_all_files():
-#     response=requests.get(SERVER+":"+str(PORT)+"/api/v1/files")
+#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/files")
 #     return(response)
 
     
 # def delete_file_by_uid(file_uid):
-#     response=requests.delete(SERVER+":"+str(PORT)+"/api/v1/file/"+str(file_uid))
+#     response=http_client.delete(SERVER+":"+str(PORT)+"/api/v1/file/"+str(file_uid))
 #     return(response)
     
 
@@ -815,7 +809,7 @@ def delete_all_files():
 
     payload='{"project_uid":"'+project_uid+'"}'
     flog.info(payload)
-    response=requests.delete(SERVER+":"+str(PORT)+"/api/v1/files",data=payload)
+    response=http_client.delete(SERVER+":"+str(PORT)+"/api/v1/files",data=payload)
     return(response)
     
 
@@ -825,7 +819,7 @@ def delete_all_files():
 # def update_file_by_uid(file_uid,name,value,type=None,size=None):
 #     payload='{"name":'+json.dumps(name)+',"value":'+json.dumps(value)+',"type":'+json.dumps(type)+',"size":'+json.dumps(size)+'}' #
 #     flog.info(payload)
-#     response=requests.put(SERVER+":"+str(PORT)+"/api/v1/file/"+str(file_uid),data=payload)
+#     response=http_client.put(SERVER+":"+str(PORT)+"/api/v1/file/"+str(file_uid),data=payload)
 #     result=json.loads(response.content.decode('utf-8'))
 #     return(response)
 
@@ -833,7 +827,7 @@ def delete_all_files():
 
 
 # def delete_dbtable_by_uid(dbtable_uid):
-#     response = requests.delete(SERVER + ":" + str(PORT) + "/api/v1/dbtable/" + str(dbtable_uid))
+#     response = http_client.delete(SERVER + ":" + str(PORT) + "/api/v1/dbtable/" + str(dbtable_uid))
 #     return (response)
 
 
@@ -846,7 +840,7 @@ def delete_all_files():
 # def get_all_pipelines():
 #     url = f'{BASE_API}/pipelines'
 #
-#     response = requests.get(url)
+#     response = http_client.get(url)
 #     flog.info(f'GET all Pipelines response: {response.text}')
 #
 #     return response
@@ -855,7 +849,7 @@ def delete_all_files():
 # def delete_pipeline_by_uid(pipeline_uid):
 #     url = f'{BASE_API}/pipeline/{pipeline_uid}'
 #
-#     response = requests.delete(url)
+#     response = http_client.delete(url)
 #     flog.info(f'DELETE Pipeline response: {response.text}')
 #
 #     return response
@@ -875,7 +869,7 @@ def delete_all_files():
 #
 #     url = f'{BASE_API}/pipelines'
 #
-#     response = requests.post(url, json=payload)
+#     response = http_client.post(url, json=payload)
 #     flog.info(f'New Pipeline response: {response.text}')
 #
 #     return response
@@ -883,7 +877,7 @@ def delete_all_files():
 def pipeline_refresh_building_blocks(pipeline_uid:str): 
     url = f'{BASE_API}/pipeline_refresh_building_blocks/{pipeline_uid}'
 
-    response = requests.get(url)
+    response = http_client.get(url)
     flog.info(f'GET Pipeline Refresh Building Blocks response: {response.text}')
 
     return response
@@ -891,7 +885,7 @@ def pipeline_refresh_building_blocks(pipeline_uid:str):
 def pipeline_refresh_running_blocks(pipeline_uid:str): 
     url = f'{BASE_API}/pipeline_refresh_running_blocks/{pipeline_uid}'
 
-    response = requests.get(url)
+    response = http_client.get(url)
     flog.info(f'GET Pipeline Refresh Building Blocks response: {response.text}')
 
     return response
@@ -899,7 +893,7 @@ def pipeline_refresh_running_blocks(pipeline_uid:str):
 def activate_pipeline(pipeline_uid: str, project_uid: str):
     url = f'{BASE_API}/projects/{project_uid}/pipelines/{pipeline_uid}/activate'
 
-    response = requests.post(url)
+    response = http_client.post(url)
     response.raise_for_status()
     return response
 
@@ -941,7 +935,7 @@ def new_popup(pos, typ, params_dict=None):
 
     url = f'{BASE_API}/popups'
 
-    response = requests.post(url, json=payload)
+    response = http_client.post(url, json=payload)
     flog.info(f'New Popup response: {response.text}')
 
     return response
@@ -983,7 +977,7 @@ def update_popup_by_uid(popup_uid, pos=None, typ=None, params_dict=None):
 
     url = f'{BASE_API}/popup/{popup_uid}'
 
-    response = requests.put(url, json=payload)
+    response = http_client.put(url, json=payload)
     flog.info(f'Updated Popup response: {response.text}')
 
     return response
@@ -992,7 +986,7 @@ def update_popup_by_uid(popup_uid, pos=None, typ=None, params_dict=None):
 # def get_all_popups():
 #     url = f'{BASE_API}/popups'
 #
-#     response = requests.get(url)
+#     response = http_client.get(url)
 #     flog.info(f'GET all Popups response: {response.text}')
 #
 #     return response
@@ -1001,7 +995,7 @@ def update_popup_by_uid(popup_uid, pos=None, typ=None, params_dict=None):
 # def get_popup_by_uid(popup_uid):
 #     url = f'{BASE_API}/popup/{popup_uid}'
 #
-#     response = requests.get(url)
+#     response = http_client.get(url)
 #     flog.info(f'GET Popup response: {response.text}')
 #
 #     return response
@@ -1009,7 +1003,7 @@ def update_popup_by_uid(popup_uid, pos=None, typ=None, params_dict=None):
 
 # def delete_popup_by_uid(popup_uid):
 #     url = f'{BASE_API}/popup/{str(popup_uid)}'
-#     response = requests.delete(url)
+#     response = http_client.delete(url)
 #     flog.info(f'DELETE Popup response: {response.text}')
 #
 #     return response
@@ -1025,7 +1019,7 @@ def update_popup_by_uid(popup_uid, pos=None, typ=None, params_dict=None):
 #
 #     url = f'{SERVER}:{PORT}/api/v1/scripts'
 #
-#     response = requests.post(url, data=payload)
+#     response = http_client.post(url, data=payload)
 #     flog.info(f'New Script response: {response.text}')
 #
 #     return response
@@ -1037,7 +1031,7 @@ def update_popup_by_uid(popup_uid, pos=None, typ=None, params_dict=None):
 #
 #     flog.info(f'Update Script by Uid Payload: {payload}')
 #
-#     response = requests.put(SERVER + ":" + str(PORT) + "/api/v1/script/" + str(script_uid), data=payload)
+#     response = http_client.put(SERVER + ":" + str(PORT) + "/api/v1/script/" + str(script_uid), data=payload)
 #     result = json.loads(response.content.decode('utf-8'))
 #
 #     flog.info(f'Update Script by Uid Result: {result}')
@@ -1047,19 +1041,19 @@ def update_popup_by_uid(popup_uid, pos=None, typ=None, params_dict=None):
 
 
 # def get_all_scripts():
-#     response=requests.get(SERVER+":"+str(PORT)+"/api/v1/scripts")
+#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/scripts")
 #     print("Get all scripts response: ", response)
 #     return(response)
 
 
 
 # def get_script_by_uid(script_uid):
-#     response=requests.get(SERVER+":"+str(PORT)+"/api/v1/script/"+str(script_uid))
+#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/script/"+str(script_uid))
 #     return(response)
 #
 #
 # def delete_script_by_uid(script_uid):
-#     response=requests.delete(SERVER+":"+str(PORT)+"/api/v1/script/"+str(script_uid))
+#     response=http_client.delete(SERVER+":"+str(PORT)+"/api/v1/script/"+str(script_uid))
 #     return(response)
 
 def update_last_active_script(script_uid: Optional[str] = None):
@@ -1070,7 +1064,7 @@ def update_last_active_script(script_uid: Optional[str] = None):
     flog.info(f'Last active Script payload: {payload}')
 
     url = f'{BASE_API}/last_active_script'
-    response = requests.put(url, json=payload)
+    response = http_client.put(url, json=payload)
     
     flog.info(f'Last active Script response: {response.text}')
 
@@ -1080,7 +1074,7 @@ def update_last_active_script(script_uid: Optional[str] = None):
 def get_last_active_script():
     url = f'{BASE_API}/last_active_script?project_uid={aet.project_uid}'
 
-    response = requests.get(url)
+    response = http_client.get(url)
     flog.info(f'GET Last active Script response: {response.text}')
 
     return response
@@ -1093,7 +1087,7 @@ def run_pipeline_to_code_conversion():
         "project_uid": aet.project_uid
     }
     url = f"{BASE_API}/pipeline_to_code"
-    response = requests.post(url=url, json=payload)
+    response = http_client.post(url=url, json=payload)
     
     return response
 
@@ -1103,7 +1097,7 @@ def run_code_to_pipeline_conversion():
         "project_uid": aet.project_uid
     }
     url = f"{BASE_API}/code_to_pipeline"
-    response = requests.post(url=url, json=payload)
+    response = http_client.post(url=url, json=payload)
     
     return response
 
@@ -1113,11 +1107,11 @@ def run_inspect_node_code(node_uid:str):
         "project_uid": aet.project_uid
     }
     url = f"{BASE_API}/inspect_node_code"
-    response = requests.post(url=url, json=payload)
+    response = http_client.post(url=url, json=payload)
     return response
 
 def get_all_databases_by_project_uid():
-    response = requests.get(SERVER+":"+str(PORT)+"/api/v1/databases")
+    response = http_client.get(SERVER+":"+str(PORT)+"/api/v1/databases")
         
     if response.status_code != 200:
         raise Exception(f'Error {response.status_code}: {response.reason}.')
@@ -1128,11 +1122,11 @@ def get_all_databases_by_project_uid():
     return project_databases
 
 # def get_all_databases():
-#     response=requests.get(SERVER+":"+str(PORT)+"/api/v1/databases")
+#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/databases")
 #     return(response)
 
 # def delete_database_by_uid(database_uid):
-#     response=requests.delete(SERVER+":"+str(PORT)+"/api/v1/databases/"+str(database_uid))
+#     response=http_client.delete(SERVER+":"+str(PORT)+"/api/v1/databases/"+str(database_uid))
 #     flog.info(f'DELETE Database response: {response.text}')
 #     return(response)
 
@@ -1150,7 +1144,7 @@ def get_all_databases_by_project_uid():
 #
 #     url = f'{SERVER}:{PORT}/api/v1/databases'
 #
-#     response = requests.post(url, json=payload)
+#     response = http_client.post(url, json=payload)
 #     flog.info(f'New Database response: {response.text}')
 #
 #     return response
@@ -1169,22 +1163,22 @@ def get_all_databases_by_project_uid():
 #
 #     url = f'{SERVER}:{PORT}/api/v1/databases/{database_uid}'
 #
-#     response = requests.put(url, json=payload)
+#     response = http_client.put(url, json=payload)
 #     flog.info(f'New Database response: {response.text}')
 #
 #     return response
 
 
 # def delete_script_by_uid(script_uid):
-#     response=requests.delete(SERVER+":"+str(PORT)+"/api/v1/script/"+str(script_uid))
+#     response=http_client.delete(SERVER+":"+str(PORT)+"/api/v1/script/"+str(script_uid))
 #     return response
 
 # def get_all_datasets():
-#     response=requests.get(SERVER+":"+str(PORT)+"/api/v1/datasets")
+#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/datasets")
 #     return(response)
 
 # def delete_dataset_by_uid(dataset_uid):
-#     response=requests.delete(SERVER+":"+str(PORT)+"/api/v1/dataset/"+str(dataset_uid))
+#     response=http_client.delete(SERVER+":"+str(PORT)+"/api/v1/dataset/"+str(dataset_uid))
 #     return(response)
 
 def store_df_to_google_sheet(dataset_uid:str, sheet_name:str, email:str):
@@ -1199,7 +1193,7 @@ def store_df_to_google_sheet(dataset_uid:str, sheet_name:str, email:str):
 
     url = f'{SERVER}:{PORT}/api/v1/store_df_to_google_sheet'
 
-    response = requests.post(url, json = payload)
+    response = http_client.post(url, json = payload)
     flog.info(f'Store Df to Google Sheet response: {response.text}')
 
     return response
@@ -1215,7 +1209,7 @@ def initialize_last_or_new_project_by_email(email):
 
     url = f'{BASE_API}/initialize_last_or_new_project_by_email'
 
-    response = requests.post(url, json=payload)
+    response = http_client.post(url, json=payload)
     flog.info(f'Response: {response.text}')
 
     return response
@@ -1229,7 +1223,7 @@ def initialize_last_or_new_pipeline(project_uid):
 
     url = f'{BASE_API}/initialize_last_or_new_pipeline?project_uid='+str(project_uid)
 
-    response = requests.post(url, json=payload)
+    response = http_client.post(url, json=payload)
     flog.info(f'Response: {response.text}')
 
     return response
@@ -1244,7 +1238,7 @@ def initialize_last_or_new_pipeline(project_uid):
 #
 #     url = f'{SERVER}:{PORT}/api/v1/datasets'
 #
-#     response = requests.post(url, json=payload)
+#     response = http_client.post(url, json=payload)
 #     flog.info(f'New Script response: {response.text}')
 #
 #     return response
@@ -1259,7 +1253,7 @@ def get_next_node_predictions(initial_node_uid: Optional[str] = None, is_used_fo
     
     url = f'{SERVER}:{PORT}/api/v1/next_node_predictions'
 
-    response = requests.get(url, json=payload)
+    response = http_client.get(url, json=payload)
     flog.info(f'GET Next Node Predictions response: {response.text}')
 
     return response
@@ -1274,14 +1268,14 @@ def confirm_selected_node_prediction(node_uid: str, is_used_for_autopilot: bool 
     
     url = f'{SERVER}:{PORT}/api/v1/next_node_predictions'
 
-    response = requests.post(url, json=payload)
+    response = http_client.post(url, json=payload)
     flog.info(f'POST Next Node Predictions response: {response.text}')
 
     return response
 
 def get_form_dict_list_templates():
     url = f'{BASE_API}/node_defs'
-    response = requests.get(url)
+    response = http_client.get(url)
     flog.debug(f'GET form dict list templates: {response.text}')
 
     return response
@@ -1296,7 +1290,7 @@ def get_chatgpt_adjustment(user_input_text, openai_api_key):
 
     url = f'{BASE_API}/pipeline_adjustment_chatgpt_nlp'
 
-    response = requests.post(url, data=json.dumps(payload))
+    response = http_client.post(url, data=json.dumps(payload))
     flog.info(f'Chatgpt adjustment: {response.text}')
 
     return response
@@ -1311,20 +1305,20 @@ def process_api_adjustments(adjustments_dict, project_uid):
 
     url = f'{BASE_API}/api_pipeline_adjustments'
 
-    response = requests.post(url, data=json.dumps(payload))
+    response = http_client.post(url, data=json.dumps(payload))
     # flog.info(f'Chatgpt adjustment: {response.text}')
 
     return response
 
 def get_user_logs():
     url = f'{BASE_API}/user_logs'
-    response = requests.get(url)
+    response = http_client.get(url)
     return response
 
 
 def clean_data(data):
     url = f'{BASE_API}/clean_data'
-    response = requests.post(url, data=data)
+    response = http_client.post(url, data=data)
 
     return response
 
@@ -1341,7 +1335,7 @@ def scan_website_and_take_screenshot_test(email, url):
               "incl_buttons": True,
              "xpath":""}
     url = f'{BASE_API}/website_screenshot_and_scan_test'
-    response=requests.post(url=url,json=payload)
+    response=http_client.post(url=url,json=payload)
     print(json.loads(response.content))
     return response
 
@@ -1351,14 +1345,14 @@ def finalize_pipeline(project_uid):
     payload={"project_uid":project_uid,
            }
     url = f'{BASE_API}/finalize_pipeline'
-    response=requests.post(url=url,json=payload)
+    response=http_client.post(url=url,json=payload)
     print(json.loads(response.content))
     return response
 
 
 def pipeline_direct_execute(pipeline_uid: str, payload: dict):
     url = f'{BASE_API}/pipelines/{pipeline_uid}/direct_execute'
-    response = requests.post(url=url, json=payload)
+    response = http_client.post(url=url, json=payload)
     response.raise_for_status()
 
     return response
@@ -1371,6 +1365,6 @@ def filter_webpage_elements_based_on_objective(elements: list[dict], objective: 
     }
     
     url = f'{BASE_API}/filter_webpage_elements_based_on_objective'
-    response = requests.post(url=url, json=payload)
+    response = http_client.post(url=url, json=payload)
     
     return response
