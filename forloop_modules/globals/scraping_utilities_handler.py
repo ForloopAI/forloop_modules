@@ -669,6 +669,10 @@ class ScrapingUtilitiesHandler:
 
         return webpage_elements
 
+    def send_text(self, xpath, text):
+        xpath = self.check_xpath_apostrophes(xpath)
+        self.webscraping_client.send_text(xpath, text)
+
     def find_nth_substring_occurence(self, string, substring, n):
         #TODO: potentially could hit recursive limit
         if (n == 1) or n == 0:
