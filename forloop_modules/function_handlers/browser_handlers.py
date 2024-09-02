@@ -1,7 +1,7 @@
 import base64
 from io import BytesIO
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 from PIL import Image
 
@@ -431,8 +431,8 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
 
         #slack_notif.send_slack_notification(api_scan_webpage.url,user_email=api_scan_webpage.email)  #2 seconds
         # e_time = time.perf_counter() - start_time #12.5s
-
-        suh.webscraping_client.load_website(url, timeout=120)
+        if url:
+            suh.webscraping_client.load_website(url, timeout=120)
         elements, screenshot_base64 = suh.scan_web_page_API(output_folder, scraping_options)  #9 seconds
 
         # # Convert PNG file to WEBP

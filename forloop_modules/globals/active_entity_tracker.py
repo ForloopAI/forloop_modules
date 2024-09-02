@@ -17,7 +17,6 @@ else:
 with Path(config_path).open(mode='r') as f:
     rows = f.readlines()
 
-
 SERVER = rows[0].split("=")[1].strip()
 PORT = rows[1].split("=")[1].strip()
 BASE_API = f'{SERVER}:{PORT}/api/v1'
@@ -30,7 +29,7 @@ def initialize_last_or_new_project_by_email(email: str):
 
     url = f'{BASE_API}/initialize_last_or_new_project_by_email'
 
-    response = requests.post(url, json = payload)
+    response = requests.post(url, headers={'User-Email': aet.user_email}, json = payload)
     flog.info(f'Response: {response.text}')
 
     return response
@@ -41,7 +40,7 @@ def initialize_last_or_new_pipeline(project_uid: str):
 
     url = f'{BASE_API}/initialize_last_or_new_pipeline?project_uid='+str(project_uid)
 
-    response = requests.post(url, json = payload)
+    response = requests.post(url, headers={'User-Email': aet.user_email}, json = payload)
     flog.info(f'Response: {response.text}')
 
     return response
@@ -49,10 +48,10 @@ def initialize_last_or_new_pipeline(project_uid: str):
 #{"user":{"email":"dominik@forloop.ai","auth0_subject_id":"google-oauth2|117904919065527607983","given_name":"Dominik","family_name":"Vach","picture_url":"https://lh3.googleusercontent.com/a/ACg8ocJesTb0ftxmvNbTJHwFf3nfYojgdq4eTslDZ8ewPxbC_A=s96-c"},"session":{"auth0_session_id":"lCkKE8qIUgjxSU3J9q6lZntc2ZUDat6T","version":null,"platform_type":"cloud","ip":null,"mac_address":null,"hostname":null}}
 def refresh_user_and_session_heartbeat(email: str):
     """Duplicate in ncrb due to circular imports, remove from here once auth not used in ncrb"""
-    payload = {"user":{"email":email,"auth0_subject_id":None,"given_name":None,"family_name":None,"picture_url":None},"session":{"auth0_session_id":None,"version":None,"platform_type":"desktop","ip":None,"mac_address":None,"hostname":None}}
+    payload = {"user":{"email":email,"auth0_subject_id":'whatever',"given_name":None,"family_name":None,"picture_url":None},"session":{"auth0_session_id":'whatever',"version":None,"platform_type":"desktop","ip":None,"mac_address":None,"hostname":None}}
     url = f'{BASE_API}/refresh_user_and_session_heartbeat'
 
-    response = requests.post(url, json = payload)
+    response = requests.post(url, headers={'User-Email': aet.user_email}, json = payload)
     flog.info(f'Response: {response.text}')
 
     return response
@@ -71,6 +70,9 @@ class ActiveEntityTracker:
     
     """
     def __init__(self):
+        self.user_email: str = None
+        self.user_uid: str = None
+
         self.project_uid: str = None #Todo: rename to active
         self.active_session_uid: str = None
         self.active_pipeline_uid: str = None
@@ -95,11 +97,13 @@ class ActiveEntityTracker:
         Path(self.home_folder).mkdir(exist_ok=True)
 
     def _initialize_project_and_pipeline_after_login(self, email: str):
+        self.user_email = email
+        user_response = refresh_user_and_session_heartbeat(email)
+        self.user_uid = user_response.json()["uid"]
         project_response = initialize_last_or_new_project_by_email(email)
         self.project_uid = json.loads(project_response.content.decode('utf-8'))["uid"]
         pipeline_response = initialize_last_or_new_pipeline(self.project_uid)
         self.active_pipeline_uid= json.loads(pipeline_response.content.decode('utf-8'))["uid"]
-        #user_response = refresh_user_and_session_heartbeat(email)
         #self.active_user_uid = json.loads(user_response.content.decode('utf-8'))["uid"] #TODO problem with payload, line 52 here
 
     def set_project_and_pipeline_uid(

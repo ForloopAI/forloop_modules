@@ -127,6 +127,15 @@ class WaitHandler(AbstractFunctionHandler):
         fdl.entry(name="rand_ms",text="0",row=2, input_types=["int", "float"])
         return fdl
 
+    def execute(self, node_detail_form):
+        milliseconds = node_detail_form.get_chosen_value_by_name(
+            "milliseconds", variable_handler
+        )
+        rand_ms = node_detail_form.get_chosen_value_by_name(
+            "rand_ms", variable_handler
+        )
+        self.direct_execute(milliseconds, rand_ms)
+
     def direct_execute(self, milliseconds, rand_ms):
         milliseconds = int(milliseconds)
 
