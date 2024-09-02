@@ -204,7 +204,7 @@ class APIPipelineDirectExecute(BaseModel):
     @model_validator(mode='after')
     @classmethod
     def check_uid_provided_if_not_user(cls, data: 'APIPipelineDirectExecute') -> 'APIPipelineDirectExecute':
-        if data.triggered_by != 'user' and data.uid is None:
+        if data.triggered_by != 'USER' and data.uid is None:
             raise ValueError('`uid` must be provided for `pipeline_job` and `trigger` choice')
         return data
 
