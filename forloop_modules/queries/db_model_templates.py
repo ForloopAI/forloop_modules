@@ -785,6 +785,7 @@ class APIConvertToScrapingNode(BaseModel):
     project_uid: str
     
 class APICopyTemplateBody(BaseModel):
+    project_uid: str
     pipeline_uid: str
     url: Optional[str] = None
 
