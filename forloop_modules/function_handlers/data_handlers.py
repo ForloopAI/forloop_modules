@@ -500,7 +500,7 @@ class DfToListHandler(AbstractFunctionHandler):
         flog.debug(f"DF = {df_entry}")
         self.direct_execute(df_entry, column_names, new_var_name)
 
-    def direct_execute(self, df_entry, column_name, new_variable_name):
+    def direct_execute(self, df_entry, column_name, new_var_name):
         # df_entry[column_name] = df_entry[column_name].fillna("")
         col_names = column_name.split(",")
         if len(col_names) == 1:
@@ -519,7 +519,7 @@ class DfToListHandler(AbstractFunctionHandler):
             new_value = []
             flog.error(f"Undefined Error: {e}")
 
-        variable_handler.new_variable(new_variable_name, new_value)
+        variable_handler.new_variable(new_var_name, new_value)
         #variable_handler.update_data_in_variable_explorer(glc)
 
     def input_execute(self, inp):
