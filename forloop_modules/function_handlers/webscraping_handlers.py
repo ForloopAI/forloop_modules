@@ -26,7 +26,7 @@ from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.errors.errors import CriticalPipelineError, SoftPipelineError
 from forloop_modules.redis.redis_connection import kv_redis
 import forloop_modules.queries.node_context_requests_backend as ncrb
-
+from docrawl.errors import SpiderFunctionError
 #from src.gui.gui_layout_context import glc
 ####################### SCRAPING HANDLERS ################################
 
@@ -2735,6 +2735,65 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
         return imports
 
 
+class SendTextHandler(AbstractFunctionHandler):
+    """
+    Send a string into a web page element specified by its XPath, e.g. a text input field.
+    """
+
+    def __init__(self):
+        self.icon_type = "SendText"
+        self.fn_name = "Send Text"
+
+        self.type_category = ntcm.categories.webscraping
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "SendText Node takes 1 parameter"
+
+        self.docs.add_parameter_table_row(
+            title="XPath",
+            name="xpath",
+            description="XPath of web page element to send text to",
+            typ="string",
+            example=['/html/body/header/div[3]/div[1]/div[2]/section/nav/a', '//button[@class="page-link"]']
+        )
+        self.docs.add_parameter_table_row(
+            title="Text",
+            name="text",
+            description="Text to be sent to the web page element",
+            typ="string",
+            example=['username123', 'password123']
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
+        fdl = FormDictList()
+
+        fdl.label("Element XPath")
+        fdl.entry(name="xpath", text="", input_types=["str"], required=True, show_info=True, row=1)
+        fdl.label("Text to send")
+        fdl.entry(name="text", text="", input_types=["str"], required=True, show_info=True, row=2)
+
+        return fdl
+
+    def execute(self, node_detail_form):
+        xpath = node_detail_form.get_chosen_value_by_name("xpath", variable_handler)
+        text = node_detail_form.get_chosen_value_by_name("text", variable_handler)
+        self.direct_execute(xpath, text)
+
+    def execute_with_params(self, params):
+        xpath = params["xpath"]
+        text = params["text"]
+
+        self.direct_execute(xpath, text)
+
+    def direct_execute(self, xpath, text):
+        xpath = suh.check_xpath_apostrophes(xpath)
+        try:
+            suh.send_text(xpath, text)
+        except SpiderFunctionError as e:
+            raise CriticalPipelineError(str(e))
+
+
 webscraping_handlers_dict = {
     "OpenBrowser": OpenBrowserHandler(),
     "ExtractPageSource": ExtractPageSourceHandler(),
@@ -2759,5 +2818,6 @@ webscraping_handlers_dict = {
     "NextPage": NextPageHandler(),
     "SetProxy": SetProxyHandler(),
     "GetPageSource": GetPageSourceHandler(),
-    "FindPageElements": FindPageElementsHandler()
+    "FindPageElements": FindPageElementsHandler(),
+    "SendText": SendTextHandler(),
 }
