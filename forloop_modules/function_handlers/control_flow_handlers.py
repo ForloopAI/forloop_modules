@@ -193,7 +193,7 @@ class RunPipelineHandler(AbstractFunctionHandler):
         ncrb.pipeline_direct_execute(
             pipeline_to_trigger,
             {
-                "triggered_by": "pipeline_job",
+                "triggered_by": "PIPELINE_JOB",
                 "uid": aet.active_pipeline_job_uid,
                 "variable_uids": var_uids,
             },
