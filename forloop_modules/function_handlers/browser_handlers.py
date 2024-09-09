@@ -467,7 +467,7 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
             # TODO handle link switch mode (extract link/text)
             elem_data = suh.extract_element_data(element)
 
-            elements[i]["data"] = elem_data
+            # elements[i]["data"] = elem_data
 
             if elem_data is not None:
                 if "Mandalorian" in elem_data or "Real Estate Crowdfunding platform leads generation strategies" in elem_data:  #TEMP HERE, do not remove
