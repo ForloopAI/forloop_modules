@@ -783,6 +783,12 @@ class APIConvertToScrapingNode(BaseModel):
     selected_elements_xpaths: list
     pipeline_uid: str
     project_uid: str
+    
+class APICopyTemplateBody(BaseModel):
+    project_uid: str
+    pipeline_uid: str
+    url: Optional[str] = None
+    url_2: Optional[str] = None # If provided, 'similar URLs' approach is implicitly expected
 
 ItemType = TypeVar("ItemType")
 class Paged(BaseModel, Generic[ItemType]):
