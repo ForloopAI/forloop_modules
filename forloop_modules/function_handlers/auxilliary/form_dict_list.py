@@ -66,7 +66,8 @@ class FormDictList(UserList):
         Label is a simple text element
         args:
             text (str): text of the element
-            row (int): row number of the element - specified only if it's not first element on the same row
+            row (int): row number of the element - specified only if it's not first element on the
+                same row
         """
         key = "Label"
         value = text
