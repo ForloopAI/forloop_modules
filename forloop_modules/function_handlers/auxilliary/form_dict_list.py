@@ -33,11 +33,11 @@ class FormDictList(UserList):
     fdl.label("Pipette current position (Press Enter Key)")
     fdl.label(str(glc.motion_mouse_pos))
     """
-    
+
     def __init__(self, initlist=None, docs: Optional[Docs] = None):
         super().__init__(initlist)
         self.docs = docs
-    
+
     @property
     def form_dict_list(self):
         flog.warning(
@@ -231,6 +231,3 @@ class FormDictList(UserList):
         key = "Checkbox"
         value = {"name": name, "bool_value": bool_value, "desktop_only": desktop_only}
         self.insert_element_to_form_dict_list(key, value, row)
-
-
-
