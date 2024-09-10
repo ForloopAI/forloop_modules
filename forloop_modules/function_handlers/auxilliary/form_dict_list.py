@@ -1,4 +1,5 @@
 from collections import UserList
+from collections.abc import Callable
 from typing import Optional, Literal
 
 import forloop_modules.flog as flog
@@ -181,7 +182,7 @@ class FormDictList(UserList):
         }
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def button(self, function, function_args: list, text: str, focused: bool = False,
+    def button(self, function: Callable, function_args: list, text: str, focused: bool = False,
         enforce_required: bool = None, frontend_implementation: bool = False,
         name: Optional[str] = None, desktop_only: bool = False, is_advanced: bool = False,
         row: Optional[int] = None
@@ -214,7 +215,7 @@ class FormDictList(UserList):
         }
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def button_image(self, image: str, x_size: int, y_size: int, x_offset: int, function,
+    def button_image(self, image: str, x_size: int, y_size: int, x_offset: int, function: Callable,
         function_args: Optional[list] = None, desktop_only: bool = False, is_advanced: bool = False,
         row: Optional[int] = None
     ):
