@@ -188,19 +188,25 @@ class FormDictList(UserList):
         row: Optional[int] = None
     ):
         """
-        Button is a button with a function and arguments
+        Button is a button with a function and arguments.
 
         Args:
-            function (function): function to be called when button is pressed
-            function_args (list): list of arguments for the function
-            text (str): text of the button
+            function (Callable): A function to be called when button is pressed.
+            function_args (list): A list of arguments for the function.
+            text (str): Text of the button.
             focused (bool, optional): If True, button will be executed after Enter push. Defaults
                 to False.
             enforce_required (bool, optional): If True, button will check whether compulsory elements
-                are filled. Defaults to True.
-            row (int): row number of the element - specified only if it's not first element on the
-                same row
-        """    
+                are filled. Defaults to None.
+            frontend_implementation (bool, optional): Marks FE only appearance. Defaults to False.
+            name (Optional[str], optional): Button element name. Defaults to None.
+            desktop_only (bool, optional): If True, won't appear in cloud version. Defaults to False.
+            is_advanced (bool, optional): If True, will be wrapped as an optional (not shown by
+                default). Defaults to False.
+            row (Optional[int], optional): Row number of the element - specified only if it's not
+                first element on the same row. Defaults to None.
+        """
+          
         key = "Button"
         value = {
             "name": name,
