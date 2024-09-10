@@ -78,17 +78,26 @@ class FormDictList(UserList):
         row: Optional[int] = None
     ):
         """
-        Entry is a text element with a name and a text
-        args:
-            name (str): name of the element
-            text (str): text of the element
-            category (str): category of the element
-            input_types (str): input types of the element
-            required (bool): required to fill in on frontend
-            type (str): One of 'text', 'file', 'password' - changes entry behaviour
-            row (int): row number of the element - specified only if it's not first element on the
-                same row
+        Entry is a text element with a name and a text.
+
+        Args:
+            name (str): Name of the element.
+            text (str): Text of the element.
+            category (Optional[str], optional): Category of the element. Defaults to None.
+            input_types (Optional[list[str]], optional): Input types of the element. Defaults to None.
+            required (Optional[bool], optional): Required to fill in on frontend. Defaults to None.
+            type (TypeLiteral, optional): One of 'text', 'file', 'password' - changes entry
+                behaviour. Defaults to 'text'.
+            file_types (Optional[list[tuple[str]]], optional): Supported file file types in format
+                [(<type label>, <file type>), ...], e.g.: [("Python files", "*.py")]. Defaults to None.
+            show_info (Optional[bool], optional): Show node info switch. Defaults to None.
+            desktop_only (bool, optional): If True, won't appear in cloud version. Defaults to False.
+            is_advanced (bool, optional): If True, will be wrapped as an optional (not shown by
+                default). Defaults to False.
+            row (Optional[int], optional): Row number of the element - specified only if it's not
+                first element on the same row. Defaults to None.
         """
+
         if file_types is None:
             file_types = [("all files", "*")]
 
