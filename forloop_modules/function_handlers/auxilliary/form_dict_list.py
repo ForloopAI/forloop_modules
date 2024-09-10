@@ -86,7 +86,8 @@ class FormDictList(UserList):
             input_types (str): input types of the element
             required (bool): required to fill in on frontend
             type (str): One of 'text', 'file', 'password' - changes entry behaviour
-            row (int): row number of the element - specified only if it's not first element on the same row
+            row (int): row number of the element - specified only if it's not first element on the
+                same row
         """
         if file_types is None:
             file_types = [("all files", "*")]
@@ -174,7 +175,8 @@ class FormDictList(UserList):
             function (function): function to be called when button is pressed
             function_args (list): list of arguments for the function
             text (str): text of the button
-            focused (bool, optional): If True, button will be executed after Enter push. Defaults to False.
+            focused (bool, optional): If True, button will be executed after Enter push. Defaults
+                to False.
             enforce_required (bool, optional): If True, button will check whether compulsory elements
                 are filled. Defaults to True.
             row (int): row number of the element - specified only if it's not first element on the
@@ -234,7 +236,8 @@ class FormDictList(UserList):
         Args:
             name (str): name of the element
             bool_value (bool, optional): if True, checkbox is selected. Default False.
-            row (int): row number of the element - specified only if it's not first element on the same row
+            row (int): row number of the element - specified only if it's not first element on the
+                same row
         """
         key = "Checkbox"
         value = {
