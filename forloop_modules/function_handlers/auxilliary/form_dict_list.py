@@ -1,9 +1,13 @@
 from collections import UserList
-from typing import Optional
+from typing import Optional, Literal
 
 import forloop_modules.flog as flog
 
 from forloop_modules.function_handlers.auxilliary.docs import Docs
+
+
+KeyLiteral = Literal["Label", "Combobox", "ComboEntry", "Button", "ButtonImage", "Checkbox"]
+TypeLiteral = Literal["text", "file", "password"]
 
 class FormDictList(UserList):
     """
