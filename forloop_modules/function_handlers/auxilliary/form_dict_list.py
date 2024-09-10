@@ -74,7 +74,8 @@ class FormDictList(UserList):
     def entry(self, name: str, text: str, category: Optional[str] = None,
         input_types: Optional[list[str]] = None, required: Optional[bool] = None,
         type: TypeLiteral = 'text', file_types: Optional[list[tuple[str]]] = None,
-        show_info: Optional[bool] = None, desktop_only: bool = False, row: Optional[int] = None
+        show_info: Optional[bool] = None, desktop_only: bool = False, is_advanced: bool = False,
+        row: Optional[int] = None
     ):
         """
         Entry is a text element with a name and a text
@@ -101,6 +102,7 @@ class FormDictList(UserList):
             "file_types": file_types,
             "show_info": show_info,
             'desktop_only': desktop_only,
+            "is_advanced": is_advanced,
         }
 
         if required:
@@ -111,7 +113,7 @@ class FormDictList(UserList):
 
     def combobox(self, name: str, options: list, multiselect_indices: Optional[dict] = None,
         default: Optional[str] = None, show_info: Optional[bool] = None,
-        desktop_only: bool = False, row: Optional[int] = None
+        desktop_only: bool = False, is_advanced: bool = False, row: Optional[int] = None
     ):
         """
         Combobox is a dropdown list with options
@@ -132,11 +134,12 @@ class FormDictList(UserList):
             "multiselect_indices": multiselect_indices,
             "show_info": show_info,
             "desktop_only": desktop_only,
+            "is_advanced": is_advanced,
         }
         self.insert_element_to_form_dict_list(key, value, row)
 
     def comboentry(self, name: str, text: str, options: list, show_info: Optional[bool] = None,
-        desktop_only: bool = False, row: Optional[int] = None
+        desktop_only: bool = False, is_advanced: bool = False, row: Optional[int] = None
     ):
         """
         Comboentry is a dropdown list with options and a text field
@@ -155,12 +158,14 @@ class FormDictList(UserList):
             "options": options,
             "show_info": show_info,
             "desktop_only": desktop_only,
+            "is_advanced": is_advanced,
         }
         self.insert_element_to_form_dict_list(key, value, row)
 
     def button(self, function, function_args: list, text: str, focused: bool = False,
         enforce_required: bool = None, frontend_implementation: bool = False,
-        name: Optional[str] = None, desktop_only: bool = False, row: Optional[int] = None
+        name: Optional[str] = None, desktop_only: bool = False, is_advanced: bool = False,
+        row: Optional[int] = None
     ):
         """
         Button is a button with a function and arguments
@@ -185,11 +190,13 @@ class FormDictList(UserList):
             "enforce_required": enforce_required,
             "frontend_implementation": frontend_implementation,
             "desktop_only": desktop_only,
+            "is_advanced": is_advanced,
         }
         self.insert_element_to_form_dict_list(key, value, row)
 
     def button_image(self, image: str, x_size: int, y_size: int, x_offset: int, function,
-        function_args: Optional[list] = None, desktop_only: bool = False, row: Optional[int] = None
+        function_args: Optional[list] = None, desktop_only: bool = False, is_advanced: bool = False,
+        row: Optional[int] = None
     ):
         """
         Button is an image with or without function and arguments
@@ -214,11 +221,12 @@ class FormDictList(UserList):
             "y_size": y_size,
             "x_offset": x_offset,
             "desktop_only": desktop_only,
+            "is_advanced": is_advanced,
         }
         self.insert_element_to_form_dict_list(key, value, row)
 
     def checkbox(self, name: str, bool_value: bool = False, desktop_only: bool = False,
-        row: Optional[int] = None
+        is_advanced: bool = False, row: Optional[int] = None
     ):
         """
         CheckBox is an element for storing True/False values
@@ -229,5 +237,10 @@ class FormDictList(UserList):
             row (int): row number of the element - specified only if it's not first element on the same row
         """
         key = "Checkbox"
-        value = {"name": name, "bool_value": bool_value, "desktop_only": desktop_only}
+        value = {
+            "name": name,
+            "bool_value": bool_value,
+            "desktop_only": desktop_only,
+            "is_advanced": is_advanced,
+        }
         self.insert_element_to_form_dict_list(key, value, row)
