@@ -125,7 +125,14 @@ class FormDictList(UserList):
                 element on the same row. Defaults to None.
         """
         key = "Combobox"
-        value = {"name": name, "options": options, "default": default, "multiselect_indices": multiselect_indices, "show_info":show_info, 'desktop_only': desktop_only}
+        value = {
+            "name": name,
+            "options": options,
+            "default": default,
+            "multiselect_indices": multiselect_indices,
+            "show_info": show_info,
+            "desktop_only": desktop_only,
+        }
         self.insert_element_to_form_dict_list(key, value, row)
 
     def comboentry(self, name: str, text: str, options: list, show_info: Optional[bool] = None,
@@ -142,7 +149,13 @@ class FormDictList(UserList):
                 same row
         """
         key = "ComboEntry"
-        value = {"name": name, "text": text, "options": options, "show_info": show_info, 'desktop_only': desktop_only}
+        value = {
+            "name": name,
+            "text": text,
+            "options": options,
+            "show_info": show_info,
+            "desktop_only": desktop_only,
+        }
         self.insert_element_to_form_dict_list(key, value, row)
 
     def button(self, function, function_args: list, text: str, focused: bool = False,
@@ -163,7 +176,16 @@ class FormDictList(UserList):
                 same row
         """    
         key = "Button"
-        value = {"name": name, "function": function, "function_args": function_args, "text": text, "focused": focused, "enforce_required": enforce_required, "frontend_implementation": frontend_implementation, 'desktop_only': desktop_only}
+        value = {
+            "name": name,
+            "function": function,
+            "function_args": function_args,
+            "text": text,
+            "focused": focused,
+            "enforce_required": enforce_required,
+            "frontend_implementation": frontend_implementation,
+            "desktop_only": desktop_only,
+        }
         self.insert_element_to_form_dict_list(key, value, row)
 
     def button_image(self, image: str, x_size: int, y_size: int, x_offset: int, function,
@@ -184,7 +206,15 @@ class FormDictList(UserList):
         """
 
         key = "ButtonImage"
-        value = {"image": image, "function": function, "function_args": function_args, "x_size": x_size, "y_size": y_size, "x_offset": x_offset, 'desktop_only': desktop_only}
+        value = {
+            "image": image,
+            "function": function,
+            "function_args": function_args,
+            "x_size": x_size,
+            "y_size": y_size,
+            "x_offset": x_offset,
+            "desktop_only": desktop_only,
+        }
         self.insert_element_to_form_dict_list(key, value, row)
 
     def checkbox(self, name: str, bool_value: bool = False, desktop_only: bool = False,
@@ -199,7 +229,7 @@ class FormDictList(UserList):
             row (int): row number of the element - specified only if it's not first element on the same row
         """
         key = "Checkbox"
-        value = {"name": name, "bool_value": bool_value, 'desktop_only': desktop_only}
+        value = {"name": name, "bool_value": bool_value, "desktop_only": desktop_only}
         self.insert_element_to_form_dict_list(key, value, row)
 
 
