@@ -11,7 +11,8 @@ TypeLiteral = Literal["text", "file", "password"]
 
 class FormDictList(UserList):
     """
-    Class replacing initial way of definining form_dict_list (template for ItemDetailForm for each node)
+    Class replacing initial way of definining form_dict_list (template for ItemDetailForm for
+    each node)
     
     #Example of syntax until 0.6.1
     form_dict_list = [
@@ -39,9 +40,13 @@ class FormDictList(UserList):
     
     @property
     def form_dict_list(self):
-        flog.warning("Forloop Deprecation Warning: Following FormDictList should be changed to return only fdl value, not fdl.form_dict_list:"+str(self))
-        return(self)
-    
+        flog.warning(
+            f"""Forloop Deprecation Warning: Following FormDictList should be changed to return only
+            fdl value, not fdl.form_dict_list: {str(self)}"""
+        )
+
+        return self
+
     @form_dict_list.setter
     def form_dict_list(self,form_dict_list):
         self._form_dict_list=self
@@ -116,7 +121,8 @@ class FormDictList(UserList):
             options (list): list of options
             multiselect_indices (dict, optional): Enables multiselect mode. Defaults to None.
             default (str, optional): Default option. Defaults to None.
-            row (int, optional): Row number of the element - specified only if it's not first element on the same row. Defaults to None.
+            row (int, optional): Row number of the element - specified only if it's not first
+                element on the same row. Defaults to None.
         """
         key = "Combobox"
         value = {"name": name, "options": options, "default": default, "multiselect_indices": multiselect_indices, "show_info":show_info, 'desktop_only': desktop_only}
@@ -132,7 +138,8 @@ class FormDictList(UserList):
             name (str): name of the element
             text (str): text of the element
             options (list): list of options
-            row (int): row number of the element - specified only if it's not first element on the same row
+            row (int): row number of the element - specified only if it's not first element on the
+                same row
         """
         key = "ComboEntry"
         value = {"name": name, "text": text, "options": options, "show_info": show_info, 'desktop_only': desktop_only}
@@ -150,8 +157,10 @@ class FormDictList(UserList):
             function_args (list): list of arguments for the function
             text (str): text of the button
             focused (bool, optional): If True, button will be executed after Enter push. Defaults to False.
-            enforce_required (bool, optional): If True, button will check whether compulsory elements are filled. Defaults to True.
-            row (int): row number of the element - specified only if it's not first element on the same row
+            enforce_required (bool, optional): If True, button will check whether compulsory elements
+                are filled. Defaults to True.
+            row (int): row number of the element - specified only if it's not first element on the
+                same row
         """    
         key = "Button"
         value = {"name": name, "function": function, "function_args": function_args, "text": text, "focused": focused, "enforce_required": enforce_required, "frontend_implementation": frontend_implementation, 'desktop_only': desktop_only}
@@ -170,7 +179,8 @@ class FormDictList(UserList):
             x_size (int): width of image
             y_size (int): height of the button
             x_offset (int): offset on x-axis
-            row (int): row number of the element - specified only if it's not first element on the same row
+            row (int): row number of the element - specified only if it's not first element on the
+                same row
         """
 
         key = "ButtonImage"
