@@ -126,15 +126,19 @@ class FormDictList(UserList):
         desktop_only: bool = False, is_advanced: bool = False, row: Optional[int] = None
     ):
         """
-        Combobox is a dropdown list with options
+        Combobox is a dropdown list with options.
 
         Args:
-            name (str): name of the element
-            options (list): list of options
-            multiselect_indices (dict, optional): Enables multiselect mode. Defaults to None.
-            default (str, optional): Default option. Defaults to None.
-            row (int, optional): Row number of the element - specified only if it's not first
-                element on the same row. Defaults to None.
+            name (str): Name of the element.
+            options (list): List of options.
+            multiselect_indices (Optional[dict], optional): Enables multiselect mode. Defaults to None.
+            default (Optional[str], optional): Option selected by default. Defaults to None.
+            show_info (Optional[bool], optional): Show node info switch. Defaults to None.
+            desktop_only (bool, optional): If True, won't appear in cloud version. Defaults to False.
+            is_advanced (bool, optional): If True, will be wrapped as an optional (not shown by
+                default). Defaults to False.
+            row (Optional[int], optional): Row number of the element - specified only if it's not
+                first element on the same row. Defaults to None.
         """
         key = "Combobox"
         value = {
