@@ -156,15 +156,20 @@ class FormDictList(UserList):
         desktop_only: bool = False, is_advanced: bool = False, row: Optional[int] = None
     ):
         """
-        Comboentry is a dropdown list with options and a text field
-        
+        Comboentry is a dropdown list with options and a text field.
+
         Args:
-            name (str): name of the element
-            text (str): text of the element
-            options (list): list of options
-            row (int): row number of the element - specified only if it's not first element on the
-                same row
+            name (str): Name of the element.
+            text (str): Text of the element.
+            options (list): List of selectable options.
+            show_info (Optional[bool], optional): Show node info switch. Defaults to None.
+            desktop_only (bool, optional): If True, won't appear in cloud version. Defaults to False.
+            is_advanced (bool, optional): If True, will be wrapped as an optional (not shown by
+                default). Defaults to False.
+            row (Optional[int], optional): Row number of the element - specified only if it's not
+                first element on the same row. Defaults to None.
         """
+        
         key = "ComboEntry"
         value = {
             "name": name,
