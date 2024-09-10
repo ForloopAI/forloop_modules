@@ -226,17 +226,21 @@ class FormDictList(UserList):
         row: Optional[int] = None
     ):
         """
-        Button is an image with or without function and arguments
+        Button is an image with or without function and arguments.
 
         Args:
-            image (str): path to image (relative to src/png)
-            function (function): function to be called when button is pressed
-            function_args (list): list of arguments for the function
-            x_size (int): width of image
-            y_size (int): height of the button
-            x_offset (int): offset on x-axis
-            row (int): row number of the element - specified only if it's not first element on the
-                same row
+            image (str): A path to an image (relative to src/png).
+            x_size (int): Image width.
+            y_size (int): Image height.
+            x_offset (int): Horizontal (x-axis) offset of the image.
+            function (Callable): A function to be called when button is pressed.
+            function_args (Optional[list], optional): A list of arguments for the function. Defaults
+                to None.
+            desktop_only (bool, optional): If True, won't appear in cloud version. Defaults to False.
+            is_advanced (bool, optional): If True, will be wrapped as an optional (not shown by
+                default). Defaults to False.
+            row (Optional[int], optional): Row number of the element - specified only if it's not
+                first element on the same row. Defaults to None.
         """
 
         key = "ButtonImage"
@@ -256,14 +260,18 @@ class FormDictList(UserList):
         is_advanced: bool = False, row: Optional[int] = None
     ):
         """
-        CheckBox is an element for storing True/False values
+        CheckBox is an element for storing True/False values.
 
         Args:
-            name (str): name of the element
-            bool_value (bool, optional): if True, checkbox is selected. Default False.
-            row (int): row number of the element - specified only if it's not first element on the
-                same row
+            name (str): Name of the element.
+            bool_value (bool, optional): If True, checkbox is selected by default. Defaults to False.
+            desktop_only (bool, optional): If True, won't appear in cloud version. Defaults to False.
+            is_advanced (bool, optional): If True, will be wrapped as an optional (not shown by
+                default). Defaults to False.
+            row (Optional[int], optional): Row number of the element - specified only if it's not
+                first element on the same row. Defaults to None.
         """
+        
         key = "Checkbox"
         value = {
             "name": name,
