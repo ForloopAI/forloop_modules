@@ -1,13 +1,19 @@
 from collections import UserList
-from typing import Optional
+from collections.abc import Callable
+from typing import Optional, Literal
 
 import forloop_modules.flog as flog
 
 from forloop_modules.function_handlers.auxilliary.docs import Docs
 
+
+KeyLiteral = Literal["Label", "Combobox", "ComboEntry", "Button", "ButtonImage", "Checkbox"]
+TypeLiteral = Literal["text", "file", "password"]
+
 class FormDictList(UserList):
     """
-    Class replacing initial way of definining form_dict_list (template for ItemDetailForm for each node)
+    Class replacing initial way of definining form_dict_list (template for ItemDetailForm for
+    each node)
     
     #Example of syntax until 0.6.1
     form_dict_list = [
@@ -28,21 +34,25 @@ class FormDictList(UserList):
     fdl.label("Pipette current position (Press Enter Key)")
     fdl.label(str(glc.motion_mouse_pos))
     """
-    
+
     def __init__(self, initlist=None, docs: Optional[Docs] = None):
         super().__init__(initlist)
         self.docs = docs
-    
+
     @property
     def form_dict_list(self):
-        flog.warning("Forloop Deprecation Warning: Following FormDictList should be changed to return only fdl value, not fdl.form_dict_list:"+str(self))
-        return(self)
-    
+        flog.warning(
+            f"""Forloop Deprecation Warning: Following FormDictList should be changed to return only
+            fdl value, not fdl.form_dict_list: {str(self)}"""
+        )
+
+        return self
+
     @form_dict_list.setter
     def form_dict_list(self,form_dict_list):
         self._form_dict_list=self
-    
-    def insert_element_to_form_dict_list(self, key, value, row=None):
+
+    def insert_element_to_form_dict_list(self, key: KeyLiteral, value, row: Optional[int] = None):
         """Row parameter is specified only if it's not first element on the same row"""
         if isinstance(value, dict):
             value = {k: v for k, v in value.items() if v is not None}  # don't append None values in self
@@ -51,29 +61,45 @@ class FormDictList(UserList):
         else:
             self.append({key: value})
 
-    def label(self, text, row=None):
+    def label(self, text: str, row: Optional[int] = None):
         """
         Label is a simple text element
         args:
             text (str): text of the element
-            row (int): row number of the element - specified only if it's not first element on the same row
+            row (int): row number of the element - specified only if it's not first element on the
+                same row
         """
         key = "Label"
         value = text
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def entry(self, name, text, category=None, input_types=None, required=None, type='text', file_types=None, show_info=None, desktop_only=False, row=None):
+    def entry(self, name: str, text: str, category: Optional[str] = None,
+        input_types: Optional[list[str]] = None, required: Optional[bool] = None,
+        type: TypeLiteral = 'text', file_types: Optional[list[tuple[str]]] = None,
+        show_info: Optional[bool] = None, desktop_only: bool = False, is_advanced: bool = False,
+        row: Optional[int] = None
+    ):
         """
-        Entry is a text element with a name and a text
-        args:
-            name (str): name of the element
-            text (str): text of the element
-            category (str): category of the element
-            input_types (str): input types of the element
-            required (bool): required to fill in on frontend
-            type (str): One of 'text', 'file', 'password' - changes entry behaviour
-            row (int): row number of the element - specified only if it's not first element on the same row
+        Entry is a text element with a name and a text.
+
+        Args:
+            name (str): Name of the element.
+            text (str): Text of the element.
+            category (Optional[str], optional): Category of the element. Defaults to None.
+            input_types (Optional[list[str]], optional): Input types of the element. Defaults to None.
+            required (Optional[bool], optional): Required to fill in on frontend. Defaults to None.
+            type (TypeLiteral, optional): One of 'text', 'file', 'password' - changes entry
+                behaviour. Defaults to 'text'.
+            file_types (Optional[list[tuple[str]]], optional): Supported file file types in format
+                [(<type label>, <file type>), ...], e.g.: [("Python files", "*.py")]. Defaults to None.
+            show_info (Optional[bool], optional): Show node info switch. Defaults to None.
+            desktop_only (bool, optional): If True, won't appear in cloud version. Defaults to False.
+            is_advanced (bool, optional): If True, will be wrapped as an optional (not shown by
+                default). Defaults to False.
+            row (Optional[int], optional): Row number of the element - specified only if it's not
+                first element on the same row. Defaults to None.
         """
+
         if file_types is None:
             file_types = [("all files", "*")]
 
@@ -88,6 +114,7 @@ class FormDictList(UserList):
             "file_types": file_types,
             "show_info": show_info,
             'desktop_only': desktop_only,
+            "is_advanced": is_advanced,
         }
 
         if required:
@@ -96,81 +123,161 @@ class FormDictList(UserList):
 
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def combobox(self, name, options, multiselect_indices=None, default=None, show_info=None, desktop_only=False, row=None):
+    def combobox(self, name: str, options: list, multiselect_indices: Optional[dict] = None,
+        default: Optional[str] = None, show_info: Optional[bool] = None,
+        desktop_only: bool = False, is_advanced: bool = False, row: Optional[int] = None
+    ):
         """
-        Combobox is a dropdown list with options
+        Combobox is a dropdown list with options.
 
         Args:
-            name (str): name of the element
-            options (list): list of options
-            multiselect_indices (dict, optional): Enables multiselect mode. Defaults to None.
-            default (str, optional): Default option. Defaults to None.
-            row (int, optional): Row number of the element - specified only if it's not first element on the same row. Defaults to None.
+            name (str): Name of the element.
+            options (list): List of options.
+            multiselect_indices (Optional[dict], optional): Enables multiselect mode. Defaults to None.
+            default (Optional[str], optional): Option selected by default. Defaults to None.
+            show_info (Optional[bool], optional): Show node info switch. Defaults to None.
+            desktop_only (bool, optional): If True, won't appear in cloud version. Defaults to False.
+            is_advanced (bool, optional): If True, will be wrapped as an optional (not shown by
+                default). Defaults to False.
+            row (Optional[int], optional): Row number of the element - specified only if it's not
+                first element on the same row. Defaults to None.
         """
         key = "Combobox"
-        value = {"name": name, "options": options, "default": default, "multiselect_indices": multiselect_indices, "show_info":show_info, 'desktop_only': desktop_only}
+        value = {
+            "name": name,
+            "options": options,
+            "default": default,
+            "multiselect_indices": multiselect_indices,
+            "show_info": show_info,
+            "desktop_only": desktop_only,
+            "is_advanced": is_advanced,
+        }
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def comboentry(self, name, text, options, show_info=None, desktop_only=False, row=None):
+    def comboentry(self, name: str, text: str, options: list, show_info: Optional[bool] = None,
+        desktop_only: bool = False, is_advanced: bool = False, row: Optional[int] = None
+    ):
         """
-        Comboentry is a dropdown list with options and a text field
+        Comboentry is a dropdown list with options and a text field.
+
+        Args:
+            name (str): Name of the element.
+            text (str): Text of the element.
+            options (list): List of selectable options.
+            show_info (Optional[bool], optional): Show node info switch. Defaults to None.
+            desktop_only (bool, optional): If True, won't appear in cloud version. Defaults to False.
+            is_advanced (bool, optional): If True, will be wrapped as an optional (not shown by
+                default). Defaults to False.
+            row (Optional[int], optional): Row number of the element - specified only if it's not
+                first element on the same row. Defaults to None.
+        """
         
-        Args:
-            name (str): name of the element
-            text (str): text of the element
-            options (list): list of options
-            row (int): row number of the element - specified only if it's not first element on the same row
-        """
         key = "ComboEntry"
-        value = {"name": name, "text": text, "options": options, "show_info": show_info, 'desktop_only': desktop_only}
+        value = {
+            "name": name,
+            "text": text,
+            "options": options,
+            "show_info": show_info,
+            "desktop_only": desktop_only,
+            "is_advanced": is_advanced,
+        }
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def button(self, function, function_args, text, focused: bool = False, enforce_required: bool = None, frontend_implementation=False, name=None, desktop_only=False, row=None):
+    def button(self, function: Callable, function_args: list, text: str, focused: bool = False,
+        enforce_required: bool = None, frontend_implementation: bool = False,
+        name: Optional[str] = None, desktop_only: bool = False, is_advanced: bool = False,
+        row: Optional[int] = None
+    ):
         """
-        Button is a button with a function and arguments
+        Button is a button with a function and arguments.
 
         Args:
-            function (function): function to be called when button is pressed
-            function_args (list): list of arguments for the function
-            text (str): text of the button
-            focused (bool, optional): If True, button will be executed after Enter push. Defaults to False.
-            enforce_required (bool, optional): If True, button will check whether compulsory elements are filled. Defaults to True.
-            row (int): row number of the element - specified only if it's not first element on the same row
-        """    
+            function (Callable): A function to be called when button is pressed.
+            function_args (list): A list of arguments for the function.
+            text (str): Text of the button.
+            focused (bool, optional): If True, button will be executed after Enter push. Defaults
+                to False.
+            enforce_required (bool, optional): If True, button will check whether compulsory elements
+                are filled. Defaults to None.
+            frontend_implementation (bool, optional): Marks FE only appearance. Defaults to False.
+            name (Optional[str], optional): Button element name. Defaults to None.
+            desktop_only (bool, optional): If True, won't appear in cloud version. Defaults to False.
+            is_advanced (bool, optional): If True, will be wrapped as an optional (not shown by
+                default). Defaults to False.
+            row (Optional[int], optional): Row number of the element - specified only if it's not
+                first element on the same row. Defaults to None.
+        """
+          
         key = "Button"
-        value = {"name": name, "function": function, "function_args": function_args, "text": text, "focused": focused, "enforce_required": enforce_required, "frontend_implementation": frontend_implementation, 'desktop_only': desktop_only}
+        value = {
+            "name": name,
+            "function": function,
+            "function_args": function_args,
+            "text": text,
+            "focused": focused,
+            "enforce_required": enforce_required,
+            "frontend_implementation": frontend_implementation,
+            "desktop_only": desktop_only,
+            "is_advanced": is_advanced,
+        }
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def button_image(self, image, x_size, y_size, x_offset, function, function_args=None, desktop_only=False, row=None):
+    def button_image(self, image: str, x_size: int, y_size: int, x_offset: int, function: Callable,
+        function_args: Optional[list] = None, desktop_only: bool = False, is_advanced: bool = False,
+        row: Optional[int] = None
+    ):
         """
-        Button is an image with or without function and arguments
+        Button is an image with or without function and arguments.
 
         Args:
-            image (str): path to image (relative to src/png)
-            function (function): function to be called when button is pressed
-            function_args (list): list of arguments for the function
-            x_size (int): width of image
-            y_size (int): height of the button
-            x_offset (int): offset on x-axis
-            row (int): row number of the element - specified only if it's not first element on the same row
+            image (str): A path to an image (relative to src/png).
+            x_size (int): Image width.
+            y_size (int): Image height.
+            x_offset (int): Horizontal (x-axis) offset of the image.
+            function (Callable): A function to be called when button is pressed.
+            function_args (Optional[list], optional): A list of arguments for the function. Defaults
+                to None.
+            desktop_only (bool, optional): If True, won't appear in cloud version. Defaults to False.
+            is_advanced (bool, optional): If True, will be wrapped as an optional (not shown by
+                default). Defaults to False.
+            row (Optional[int], optional): Row number of the element - specified only if it's not
+                first element on the same row. Defaults to None.
         """
 
         key = "ButtonImage"
-        value = {"image": image, "function": function, "function_args": function_args, "x_size": x_size, "y_size": y_size, "x_offset": x_offset, 'desktop_only': desktop_only}
+        value = {
+            "image": image,
+            "function": function,
+            "function_args": function_args,
+            "x_size": x_size,
+            "y_size": y_size,
+            "x_offset": x_offset,
+            "desktop_only": desktop_only,
+            "is_advanced": is_advanced,
+        }
         self.insert_element_to_form_dict_list(key, value, row)
 
-    def checkbox(self, name, bool_value: bool = False, desktop_only=False, row=None):
+    def checkbox(self, name: str, bool_value: bool = False, desktop_only: bool = False,
+        is_advanced: bool = False, row: Optional[int] = None
+    ):
         """
-        CheckBox is an element for storing True/False values
+        CheckBox is an element for storing True/False values.
 
         Args:
-            name (str): name of the element
-            bool_value (bool, optional): if True, checkbox is selected. Default False.
-            row (int): row number of the element - specified only if it's not first element on the same row
+            name (str): Name of the element.
+            bool_value (bool, optional): If True, checkbox is selected by default. Defaults to False.
+            desktop_only (bool, optional): If True, won't appear in cloud version. Defaults to False.
+            is_advanced (bool, optional): If True, will be wrapped as an optional (not shown by
+                default). Defaults to False.
+            row (Optional[int], optional): Row number of the element - specified only if it's not
+                first element on the same row. Defaults to None.
         """
+        
         key = "Checkbox"
-        value = {"name": name, "bool_value": bool_value, 'desktop_only': desktop_only}
+        value = {
+            "name": name,
+            "bool_value": bool_value,
+            "desktop_only": desktop_only,
+            "is_advanced": is_advanced,
+        }
         self.insert_element_to_form_dict_list(key, value, row)
-
-
-
