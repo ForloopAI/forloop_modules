@@ -1365,6 +1365,6 @@ def filter_webpage_elements_based_on_objective(elements: list[dict], objective: 
     }
     
     url = f'{BASE_API}/filter_webpage_elements_based_on_objective'
-    response = http_client.post(url=url, json=payload)
+    response = http_client.post(url=url, json=payload, timeout=None)
     
     return response
