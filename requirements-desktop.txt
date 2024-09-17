@@ -1,4 +1,0 @@
-doclick==0.1.7
-openpyxl==3.1.2
-pyautogui==0.9.54
-pywinauto==0.6.6
