@@ -170,7 +170,15 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             error_output = completed_process.stderr
             message = f'Executed script failed with the following traceback:\n{error_output}'
             flog.warning(message)
+            
+    def _install_package(self, package_name: str):
+        """Install a package using pip and the current python executable."""
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
 
+    def _uninstall_package(self, package_name: str):
+        """Uninstall a package using pip and the current python executable."""
+        subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", package_name])
+            
     def _execute_python_script(self, script_text: str):
         # Execute the script using the current Python interpreter
         process = subprocess.Popen(
