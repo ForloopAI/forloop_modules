@@ -134,34 +134,36 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
     def direct_execute(self, script_name):
         """
         DANGER: The code runs without any checks!
-        
+
         TODO 1: Solve security issues when running the code.
         TODO 2: Solve scanning for packages used by script and pip installing of the missing ones.
         """
-        
+
         # HACK: Disable the execution of the node with some feedback for a user until we implement security checks
         # raise SoftPipelineError("Execution of this node is temporarily disabled.")
-         
+
         script = su.get_script_by_name(script_name)
         script_text = script.get("text", "")
-        
+
         self._execute_python_script(script_text=script_text)
-        
+
         ### Experimental implementation with stdout/stderr streaming
         # self._execute_python_script_with_streaming(script_text=script_text)
-            
+
     def _install_package(self, package_name: str):
         """Install a package using pip and the current python executable."""
         subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
 
     def _uninstall_package(self, package_name: str):
         """Uninstall a package using pip and the current python executable."""
-        subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", package_name])
-            
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "uninstall", "-y", package_name]
+        )
+
     def _execute_python_script(self, script_text: str):
         """
         Executes Python script (obtained from FL Script object) text via subprocess.Popen method.
-        
+
         Missing libraries, if present in the script, are installed via pip and uninstalled after the
         execution.
 
@@ -170,13 +172,13 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
         Raises:
             SoftPipelineError: Raised in case of an Exception during script execution.
-        """        
+        """
         # First attempt to run the script
         process = subprocess.Popen(
             [sys.executable, "-u", "-c", script_text],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
         )
 
         try:
@@ -195,7 +197,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
                     [sys.executable, "-u", "-c", script_text],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
-                    text=True
+                    text=True,
                 )
                 stdout, stderr = process.communicate()
 
@@ -222,7 +224,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         """
         Executes Python script (obtained from FL Script object) text via subprocess.Popen method
         with continuous streaming of stdout and stderr.
-        
+
         TODO: Replicate the library installation procedure from _execute_python_script if this
               method is pereferred
         TODO: Solve streaming to FE (currently not supported)
@@ -232,7 +234,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
         Raises:
             SoftPipelineError: Raised in case of an Exception during script execution.
-        """ 
+        """
         stdout_var_name = "script_stdout"
         stderr_var_name = "script_stderr"
         variable_handler.new_variable(stdout_var_name, "", is_result=True)
