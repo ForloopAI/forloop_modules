@@ -180,19 +180,40 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", package_name])
             
     def _execute_python_script(self, script_text: str):
-        # Execute the script using the current Python interpreter
+        # First attempt to run the script
         process = subprocess.Popen(
             [sys.executable, "-u", "-c", script_text],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
+            text=True
         )
 
         try:
-            # Capture the entire stdout and stderr after execution
             stdout, stderr = process.communicate()
 
-            # Print the collected stdout and stderr
+            # Check for ImportError in stderr (if missing libraries)
+            missing_libs = re.findall(r"No module named '(\w+)'", stderr)
+
+            if missing_libs:
+                for lib in missing_libs:
+                    print(f"Installing missing library: {lib}")
+                    self._install_package(lib)
+
+                # Re-run the script after installing missing libraries
+                process = subprocess.Popen(
+                    [sys.executable, "-u", "-c", script_text],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                stdout, stderr = process.communicate()
+
+                # Optional: uninstall the installed packages after use
+                for lib in missing_libs:
+                    print(f"Uninstalling library: {lib}")
+                    self._uninstall_package(lib)
+
+            # Print the final output
             if stdout:
                 variable_handler.new_variable("script_stdout", stdout, is_result=True)
                 print(f"stdout:\n{stdout}")
@@ -201,10 +222,9 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
                 print(f"stderr:\n{stderr}")
 
         except Exception as e:
-            raise SoftPipelineError(e)
+            raise SoftPipelineError(f"Error while executing the script: {e}")
 
         finally:
-            # Ensure the process has completed
             process.wait()
 
     def _execute_python_script_with_streaming(self, script_text: str):
