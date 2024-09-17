@@ -218,6 +218,20 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             process.wait()
 
     def _execute_python_script_with_streaming(self, script_text: str):
+        """
+        Executes Python script (obtained from FL Script object) text via subprocess.Popen method
+        with continuous streaming of stdout and stderr.
+        
+        TODO: Replicate the library installation procedure from _execute_python_script if this
+              method is pereferred
+        TODO: Solve streaming to FE (currently not supported)
+
+        Args:
+            script_text (str): Contents of .py script to be executed.
+
+        Raises:
+            SoftPipelineError: Raised in case of an Exception during script execution.
+        """ 
         stdout_var_name = "script_stdout"
         stderr_var_name = "script_stderr"
         variable_handler.new_variable(stdout_var_name, "", is_result=True)
