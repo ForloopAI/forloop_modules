@@ -159,6 +159,84 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             error_output = completed_process.stderr
             message = f'Executed script failed with the following traceback:\n{error_output}'
             flog.warning(message)
+
+    def _execute_python_script(self, script_text: str):
+        # Execute the script using the current Python interpreter
+        process = subprocess.Popen(
+            [sys.executable, "-u", "-c", script_text],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+        try:
+            # Capture the entire stdout and stderr after execution
+            stdout, stderr = process.communicate()
+
+            # Print the collected stdout and stderr
+            if stdout:
+                variable_handler.new_variable("script_stdout", stdout, is_result=True)
+                print(f"stdout:\n{stdout}")
+            if stderr:
+                variable_handler.new_variable("script_stderr", stderr, is_result=True)
+                print(f"stderr:\n{stderr}")
+
+        except Exception as e:
+            raise SoftPipelineError(e)
+
+        finally:
+            # Ensure the process has completed
+            process.wait()
+
+    def _execute_python_script_with_streaming(self, script_text: str):
+        stdout_var_name = "script_stdout"
+        stderr_var_name = "script_stderr"
+        variable_handler.new_variable(stdout_var_name, "", is_result=True)
+        variable_handler.new_variable(stderr_var_name, "", is_result=True)
+
+        # Execute the script in real-time using the current Python interpreter
+        process = subprocess.Popen(
+            [sys.executable, "-u", "-c", script_text],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,  # Line-buffering for real-time output
+        )
+
+        # Reading stdout and stderr line by line
+        try:
+            # Print stdout in real-time with a delay
+            for stdout_line in iter(process.stdout.readline, ""):
+                # time.sleep(1)  # Delay before printing
+                curr_stdout = variable_handler.get_variable_by_name(
+                    stdout_var_name
+                ).get("value", "")
+                curr_stdout += stdout_line
+                variable_handler.new_variable(
+                    stdout_var_name, curr_stdout, is_result=True
+                )
+                print(f"stdout: {stdout_line}", end="")
+
+            # Print stderr in real-time with a delay
+            for stderr_line in iter(process.stderr.readline, ""):
+                # time.sleep(1)  # Delay before printing
+                curr_stderr = variable_handler.get_variable_by_name(
+                    stderr_var_name
+                ).get("value", "")
+                curr_stderr += f"\n{stderr_line}"
+                variable_handler.new_variable(
+                    stderr_var_name, curr_stderr, is_result=True
+                )
+                print(f"stderr: {stderr_line}", end="")
+
+        except Exception as e:
+            print(f"Error while executing the script: {e}")
+
+        finally:
+            # Ensure the process has completed
+            process.stdout.close()
+            process.stderr.close()
+            process.wait()
             
 class RunJupyterScriptHandler(AbstractFunctionHandler):
     """
