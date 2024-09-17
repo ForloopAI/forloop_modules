@@ -148,29 +148,6 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         ##### Experimental implementation
         self._execute_python_script(script_text=script_text)
         # self._execute_python_script_with_streaming(script_text=script_text)
-        
-        return
-        
-        random_id = su.generate_random_id()
-        temp_file_name = f'temp_py_script_{random_id}.py'
-        
-        with open(temp_file_name, "w") as temp_file:
-            temp_file.write(script_text)
-            
-        command = f'python3 {temp_file_name}'
-        
-        completed_process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, 
-                                           stderr=subprocess.PIPE, text=True)
-        
-        os.remove(temp_file_name)
-
-        if completed_process.returncode == 0:
-            output = completed_process.stdout
-            flog.info(f"Command output:\n{output}")
-        else:
-            error_output = completed_process.stderr
-            message = f'Executed script failed with the following traceback:\n{error_output}'
-            flog.warning(message)
             
     def _install_package(self, package_name: str):
         """Install a package using pip and the current python executable."""
