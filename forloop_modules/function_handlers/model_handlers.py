@@ -132,17 +132,23 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
     def direct_execute(self, script_name):
         """
-        DANGER: The code runs without any checks! 
+        DANGER: The code runs without any checks!
         
         TODO 1: Solve security issues when running the code.
         TODO 2: Solve scanning for packages used by script and pip installing of the missing ones.
-        """    
+        """
         
         # HACK: Disable the execution of the node with some feedback for a user until we implement security checks
-        raise SoftPipelineError("Execution of this node is temporarily disabled.")
+        # raise SoftPipelineError("Execution of this node is temporarily disabled.")
          
         script = su.get_script_by_name(script_name)
         script_text = script.get("text", "")
+        
+        ##### Experimental implementation
+        self._execute_python_script(script_text=script_text)
+        # self._execute_python_script_with_streaming(script_text=script_text)
+        
+        return
         
         random_id = su.generate_random_id()
         temp_file_name = f'temp_py_script_{random_id}.py'
