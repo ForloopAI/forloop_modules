@@ -145,8 +145,9 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         script = su.get_script_by_name(script_name)
         script_text = script.get("text", "")
         
-        ##### Experimental implementation
         self._execute_python_script(script_text=script_text)
+        
+        ### Experimental implementation with stdout/stderr streaming
         # self._execute_python_script_with_streaming(script_text=script_text)
             
     def _install_package(self, package_name: str):
