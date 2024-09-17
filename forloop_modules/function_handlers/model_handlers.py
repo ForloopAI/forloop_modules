@@ -1,5 +1,6 @@
 import importlib
 import os
+import re
 import subprocess
 import sys
 
@@ -269,7 +270,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
                 print(f"stderr: {stderr_line}", end="")
 
         except Exception as e:
-            print(f"Error while executing the script: {e}")
+            raise SoftPipelineError(f"Error while executing the script: {e}")
 
         finally:
             # Ensure the process has completed
