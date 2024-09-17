@@ -158,6 +158,18 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", package_name])
             
     def _execute_python_script(self, script_text: str):
+        """
+        Executes Python script (obtained from FL Script object) text via subprocess.Popen method.
+        
+        Missing libraries, if present in the script, are installed via pip and uninstalled after the
+        execution.
+
+        Args:
+            script_text (str): Contents of .py script to be executed.
+
+        Raises:
+            SoftPipelineError: Raised in case of an Exception during script execution.
+        """        
         # First attempt to run the script
         process = subprocess.Popen(
             [sys.executable, "-u", "-c", script_text],
@@ -186,12 +198,12 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
                 )
                 stdout, stderr = process.communicate()
 
-                # Optional: uninstall the installed packages after use
+                # Uninstall the installed packages after use
                 for lib in missing_libs:
                     print(f"Uninstalling library: {lib}")
                     self._uninstall_package(lib)
 
-            # Print the final output
+            # Save stdout and stderr into result variables and print them
             if stdout:
                 variable_handler.new_variable("script_stdout", stdout, is_result=True)
                 print(f"stdout:\n{stdout}")
