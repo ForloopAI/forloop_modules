@@ -668,8 +668,8 @@ class ClickIdHandler(AbstractFunctionHandler):
         self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
 
         self.docs.add_parameter_table_row(
-            title="ID",
-            name="id",
+            title="Element ID",
+            name="element_id",
             description="ID of web page element to click on",
             typ="string",
             example=['listing-details', 'pagination-elem']
@@ -678,31 +678,31 @@ class ClickIdHandler(AbstractFunctionHandler):
     def make_form_dict_list(self, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
-        fdl.label("Click element by id")
-        fdl.label("Id")
-        fdl.entry(name="id", text="", input_types=["str"], required=True, row=1)
+        fdl.label("Click element by ID")
+        fdl.label("Element ID")
+        fdl.entry(name="element_id", text="", input_types=["str"], required=True, row=1)
 
         return fdl
 
     def execute(self, node_detail_form):
-        click_id = node_detail_form.get_chosen_value_by_name("id", variable_handler)
+        click_id = node_detail_form.get_chosen_value_by_name("element_id", variable_handler)
 
         self.direct_execute(click_id)
 
     def execute_with_params(self, params):
-        click_id = params["id"]
+        click_id = params["element_id"]
 
         self.direct_execute(click_id)
 
-    def direct_execute(self, click_id):
+    def direct_execute(self, element_id):
         function = "exec"
-        inp = "self.browser.find_element_by_id('" + click_id + "').click()"
+        inp = "self.browser.find_element_by_id('" + element_id + "').click()"
         # docrawl_core.spider_functions={"function":function,"input":inp,"done":"False"}
         spider_functions = Var({"function": function, "input": inp, "done": False})
         save_variables(kept_variables)
 
     def export_code(self, node_detail_form):
-        click_id = node_detail_form.get_chosen_value_by_name("id", variable_handler)
+        click_id = node_detail_form.get_chosen_value_by_name("element_id", variable_handler)
 
         code = f"""
         # Specify the ID of the element you want to click

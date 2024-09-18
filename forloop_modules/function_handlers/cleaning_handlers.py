@@ -2727,7 +2727,7 @@ class ExtractStringHandler(AbstractFunctionHandler):
         fdl.label("New column")
         fdl.entry(name="new_col_name", text="", input_types=["str"], row=6)
         fdl.label("New variable")
-        fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=6)
+        fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], required=True, row=7)
         fdl.button(name="execute", function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl

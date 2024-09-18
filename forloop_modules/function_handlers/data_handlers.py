@@ -500,7 +500,7 @@ class DfToListHandler(AbstractFunctionHandler):
         flog.debug(f"DF = {df_entry}")
         self.direct_execute(df_entry, column_names, new_var_name)
 
-    def direct_execute(self, df_entry, column_name, new_variable_name):
+    def direct_execute(self, df_entry, column_name, new_var_name):
         # df_entry[column_name] = df_entry[column_name].fillna("")
         inp = Input()
 
@@ -516,7 +516,7 @@ class DfToListHandler(AbstractFunctionHandler):
             new_value = []
             flog.error(f"Undefined Error: {e}")
 
-        variable_handler.new_variable(new_variable_name, new_value)
+        variable_handler.new_variable(new_var_name, new_value)
         #variable_handler.update_data_in_variable_explorer(glc)
 
     def input_execute(self, inp):
@@ -591,8 +591,8 @@ class ListToDfHandler(AbstractFunctionHandler):
         flog.debug(f"column_names = {varname}")
         flog.debug(f"new_variable_name = {new_variable_name}")
 
-    def direct_execute(self, list_entry, column_names, new_variable_name):
-        self.debug(list_entry, column_names, new_variable_name)
+    def direct_execute(self, list_entry, column_names, new_var_name):
+        self.debug(list_entry, column_names, new_var_name)
 
         inp = Input()
         inp.assign("list_entry", list_entry)
@@ -605,7 +605,7 @@ class ListToDfHandler(AbstractFunctionHandler):
             flog.error(f"Undefined Error: {e}")
 
 
-        variable_handler.new_variable(new_variable_name, new_df)
+        variable_handler.new_variable(new_var_name, new_df)
         #variable_handler.update_data_in_variable_explorer(glc)
 
     def input_execute(self, inp):

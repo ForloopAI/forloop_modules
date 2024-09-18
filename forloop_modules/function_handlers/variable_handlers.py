@@ -1163,15 +1163,15 @@ class PrintVariableHandler(AbstractFunctionHandler):
 
         return fdl
 
-    def direct_execute(self, variable_value):
+    def direct_execute(self, variable_name):
 
         inp = Input()
-        inp.assign("variable_name", variable_value)
+        inp.assign("variable_name", variable_name)
 
         self.input_execute(inp)
 
         """
-        print(f'Variable value form PrintVariable icon: {variable_value}')
+        print(f'Variable value form PrintVariable icon: {variable_name}')
         """
     
     def input_execute(self, inp):
