@@ -215,6 +215,10 @@ class DBQueryHandler(AbstractFunctionHandler):
         self.type_category = ntcm.categories.database
         self.docs_category = DocsCategories.data_sources
 
+        self._init_docs()
+
+        super().__init__()
+
     def _init_docs(self):
         self.docs = Docs(description=self.__doc__)
         self.docs.add_parameter_table_row(
