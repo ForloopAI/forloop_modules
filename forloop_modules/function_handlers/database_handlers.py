@@ -244,7 +244,7 @@ class DBQueryHandler(AbstractFunctionHandler):
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         db_tables = get_connected_db_table_names()
 
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
         fdl.label(self.fn_name)
         fdl.label("DB table name")
         fdl.comboentry(name="db_table_name", text="", options=db_tables, row=1)
@@ -443,7 +443,7 @@ class DBSelectHandler(AbstractFunctionHandler):
 
 
         # TODO: Add Distinct checkbox
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
         fdl.label("DB Select")
         fdl.label("Database")
         fdl.combobox(name="db_name", options=database_names, row=1)
@@ -650,7 +650,7 @@ class DBInsertHandler(AbstractFunctionHandler):
             
         databases_names = [database["database_name"] for database in databases]
 
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
         fdl.label(self.fn_name)
         fdl.label("Database")
         fdl.combobox(name="db_name", options=databases_names, row=1)
@@ -794,7 +794,7 @@ class DBDeleteHandler(AbstractFunctionHandler):
             databases = []
         db_tables = []
 
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
         fdl.label("DB Delete")
         fdl.label("Database")
         databases_names = [database["database_name"] for database in databases]
@@ -935,7 +935,7 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
         db_tables = []
 
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
         fdl.label("DB Update")
         fdl.label("Database")
         databases_names = [database["database_name"] for database in databases]

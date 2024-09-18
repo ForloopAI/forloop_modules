@@ -73,7 +73,7 @@ class NewDataFrameHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, *args, options: Optional[dict] = None, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label("Create a new DataFrame")
         fdl.label("Data")
