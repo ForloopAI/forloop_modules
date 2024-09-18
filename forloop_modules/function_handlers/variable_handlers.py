@@ -1131,7 +1131,7 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         return (imports)
 
 
-class PrintVariableHandler:
+class PrintVariableHandler(AbstractFunctionHandler):
     """
     Takes a variable as an input and prints it into a console.
     """
@@ -1144,6 +1144,8 @@ class PrintVariableHandler:
         self.type_category = ntcm.categories.variable
         self.docs_category = DocsCategories.control
         self._init_docs()
+
+        super().__init__()
         
     def _init_docs(self):
         self.docs = Docs(description=self.__doc__)
