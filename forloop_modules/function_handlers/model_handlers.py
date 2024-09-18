@@ -3,6 +3,7 @@ import os
 import re
 import subprocess
 import sys
+from e2b_code_interpreter import CodeInterpreter
 
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
@@ -144,6 +145,65 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
         script = su.get_script_by_name(script_name)
         script_text = script.get("text", "")
+        
+        ### Experimental E2B solution:
+        stdout_lines = []
+        stderr_lines = []
+        
+        with CodeInterpreter(api_key="e2b_7c145cf98a6f95d1358897a6909332b66415b73d") as sandbox:
+            exec = sandbox.notebook.exec_cell(
+                script_text,
+                on_stderr=lambda stderr: stderr_lines.append(str(stderr)),
+                on_stdout=lambda stdout: stdout_lines.append(str(stdout))
+                # You can stream logs from the code interpreter
+                # on_stderr=lambda stderr: print("\n[Code Interpreter stdout]", stderr),
+                # on_stdout=lambda stdout: print("\n[Code Interpreter stderr]", stdout),
+                #
+                # You can also stream additional results like charts, images, etc.
+                # on_result=...
+            )
+
+            if exec.error:
+                
+                # Check for ImportError in stderr (if missing libraries)
+                missing_libs = re.findall(r"No module named '(\w+)'", exec.error.traceback)
+                
+                if missing_libs:
+                    for lib in missing_libs:
+                        sandbox.notebook.exec_cell(f"!pip install {lib}")
+                        
+                    exec = sandbox.notebook.exec_cell(
+                        script_text,
+                        on_stderr=lambda stderr: stderr_lines.append(str(stderr)),
+                        on_stdout=lambda stdout: stdout_lines.append(str(stdout))
+                        # You can stream logs from the code interpreter
+                        # on_stderr=lambda stderr: print("\n[Code Interpreter stdout]", stderr),
+                        # on_stdout=lambda stdout: print("\n[Code Interpreter stderr]", stdout),
+                        #
+                        # You can also stream additional results like charts, images, etc.
+                        # on_result=...
+                    )
+                # else:
+                #     print("[Code Interpreter error]", exec.error) # Runtime error     
+                 
+            stdout = "".join(stdout_lines).replace("'", '"')
+            stderr = "".join(stderr_lines)
+            if exec.error:
+                stderr += exec.error.traceback
+            stderr = stderr.replace("'", '"')
+                
+            variable_handler.new_variable("script_stdout", stdout, is_result=True)
+            variable_handler.new_variable("script_stderr", stderr, is_result=True) 
+            # else:
+            #     print(f"Results:\n{exec.results}")
+            #     print(f"Logs:\n{exec.logs}")
+            #     # return exec.results, exec.logs
+            print(f"Results:\n{exec.results}")
+            print(f"Logs:\n{exec.logs}")
+            print(f"Error: {exec.error}")
+        
+        return
+        
 
         self._execute_python_script(script_text=script_text)
 
