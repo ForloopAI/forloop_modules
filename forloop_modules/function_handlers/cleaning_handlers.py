@@ -1617,7 +1617,7 @@ class SortHandler(AbstractFunctionHandler):
         flog.debug(f"NEW VAR = {new_var_name}")
 
     def direct_execute(self, df_entry: pd.DataFrame, column_name1: List[str], ascending1: str,
-                       column_name2: List[str], ascending2: str, new_var_name: str, *args):
+                       column_name2: List[str], ascending2: str, new_var_name: str):
         """
         sort transformation wrapper
         """
@@ -1752,7 +1752,7 @@ class ColumnWiseShiftHandler(AbstractFunctionHandler):
         flog.debug(f"NEW VAR = {new_var_name}")
 
     def direct_execute(self, df_entry: pd.DataFrame, complete_col: str, incomplete_col: str, mode: str,
-                       new_var_name: str, *args):
+                       new_var_name: str):
         self.debug(df_entry, complete_col, incomplete_col, mode, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
@@ -1848,7 +1848,7 @@ class DifferenceDataHandler(AbstractFunctionHandler):
         flog.debug(f"RIGHT DF NAME = {right_df.head()}")
         flog.debug(f"NEW VAR = {new_var_name}")
 
-    def direct_execute(self, df_entry: pd.DataFrame, df_entry2: pd.DataFrame, new_var_name: str, *args):
+    def direct_execute(self, df_entry: pd.DataFrame, df_entry2: pd.DataFrame, new_var_name: str):
         self.debug(df_entry, df_entry2, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
@@ -2007,7 +2007,7 @@ class OutliersHandler(AbstractFunctionHandler):
     def remove_outliers(self, data: pd.DataFrame, outliers):
         return data.drop(outliers.index, axis=0)
 
-    def direct_execute(self, df_entry: pd.DataFrame, mode: str, columns, top_n, ratio, new_var_name: str, *args):
+    def direct_execute(self, df_entry: pd.DataFrame, mode: str, columns, top_n, ratio, new_var_name: str):
         self.debug(df_entry, mode, columns, top_n, ratio, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
@@ -2153,7 +2153,7 @@ class FilterHandler(AbstractFunctionHandler):
         flog.debug(f"NEW VAR = {new_var_name}")
 
     def direct_execute(self, df_entry: pd.DataFrame, column_name: Union[list[str], str], filtered_str: str, matched_or_others: str,
-                       new_var_name: str, *args):
+                       new_var_name: str):
         """
         Filter columns text based on a given (sub)string.
         The filtered rows can be either preserved and others deleted if matched_or_others is "matched"
@@ -2287,7 +2287,7 @@ class ConcatHandler(AbstractFunctionHandler):
         flog.debug(f"NEW VAR = {new_var_name}")
 
     
-    def direct_execute(self, df_entry: pd.DataFrame, df_entry2: pd.DataFrame, axis: int, join: str,new_var_name: str, *args):
+    def direct_execute(self, df_entry: pd.DataFrame, df_entry2: pd.DataFrame, axis: int, join: str,new_var_name: str):
         if not isinstance(df_entry, pd.DataFrame) or not isinstance(df_entry2, pd.DataFrame):
             raise SoftPipelineError("Both 'Dataframe' and 'Dataframe 2' arguments must be of type 'DataFrame'.")
         
@@ -2408,7 +2408,7 @@ class JoinHandler(AbstractFunctionHandler):
         return on
 
     def direct_execute(self, df_entry: Union[str, pd.DataFrame], df_entry2: Union[str, pd.DataFrame],
-                       on: Optional[str], how: str, new_var_name: str, *args):
+                       on: Optional[str], how: str, new_var_name: str):
         self.debug(df_entry, df_entry2, on, how, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame) or not isinstance(df_entry2, pd.DataFrame):
@@ -2487,7 +2487,7 @@ class AnalyzeDataFrameHandler(AbstractFunctionHandler):
 
         self.direct_execute(new_var_name)
 
-    def direct_execute(self, new_var_name, *args):
+    def direct_execute(self, new_var_name):
         df=pd.DataFrame([1,2,3],columns=["needs_fix"]) #should be replaced by "last_active_df"
 
         inp = Input()
@@ -2630,7 +2630,7 @@ class SplitColumnHandler(AbstractFunctionHandler):
         return select_index, new_col_name
 
     def direct_execute(self, df_entry: Union[str, pd.DataFrame], column: str, split_on, select_index, keep_old: bool,
-                       new_col_name: str, new_var_name: str, *args):
+                       new_col_name: str, new_var_name: str):
         """
         Split values in a given column by a given "split_on" string and take {select_index} th value or None
         Store new value into new_col_name column
@@ -2772,7 +2772,7 @@ class ExtractStringHandler(AbstractFunctionHandler):
 
 
     def direct_execute(self, df_entry: Union[str, pd.DataFrame], column: str, extract_pattern, keep_old: bool,
-                       concat_groups: bool, new_col_name: str, new_var_name: str, *args):
+                       concat_groups: bool, new_col_name: str, new_var_name: str):
         """
         Split values in a given column by a given "split_on" string and take {select_index} th value or None
         Store new value into new_col_name column
@@ -2914,7 +2914,7 @@ class KNNImputationHandler(AbstractFunctionHandler):
 
         return columns
 
-    def direct_execute(self, df_entry: pd.DataFrame, imp_cols: List[str], new_var_name: str, *args):
+    def direct_execute(self, df_entry: pd.DataFrame, imp_cols: List[str], new_var_name: str):
         self.debug(df_entry, imp_cols, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
@@ -3049,8 +3049,7 @@ class ImputationHandler(AbstractFunctionHandler):
 
         return imput_choice
 
-    def direct_execute(self, df_entry: pd.DataFrame, columns: List[str], imputation: List[str], new_var_name: str,
-                       *args):
+    def direct_execute(self, df_entry: pd.DataFrame, columns: List[str], imputation: List[str], new_var_name: str):
         self.debug(df_entry, columns, imputation, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
@@ -3817,8 +3816,7 @@ class CategorizeColumnHandler(AbstractFunctionHandler):
 
         return column_name, separator
 
-    def direct_execute(self, df_entry: pd.DataFrame, column_name: List[str], separator: List[str], new_var_name: str,
-                       *args):
+    def direct_execute(self, df_entry: pd.DataFrame, column_name: List[str], separator: List[str], new_var_name: str):
         self.debug(df_entry, column_name, separator, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
@@ -3952,7 +3950,7 @@ class SimilarityMatchingHandler(AbstractFunctionHandler):
 
         return select_index, new_col_name
 
-    def direct_execute(self, df_entry, reference_record_index, categorical_columns, text_columns, numerical_columns, new_col_name, new_var_name, *args):
+    def direct_execute(self, df_entry, reference_record_index, categorical_columns, text_columns, numerical_columns, new_col_name, new_var_name):
         """
         Split values in a given column by a given "split_on" string and take {select_index} th value or None
         Store new value into new_col_name column
@@ -4141,7 +4139,7 @@ class CleanDataHandler(AbstractFunctionHandler):
 
         return new_col_name
 
-    def direct_execute(self, df_entry: pd.DataFrame, new_var_name: str, *args):
+    def direct_execute(self, df_entry: pd.DataFrame, new_var_name: str):
         self.debug(df_entry, new_var_name)
         
         if not isinstance(df_entry, pd.DataFrame):
