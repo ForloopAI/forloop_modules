@@ -1,11 +1,12 @@
-from io import BytesIO
 import base64
+from io import BytesIO
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 from PIL import Image
 
 import forloop_modules.queries.node_context_requests_backend as ncrb
+from docrawl.errors import SpiderFunctionError
 from forloop_modules.errors.errors import CriticalPipelineError
 from forloop_modules.flog import flog
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import (
@@ -211,7 +212,7 @@ class FindSimilarItemsHandler(AbstractFunctionHandler):
 
         ##### FIND SIMILAR ITEMS X,Y POSITION ALGORITHMIC CORRECTION #####
         print("MATCHING GROUPS", matching_elements_groups)
-        
+
         for k,v in matching_elements_groups.items():
             print("K,V", k,v)
             print(v[0])
@@ -220,17 +221,17 @@ class FindSimilarItemsHandler(AbstractFunctionHandler):
             print("X POSITIONS", x_positions)
             print("Y POSITIONS", y_positions)
             print("ELEMENT_GROUP_LEN",len(v))
-            
+
             x_positions_differences=[x_positions[i+1]-x_positions[i] for i,item in enumerate(x_positions) if i+1<len(x_positions)]
             y_positions_differences=[y_positions[i+1]-y_positions[i] for i,item in enumerate(y_positions) if i+1<len(y_positions)]
             print("X POSITIONS_DIFF", x_positions_differences)
             print("Y POSITIONS_DIFF", y_positions_differences)
-            
+
             most_common_rounded_shift_in_x=[round(x/10)*10 for x in x_positions_differences]
             most_common_rounded_shift_in_y=[round(y/10)*10 for y in y_positions_differences]
             ##### TODO: Finish this!
-        
-        
+
+
         data = {
             # "message": message,
             # "ok": True,
@@ -430,8 +431,8 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
 
         #slack_notif.send_slack_notification(api_scan_webpage.url,user_email=api_scan_webpage.email)  #2 seconds
         # e_time = time.perf_counter() - start_time #12.5s
-
-        suh.webscraping_client.load_website(url, timeout=120)
+        if url:
+            suh.webscraping_client.load_website(url, timeout=120)
         elements, screenshot_base64 = suh.scan_web_page_API(output_folder, scraping_options)  #9 seconds
 
         # # Convert PNG file to WEBP
@@ -555,10 +556,70 @@ class FilterWebpageElementsWithAIHandler(AbstractFunctionHandler):
         else:
             raise CriticalPipelineError(response.reason)
 
+class SendTextHandler(AbstractFunctionHandler):
+    """
+    Send a string into a web page element specified by its XPath, e.g. a text input field.
+    """
+
+    def __init__(self):
+        self.icon_type = "SendText"
+        self.fn_name = "Send Text"
+
+        self.type_category = ntcm.categories.webscraping
+        super().__init__()
+
+    def _init_docs(self):
+        parameters_description = "SendText Node takes 1 parameter"
+
+        self.docs.add_parameter_table_row(
+            title="XPath",
+            name="xpath",
+            description="XPath of web page element to send text to",
+            typ="string",
+            example=['/html/body/header/div[3]/div[1]/div[2]/section/nav/a', '//button[@class="page-link"]']
+        )
+        self.docs.add_parameter_table_row(
+            title="Text",
+            name="text",
+            description="Text to be sent to the web page element",
+            typ="string",
+            example=['username123', 'password123']
+        )
+
+    def make_form_dict_list(self, node_detail_form=None):
+        fdl = FormDictList()
+
+        fdl.label("Element XPath")
+        fdl.entry(name="xpath", text="", input_types=["str"], required=True, show_info=True, row=1)
+        fdl.label("Text to send")
+        fdl.entry(name="text", text="", input_types=["str"], required=True, show_info=True, row=2)
+
+        return fdl
+
+    def execute(self, node_detail_form):
+        xpath = node_detail_form.get_chosen_value_by_name("xpath", variable_handler)
+        text = node_detail_form.get_chosen_value_by_name("text", variable_handler)
+        self.direct_execute(xpath, text)
+
+    def execute_with_params(self, params):
+        xpath = params["xpath"]
+        text = params["text"]
+
+        self.direct_execute(xpath, text)
+
+    def direct_execute(self, xpath, text):
+        xpath = suh.check_xpath_apostrophes(xpath)
+        try:
+            suh.send_text(xpath, text)
+        except SpiderFunctionError as e:
+            raise CriticalPipelineError(str(e))
+
+
 browser_handlers_dict = {
     "FindSimilarItems": FindSimilarItemsHandler(),
     "ConvertToScrapingNodes": ConvertToScrapingNodesHandler(),
     "RefreshBrowserView": RefreshBrowserViewHandler(),
     "ScanBrowserWebpage": ScanBrowserWebpageHandler(),
     "FilterWebpageElementsWithAI": FilterWebpageElementsWithAIHandler(),
+    "SendText": SendTextHandler(),
 }

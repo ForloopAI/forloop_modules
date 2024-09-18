@@ -42,3 +42,6 @@ class InitializationError(Exception):
     Raised whenever any essential module/component of the application has not been initialized
     properly. This can mean failure while setting DB/Redis connection, initialization assertions, etc.
     """
+
+class CreditsOverspentError(Exception):
+    """Exception raised when a billable node is executed with insufficient credits."""

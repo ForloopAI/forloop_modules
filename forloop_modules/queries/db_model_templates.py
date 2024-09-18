@@ -1,6 +1,7 @@
 import datetime
 from enum import Enum
 from typing import Annotated, Any, Dict, Generic, List, Literal, Optional, TypeVar, Union
+from typing_extensions import TypedDict
 
 from pydantic import AfterValidator, BaseModel, Field, PlainSerializer, model_validator
 from pydantic.functional_validators import field_validator
@@ -25,6 +26,11 @@ UTCDatetime = Annotated[
         lambda date: f"{date.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]}Z", when_used='json'
     ) # Serialize Timestamps to zulu format
 ]
+
+class UserSubscriptionPlanStatusEnum(str, Enum):
+    PAID = "PAID"
+    UNPAID = "UNPAID" # During a grace period
+    CANCELED = "CANCELED"
 
 
 ##### DO NOT DELETE THIS SECTION -> Dominik will do it later
@@ -185,6 +191,24 @@ class APIOperationJob(BaseModel):
     prototype_job_uid: str
 
 
+class CreatedBy(TypedDict):
+    type: Literal['USER', 'PIPELINE_JOB', 'TRIGGER']
+    uid: str
+
+
+class APIPipelineDirectExecute(BaseModel):
+    triggered_by: Literal['USER', 'PIPELINE_JOB', 'TRIGGER']
+    uid: Optional[str] = None
+    variable_uids: list[str] = []
+
+    @model_validator(mode='after')
+    @classmethod
+    def check_uid_provided_if_not_user(cls, data: 'APIPipelineDirectExecute') -> 'APIPipelineDirectExecute':
+        if data.triggered_by != 'USER' and data.uid is None:
+            raise ValueError('`uid` must be provided for `pipeline_job` and `trigger` choice')
+        return data
+
+
 class APISummaryPipelineJob(BaseModel):
     """Short summary of a pipeline job - holding only data about the main job."""
 
@@ -198,7 +222,7 @@ class APISummaryPipelineJob(BaseModel):
     pipeline_uid: str
     stats: Optional[PipelineJobStats] = None
     trigger_mode: Literal['trigger', 'manual'] = 'manual'
-
+    created_by: CreatedBy
 
 class APIFullPipelineJob(APISummaryPipelineJob):
     """Full representation of a pipeline job - holding data about the main job and all sub-jobs."""
@@ -214,20 +238,48 @@ class APIPrototypeJob(BaseModel):
     started_at: Optional[UTCDatetime] = None
     completed_at: Optional[UTCDatetime] = None
     pipeline_uid: str
+    trigger_mode: Literal['trigger', 'manual', 'system']
 
 
 class TriggerFrequencyEnum(str, Enum):
-    HOURLY = "hourly"
-    DAILY = "daily"
-    WEEKLY = "weekly"
-    MONTHLY = "monthly"
+    MINUTELY = 'MINUTELY'
+    HOURLY = "HOURLY"
+    DAILY = "DAILY"
+    WEEKLY = "WEEKLY"
+    MONTHLY = "MONTHLY"
+
+
+class TriggerType(str, Enum):
+    TIME = "time"
+    PIPELINE = "pipeline"
+
+
+class TimeTriggerParams(TypedDict):
+    first_run_date: UTCDatetime
+    multiplier: int
+    frequency: TriggerFrequencyEnum
+
+class APITimeTriggerParams(BaseModel):
+    first_run_date: UTCDatetime
+    multiplier: int = Field(..., gt=0, le=1000)
+    frequency: TriggerFrequencyEnum
+
+
+class PipelineTriggerParams(TypedDict):
+    triggering_pipeline_uid: str
+    variable_uids: list[str]
+
+
+class APIPipelineTriggerParams(BaseModel):
+    triggering_pipeline_uid: str
+    variable_uids: list[str]
 
 
 class APITrigger(BaseModel):
     name: Optional[str] = None
-    first_run_date: UTCDatetime
+    type: TriggerType
     last_run_date: Optional[UTCDatetime] = None
-    frequency: TriggerFrequencyEnum
+    params: Union[APITimeTriggerParams, APIPipelineTriggerParams]
     pipeline_uid: str
     project_uid: str
 
@@ -287,7 +339,6 @@ class APIScript(BaseModel):
     script_name: str = ""
     text: str = ""
     project_uid: str = "0"
-
 
 # class APIUser(BaseModel):
 #     email: str = ""  # auth0 response - email
@@ -534,11 +585,13 @@ class APIPipeline(BaseModel):
     name: Optional[str] = None
     start_node_uid: str = "0" # TODO: to be deprecated after introducing ExecCore for local execution
     is_active: bool = False # TODO: to be deprecated after introducing ExecCore for local execution
+    system_reactivation_status: Optional[str] = None
     #nodes_uids:list[int]
     #edges_uids:list[int]
     #variables_uids:list[int]
     active_nodes_uids: list[int] = [] # TODO: to be deprecated after introducing ExecCore for local execution
     remaining_nodes_uids: list[int] = [] # TODO: to be deprecated after introducing ExecCore for local execution
+    # triggering_pipeline_uid: Optional[str] = None
     project_uid: str = "0"
 
 class APIExecutePipelineSchema(BaseModel):
@@ -730,6 +783,12 @@ class APIConvertToScrapingNode(BaseModel):
     selected_elements_xpaths: list
     pipeline_uid: str
     project_uid: str
+    
+class APICopyTemplateBody(BaseModel):
+    project_uid: str
+    pipeline_uid: str
+    url: Optional[str] = None
+    url_2: Optional[str] = None # If provided, 'similar URLs' approach is implicitly expected
 
 ItemType = TypeVar("ItemType")
 class Paged(BaseModel, Generic[ItemType]):

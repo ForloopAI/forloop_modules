@@ -2,14 +2,19 @@ import ast
 import operator
 import random
 import time
+
 import forloop_modules.flog as flog
-
-from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
-from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
+import forloop_modules.queries.node_context_requests_backend as ncrb
+from forloop_modules.errors.errors import SoftPipelineError
+from forloop_modules.function_handlers.auxilliary.abstract_function_handler import (
+    AbstractFunctionHandler,
+)
 from forloop_modules.function_handlers.auxilliary.docs import Docs
+from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
+from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
+from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.globals.docs_categories import DocsCategories
-
-from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler
+from forloop_modules.globals.variable_handler import variable_handler
 
 
 class StartHandler(AbstractFunctionHandler):
@@ -122,6 +127,15 @@ class WaitHandler(AbstractFunctionHandler):
         fdl.entry(name="rand_ms",text="0",row=2, input_types=["int", "float"])
         return fdl
 
+    def execute(self, node_detail_form):
+        milliseconds = node_detail_form.get_chosen_value_by_name(
+            "milliseconds", variable_handler
+        )
+        rand_ms = node_detail_form.get_chosen_value_by_name(
+            "rand_ms", variable_handler
+        )
+        self.direct_execute(milliseconds, rand_ms)
+
     def direct_execute(self, milliseconds, rand_ms):
         milliseconds = int(milliseconds)
 
@@ -151,24 +165,39 @@ class RunPipelineHandler(AbstractFunctionHandler):
         self.type_category = ntcm.categories.control_flow
 
     def make_form_dict_list(self, *args, node_detail_form=None):
-    
-        fdl=FormDictList()
+        fdl = FormDictList()
         fdl.label(self.fn_name)
-        fdl.label("Pipeline ID:")
-        fdl.entry(name="pipeline_id",text="",row=1)
-        fdl.label("Runs:")
-        fdl.entry(name="runs",text="1",row=2)
-        
+        fdl.label("Pipeline to trigger")
+        fdl.combobox(name="pipeline_to_trigger", options=[], row=1)
+        fdl.label("Variables to export")
+        fdl.combobox(name="variable_uids", options=[], multiselect_indices={}, row=2)
         return fdl
-    
 
-    def direct_execute(self):
-        """TODO"""
-        pass
+    def execute(self, node_detail_form):
+        pipeline_to_trigger = node_detail_form.get_chosen_value_by_name(
+            "pipeline_to_trigger", variable_handler
+        )
+        variable_uids = node_detail_form.get_chosen_value_by_name(
+            "variable_uids", variable_handler
+        )
+        self.direct_execute(pipeline_to_trigger, variable_uids)
 
-    def execute(self, args):
-        """TODO"""
-        pass
+    def direct_execute(self, pipeline_to_trigger, variable_uids):
+        var_uids = []
+        for var_uid in variable_uids:
+            var = ncrb.get_variable(var_uid)
+            if not var:
+                raise SoftPipelineError(f"Variable {var_uid} was not found during exporting.")
+            var_uids.append(var["uid"])
+
+        ncrb.pipeline_direct_execute(
+            pipeline_to_trigger,
+            {
+                "triggered_by": "PIPELINE_JOB",
+                "uid": aet.active_pipeline_job_uid,
+                "variable_uids": var_uids,
+            },
+        )
 
 
 class IfConditionHandler(AbstractFunctionHandler):
