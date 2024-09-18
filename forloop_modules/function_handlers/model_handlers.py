@@ -98,6 +98,8 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         self.type_category = ntcm.categories.model
         self.docs_category = DocsCategories.control
 
+        super().__init__()
+
     def make_form_dict_list(self, *args, options={}, node_detail_form=None):
         script_names = []
         
@@ -255,13 +257,15 @@ class RunJupyterScriptHandler(AbstractFunctionHandler):
         #     with open(notebook_filename_out, mode='w', encoding='utf-8') as f:
         #         nbformat.write(nb, f)
 
-class TrainModelHandler:
+class TrainModelHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = 'TrainModel'
         self.fn_name = 'Train Model'
 
         self.type_category = ntcm.categories.model
         self.docs_category = DocsCategories.control
+
+        super().__init__()
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -280,9 +284,16 @@ class TrainModelHandler:
         return fdl
 
     def execute(self, node_detail_form):
+        """ TODO """
         pass
 
+    def direct_execute(self):
         """ TODO """
+        pass
+
+    def export_code(self, node_detail_form):
+        """ TODO """
+        pass
 
 
 class PredictModelValuesHandler:
