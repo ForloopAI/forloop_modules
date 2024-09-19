@@ -291,6 +291,19 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             process.wait()
             
     def _execute_python_script_with_e2b(self, script_text: str):
+        """
+        Executes Python script (obtained from FL Script object) text in an E2B code interpreter.
+        
+        E2B code interpreter (sandbox) is described in their docs: https://e2b.dev/docs
+        Missing libraries, if present in the script, are installed via pip (in the E2B sandbox,
+        not in our environment).
+
+        Args:
+            script_text (str): Contents of .py script to be executed.
+
+        Raises:
+            SoftPipelineError: Raised in case of an Exception during E2B execution.
+        """
         stdout_lines = []
         stderr_lines = []
 
