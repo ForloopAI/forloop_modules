@@ -307,35 +307,39 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         stdout_lines = []
         stderr_lines = []
 
-        with CodeInterpreter() as sandbox:
-            exec = sandbox.notebook.exec_cell(
-                script_text,
-                on_stderr=lambda stderr: stderr_lines.append(str(stderr)),
-                on_stdout=lambda stdout: stdout_lines.append(str(stdout)),
-            )
+        try:
+            with CodeInterpreter() as sandbox:
+                exec = sandbox.notebook.exec_cell(
+                    script_text,
+                    on_stderr=lambda stderr: stderr_lines.append(str(stderr)),
+                    on_stdout=lambda stdout: stdout_lines.append(str(stdout)),
+                )
 
-            if exec.error:
-                # Check for ImportError in stderr (if missing libraries)
-                missing_libs = re.findall(r"No module named '(\w+)'", exec.error.traceback)
+                if exec.error:
+                    # Check for ImportError in stderr (if missing libraries)
+                    missing_libs = re.findall(r"No module named '(\w+)'", exec.error.traceback)
 
-                if missing_libs:
-                    for lib in missing_libs:
-                        sandbox.notebook.exec_cell(f"!pip install {lib}")
+                    if missing_libs:
+                        for lib in missing_libs:
+                            sandbox.notebook.exec_cell(f"!pip install {lib}")
 
-                    exec = sandbox.notebook.exec_cell(
-                        script_text,
-                        on_stderr=lambda stderr: stderr_lines.append(str(stderr)),
-                        on_stdout=lambda stdout: stdout_lines.append(str(stdout)),
-                    )
+                        exec = sandbox.notebook.exec_cell(
+                            script_text,
+                            on_stderr=lambda stderr: stderr_lines.append(str(stderr)),
+                            on_stdout=lambda stdout: stdout_lines.append(str(stdout)),
+                        )
 
-            stdout = "".join(stdout_lines).replace("'", '"')
-            stderr = "".join(stderr_lines)
-            if exec.error:
-                stderr += exec.error.traceback
-            stderr = stderr.replace("'", '"')
+                stdout = "".join(stdout_lines).replace("'", '"')
+                stderr = "".join(stderr_lines)
+                if exec.error:
+                    stderr += exec.error.traceback
+                stderr = stderr.replace("'", '"')
 
-            variable_handler.new_variable("script_stdout", stdout, is_result=True)
-            variable_handler.new_variable("script_stderr", stderr, is_result=True)
+                variable_handler.new_variable("script_stdout", stdout, is_result=True)
+                variable_handler.new_variable("script_stderr", stderr, is_result=True)
+                
+        except Exception as e:
+            raise SoftPipelineError(f"Error while executing the script via E2B: {e}")
 
 
 class RunJupyterScriptHandler(AbstractFunctionHandler):
