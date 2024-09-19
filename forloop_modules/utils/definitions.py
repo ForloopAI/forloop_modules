@@ -16,7 +16,11 @@ PIPELINE_CLEANING_ICONS = [
     "CategorizeColumn", "SimilarityMatching", "CleanData", "ExtractString"
 ]
 
-DB_ICONS = ["DBSelect", "DBInsert", "DBDelete", "DBUpdate", "AnalyzeDbTable", "MySQLQuery", "CreateDbTable"]
+DB_ICONS = [
+    "DBSelect", "DBInsert", "DBDelete", "DBUpdate", "AnalyzeDbTable", "MySQLQuery", "CreateDbTable"
+]
+
+SCRIPT_ICONS = ["RunPythonScript", "RunJupyterScript"]
 
 SCRAPING_ICONS = [
     "OpenBrowser", "LoadWebsite", "RefreshPageSource", "ClickXPath", "ScanWebPage", "ExtractXPath",
