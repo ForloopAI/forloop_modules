@@ -282,6 +282,8 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         E2B code interpreter (sandbox) is described in their docs: https://e2b.dev/docs
         Missing libraries, if present in the script, are installed via pip (in the E2B sandbox,
         not in our environment).
+        
+        Important: E2B_API_KEY must be present in .env file in root for successful operation.
 
         Args:
             script_text (str): Contents of .py script to be executed.
