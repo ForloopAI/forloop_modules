@@ -135,14 +135,8 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
     def direct_execute(self, script_name):
         """
-        DANGER: The code runs without any checks!
-
-        TODO 1: Solve security issues when running the code.
-        TODO 2: Solve scanning for packages used by script and pip installing of the missing ones.
+        DANGER: The code runs without any checks! In production, use the E2B solution only!
         """
-
-        # HACK: Disable the execution of the node with some feedback for a user until we implement security checks
-        # raise SoftPipelineError("Execution of this node is temporarily disabled.")
 
         script = su.get_script_by_name(script_name)
         script_text = script.get("text", "")
@@ -195,7 +189,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
             if missing_libs:
                 for lib in missing_libs:
-                    print(f"Installing missing library: {lib}")
+                    flog.info(f"Installing missing library: {lib}")
                     self._install_package(lib)
 
                 # Re-run the script after installing missing libraries
@@ -209,16 +203,16 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
                 # Uninstall the installed packages after use
                 for lib in missing_libs:
-                    print(f"Uninstalling library: {lib}")
+                    flog.info(f"Uninstalling library: {lib}")
                     self._uninstall_package(lib)
 
             # Save stdout and stderr into result variables and print them
             if stdout:
                 variable_handler.new_variable("script_stdout", stdout, is_result=True)
-                print(f"stdout:\n{stdout}")
+                flog.info(f"stdout:\n{stdout}")
             if stderr:
                 variable_handler.new_variable("script_stderr", stderr, is_result=True)
-                print(f"stderr:\n{stderr}")
+                flog.info(f"stderr:\n{stderr}")
 
         except Exception as e:
             raise SoftPipelineError(f"Error while executing the script: {e}")
@@ -252,40 +246,31 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            bufsize=1,  # Line-buffering for real-time output
+            bufsize=1
         )
 
-        # Reading stdout and stderr line by line
+        # Reading stdout and stderr line by line in real-time
         try:
-            # Print stdout in real-time with a delay
             for stdout_line in iter(process.stdout.readline, ""):
-                # time.sleep(1)  # Delay before printing
                 curr_stdout = variable_handler.get_variable_by_name(
                     stdout_var_name
                 ).get("value", "")
                 curr_stdout += stdout_line
-                variable_handler.new_variable(
-                    stdout_var_name, curr_stdout, is_result=True
-                )
-                print(f"stdout: {stdout_line}", end="")
+                
+                variable_handler.new_variable(stdout_var_name, curr_stdout, is_result=True)
 
-            # Print stderr in real-time with a delay
             for stderr_line in iter(process.stderr.readline, ""):
-                # time.sleep(1)  # Delay before printing
                 curr_stderr = variable_handler.get_variable_by_name(
                     stderr_var_name
                 ).get("value", "")
                 curr_stderr += f"\n{stderr_line}"
-                variable_handler.new_variable(
-                    stderr_var_name, curr_stderr, is_result=True
-                )
-                print(f"stderr: {stderr_line}", end="")
+                
+                variable_handler.new_variable(stderr_var_name, curr_stderr, is_result=True)
 
         except Exception as e:
             raise SoftPipelineError(f"Error while executing the script: {e}")
 
         finally:
-            # Ensure the process has completed
             process.stdout.close()
             process.stderr.close()
             process.wait()
