@@ -160,6 +160,14 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             [sys.executable, "-m", "pip", "uninstall", "-y", package_name]
         )
 
+    def _save_output_line_to_result(self, output_mode: Literal["stdout", "stderr"], line: str):
+        line = line.replace("'", '"')
+        var_name = f"script_{output_mode}"
+        curr_var = variable_handler.get_variable_by_name(var_name).get("value", "")
+        curr_var += line
+
+        variable_handler.new_variable(var_name, curr_var, is_result=True)
+
     def _execute_python_script(self, script_text: str):
         """
         Executes Python script (obtained from FL Script object) text via subprocess.Popen method.
