@@ -37,9 +37,21 @@ class LoadPythonScriptHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("File path:")
-        fdl.entry(name="file_path", text="", required=True, type="file", file_types=file_types, row=1)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", 
-                   frontend_implementation=True, focused=True)
+        fdl.entry(
+            name="file_path",
+            text="",
+            required=True,
+            type="file",
+            file_types=file_types,
+            row=1,
+        )
+        fdl.button(
+            function=self.execute,
+            function_args=node_detail_form,
+            text="Execute",
+            frontend_implementation=True,
+            focused=True,
+        )
 
         return fdl
 
@@ -73,9 +85,21 @@ class LoadJupyterScriptHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("File path:")
-        fdl.entry(name="file_path", text="", required=True, type="file", file_types=file_types, row=1)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", 
-                   frontend_implementation=True, focused=True)
+        fdl.entry(
+            name="file_path",
+            text="",
+            required=True,
+            type="file",
+            file_types=file_types,
+            row=1,
+        )
+        fdl.button(
+            function=self.execute,
+            function_args=node_detail_form,
+            text="Execute",
+            frontend_implementation=True,
+            focused=True,
+        )
 
         return fdl
 
@@ -116,8 +140,13 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             if response.status_code == 200:
                 scripts = response.json()["result"]["scripts"]
                 
-                # TODO: Using aet.project_uid is ok on local but incorrect in general --> change when allowed to run on remote
-                script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
+                # TODO: Using aet.project_uid is ok on local but incorrect in general --> change
+                # when allowed to run on remote
+                script_names = [
+                    script["script_name"]
+                    for script in scripts
+                    if script["project_uid"] == aet.project_uid
+                ]
         except Exception as e:
             flog.warning(e)
         
@@ -125,7 +154,12 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         fdl.label(self.fn_name)
         fdl.label("Script:")
         fdl.combobox(name="script_name", options=script_names, row=1)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        fdl.button(
+            function=self.execute,
+            function_args=node_detail_form,
+            text="Execute",
+            focused=True,
+        )
 
         return fdl
 
@@ -356,8 +390,13 @@ class RunJupyterScriptHandler(AbstractFunctionHandler):
             if response.status_code == 200:
                 scripts = response.json()["result"]["scripts"]
                 
-                # TODO: Using aet.project_uid is ok on local but incorrect in general --> change when allowed to run on remote
-                script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
+                # TODO: Using aet.project_uid is ok on local but incorrect in general --> change
+                # when allowed to run on remote
+                script_names = [
+                    script["script_name"]
+                    for script in scripts
+                    if script["project_uid"] == aet.project_uid
+                ]
         except Exception as e:
             flog.warning(e)
         
@@ -365,7 +404,12 @@ class RunJupyterScriptHandler(AbstractFunctionHandler):
         fdl.label(self.fn_name)
         fdl.label("Script:")
         fdl.combobox(name="script_name", options=script_names, row=1)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        fdl.button(
+            function=self.execute,
+            function_args=node_detail_form,
+            text="Execute",
+            focused=True,
+        )
 
         return fdl
 
@@ -381,7 +425,8 @@ class RunJupyterScriptHandler(AbstractFunctionHandler):
         TODO: Solve security issues when running the code.
         """
         
-        # HACK: Disable the execution of the node with some feedback for a user until we implement security checks
+        # HACK: Disable the execution of the node with some feedback for a user until we implement
+        # security checks
         raise SoftPipelineError("Execution of this node is temporarily disabled.")
     
         script = su.get_script_by_name(script_name)
@@ -450,7 +495,12 @@ class TrainModelHandler:
         fdl.entry(name="model_filename", text="", row=3)
         fdl.label("Train Function Name")
         fdl.entry(name="model_function_name", text="", row=4)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        fdl.button(
+            function=self.execute,
+            function_args=node_detail_form,
+            text="Execute",
+            focused=True,
+        )
 
         return fdl
 
@@ -478,13 +528,22 @@ class PredictModelValuesHandler:
         fdl.entry(name="model_filename", text="", input_types=["str"], row=2)
         fdl.label("Predict Function Name")
         fdl.entry(name="model_function_name", text="", input_types=["str"], row=3)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        fdl.button(
+            function=self.execute,
+            function_args=node_detail_form,
+            text="Execute",
+            focused=True,
+        )
 
         return fdl
 
     def execute(self, node_detail_form):
-        model_filename = node_detail_form.get_chosen_value_by_name("model_filename", variable_handler)
-        model_function_name = node_detail_form.get_chosen_value_by_name("model_function_name", variable_handler)
+        model_filename = node_detail_form.get_chosen_value_by_name(
+            "model_filename", variable_handler
+        )
+        model_function_name = node_detail_form.get_chosen_value_by_name(
+            "model_function_name", variable_handler
+        )
 
         my_module = importlib.import_module(model_filename)
         input_data = 123
@@ -516,8 +575,11 @@ class PredictModelValuesHandler:
         #variable_handler.update_data_in_variable_explorer(glc)
         """
 
-        return (code.format(input_data='"' + input_data + '"', model_filename='"' + model_filename + '"',
-                            model_function_name='"' + model_function_name + '"'))
+        return code.format(
+            input_data='"' + input_data + '"',
+            model_filename='"' + model_filename + '"',
+            model_function_name='"' + model_function_name + '"',
+        )
 
     def export_imports(self, *args):
         imports = ["import importlib"]
