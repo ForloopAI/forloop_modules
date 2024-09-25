@@ -151,7 +151,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         ### Prefered solution for local execution for now
         # self._execute_python_script(script_text=script_text)
 
-        ### Experimental implementation with stdout/stderr streaming
+        ### Local execution with stdout/stderr streaming -- good for testing instead of E2B
         # self._execute_python_script_with_streaming(script_text=script_text)
 
     def _install_package(self, package_name: str):
@@ -165,6 +165,13 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         )
 
     def _save_output_line_to_result(self, output_mode: Literal["stdout", "stderr"], line: str):
+        """
+        Adds a current stdout/stderr line to script_stdout/script_stderr result variable.
+
+        Args:
+            output_mode (Literal["stdout", "stderr"]): Specifies the type of output to save.
+            line (str): A single line of stdout/stderr output obtained from script execution stream.
+        """        
         line = line.replace("'", '"')
         var_name = f"script_{output_mode}"
         curr_var = variable_handler.get_variable_by_name(var_name).get("value", "")
@@ -239,7 +246,6 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
         TODO: Replicate the library installation procedure from _execute_python_script if this
               method is pereferred
-        TODO: Solve streaming to FE (currently not supported)
 
         Args:
             script_text (str): Contents of .py script to be executed.
