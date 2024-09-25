@@ -141,7 +141,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
         script = su.get_script_by_name(script_name)
         script_text = script.get("text", "")
-        
+
         variable_handler.new_variable("script_stdout", "", is_result=True)
         variable_handler.new_variable("script_stderr", "", is_result=True)
 
@@ -247,10 +247,6 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         Raises:
             SoftPipelineError: Raised in case of an Exception during script execution.
         """
-        # stdout_var_name = "script_stdout"
-        # stderr_var_name = "script_stderr"
-        # variable_handler.new_variable(stdout_var_name, "", is_result=True)
-        # variable_handler.new_variable(stderr_var_name, "", is_result=True)
 
         # Execute the script in real-time using the current Python interpreter
         process = subprocess.Popen(
@@ -258,27 +254,15 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            bufsize=1
+            bufsize=1,
         )
 
         # Reading stdout and stderr line by line in real-time
         try:
             for stdout_line in iter(process.stdout.readline, ""):
-                # curr_stdout = variable_handler.get_variable_by_name(
-                #     stdout_var_name
-                # ).get("value", "")
-                # curr_stdout += stdout_line
-                
-                # variable_handler.new_variable(stdout_var_name, curr_stdout, is_result=True)
                 self._save_output_line_to_result(output_mode="stdout", line=stdout_line)
 
             for stderr_line in iter(process.stderr.readline, ""):
-                # curr_stderr = variable_handler.get_variable_by_name(
-                #     stderr_var_name
-                # ).get("value", "")
-                # curr_stderr += stderr_line
-                
-                # variable_handler.new_variable(stderr_var_name, curr_stderr, is_result=True)
                 self._save_output_line_to_result(output_mode="stderr", line=stderr_line)
 
         except Exception as e:
@@ -288,15 +272,15 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             process.stdout.close()
             process.stderr.close()
             process.wait()
-            
+
     def _execute_python_script_with_e2b(self, script_text: str):
         """
         Executes Python script (obtained from FL Script object) text in an E2B code interpreter.
-        
+
         E2B code interpreter (sandbox) is described in their docs: https://e2b.dev/docs
         Missing libraries, if present in the script, are installed via pip (in the E2B sandbox,
         not in our environment).
-        
+
         Important: E2B_API_KEY must be present in .env file in root for successful operation.
 
         Args:
@@ -305,19 +289,11 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         Raises:
             SoftPipelineError: Raised in case of an Exception during E2B execution.
         """
-        # stdout_lines = []
-        # stderr_lines = []
-        # stdout_var_name = "script_stdout"
-        # stderr_var_name = "script_stderr"
-        # variable_handler.new_variable(stdout_var_name, "", is_result=True)
-        # variable_handler.new_variable(stderr_var_name, "", is_result=True)
 
         try:
             with CodeInterpreter() as sandbox:
                 exec = sandbox.notebook.exec_cell(
                     script_text,
-                    # on_stderr=lambda stderr: stderr_lines.append(str(stderr)),
-                    # on_stdout=lambda stdout: stdout_lines.append(str(stdout)),
                     on_stderr=lambda stderr: self._save_output_line_to_result(
                         output_mode="stderr", line=str(stderr)
                     ),
@@ -336,8 +312,6 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
                         exec = sandbox.notebook.exec_cell(
                             script_text,
-                            # on_stderr=lambda stderr: stderr_lines.append(str(stderr)),
-                            # on_stdout=lambda stdout: stdout_lines.append(str(stdout)),
                             on_stderr=lambda stderr: self._save_output_line_to_result(
                                 output_mode="stderr", line=str(stderr)
                             ),
@@ -346,19 +320,11 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
                             ),
                         )
 
-                # stdout = "".join(stdout_lines).replace("'", '"')
-                # stderr = "".join(stderr_lines)
-                # if exec.error:
-                #     stderr += exec.error.traceback
-                # stderr = stderr.replace("'", '"')
-
-                # variable_handler.new_variable("script_stdout", stdout, is_result=True)
-                # variable_handler.new_variable("script_stderr", stderr, is_result=True)
                 if exec.error:
                     self._save_output_line_to_result(
                         output_mode="stderr", line=exec.error.traceback
                     )
-                
+
         except Exception as e:
             raise SoftPipelineError(f"Error while executing the script via E2B: {e}")
 
