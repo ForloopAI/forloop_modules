@@ -248,52 +248,41 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         Raises:
             SoftPipelineError: Raised in case of an Exception during script execution.
         """
-        # First attempt to run the script
-        process = subprocess.Popen(
-            [sys.executable, "-u", "-c", script_text],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+        
+        missing_libs = []
 
         try:
+            # Get list of imports from the script
+            imports = self._get_imports_from_script(script_text)
+            
+            # Check if each module is installed and install the missing ones
+            for _import in imports:
+                if not self._is_module_installed(_import):
+                    self._install_package(_import)
+                    missing_libs.append(_import)
+
+            process = subprocess.Popen(
+                [sys.executable, "-u", "-c", script_text],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
             stdout, stderr = process.communicate()
 
-            # Check for ImportError in stderr (if missing libraries)
-            missing_libs = re.findall(r"No module named '(\w+)'", stderr)
-
-            if missing_libs:
-                for lib in missing_libs:
-                    flog.info(f"Installing missing library: {lib}")
-                    self._install_package(lib)
-
-                # Re-run the script after installing missing libraries
-                process = subprocess.Popen(
-                    [sys.executable, "-u", "-c", script_text],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                )
-                stdout, stderr = process.communicate()
-
-                # Uninstall the installed packages after use
-                for lib in missing_libs:
-                    flog.info(f"Uninstalling library: {lib}")
-                    self._uninstall_package(lib)
-
-            # Save stdout and stderr into result variables and print them
             if stdout:
                 variable_handler.new_variable("script_stdout", stdout, is_result=True)
-                flog.info(f"stdout:\n{stdout}")
             if stderr:
                 variable_handler.new_variable("script_stderr", stderr, is_result=True)
-                flog.info(f"stderr:\n{stderr}")
 
         except Exception as e:
             raise SoftPipelineError(f"Error while executing the script: {e}")
 
         finally:
             process.wait()
+            
+            # Uninstall the installed packages after use
+            for lib in missing_libs:
+                self._uninstall_package(lib)
 
     def _execute_python_script_with_streaming(self, script_text: str):
         """
