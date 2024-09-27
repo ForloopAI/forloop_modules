@@ -289,8 +289,8 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         Executes Python script (obtained from FL Script object) text via subprocess.Popen method
         with continuous streaming of stdout and stderr.
 
-        TODO: Replicate the library installation procedure from _execute_python_script if this
-              method is pereferred
+        Missing libraries, if present in the script, are installed via pip and uninstalled after the
+        execution.
 
         Args:
             script_text (str): Contents of .py script to be executed.
@@ -299,22 +299,44 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             SoftPipelineError: Raised in case of an Exception during script execution.
         """
 
-        # Execute the script in real-time using the current Python interpreter
-        process = subprocess.Popen(
-            [sys.executable, "-u", "-c", script_text],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-        )
+        def _stream_output(process: subprocess.Popen):
+            """
+            Streams stdout and stderr line by line in real-time and saves them into result vars.
 
-        # Reading stdout and stderr line by line in real-time
-        try:
+            Args:
+                process (subprocess.Popen): Popen process execution a python script.
+            """                 
+            
             for stdout_line in iter(process.stdout.readline, ""):
-                self._save_output_line_to_result(output_mode="stdout", line=stdout_line)
-
+                if stdout_line:
+                    self._save_output_line_to_result(output_mode="stdout", line=stdout_line)
             for stderr_line in iter(process.stderr.readline, ""):
-                self._save_output_line_to_result(output_mode="stderr", line=stderr_line)
+                if stderr_line:
+                    self._save_output_line_to_result(output_mode="stderr", line=stderr_line)
+        
+        missing_libs = []
+
+        try:
+            # Get list of imports from the script
+            imports = self._get_imports_from_script(script_text)
+            
+            # Check if each module is installed and install the missing ones
+            for _import in imports:
+                if not self._is_module_installed(_import):
+                    self._install_package(_import)
+                    missing_libs.append(_import)
+
+            # Execute the script in a subprocess
+            process = subprocess.Popen(
+                [sys.executable, "-u", "-c", script_text],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+            )
+            
+            # Stream stdout and stderr of the script in real-time into result vars
+            _stream_output(process)
 
         except Exception as e:
             raise SoftPipelineError(f"Error while executing the script: {e}")
@@ -323,6 +345,10 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             process.stdout.close()
             process.stderr.close()
             process.wait()
+            
+            # Uninstall the installed packages after use
+            for lib in missing_libs:
+                self._uninstall_package(lib)
 
     def _execute_python_script_with_e2b(self, script_text: str):
         """
