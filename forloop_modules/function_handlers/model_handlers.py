@@ -179,14 +179,16 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         variable_handler.new_variable("script_stdout", "", is_result=True)
         variable_handler.new_variable("script_stderr", "", is_result=True)
 
-        ### Experimental E2B solution:
-        self._execute_python_script_with_e2b(script_text=script_text)
-
-        ### Prefered solution for local execution for now
-        # self._execute_python_script(script_text=script_text)
-
-        ### Local execution with stdout/stderr streaming -- good for testing instead of E2B
-        # self._execute_python_script_with_streaming(script_text=script_text)
+        if sf.E2B_API_KEY:
+            ### Experimental E2B solution:
+            self._execute_python_script_with_e2b(script_text=script_text)
+        else:
+            ### Local execution with stdout/stderr streaming -- good for testing instead of E2B
+            self._execute_python_script_with_streaming(script_text=script_text)
+            
+            ## Local execution without stdout/stderr streaming -- stdout/stderr saved after
+            ## pipeline is finished
+            # self._execute_python_script(script_text=script_text)
 
     def _install_package(self, package_name: str):
         """Install a package using pip and the current python executable."""
