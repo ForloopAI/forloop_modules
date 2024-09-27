@@ -199,6 +199,26 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         subprocess.check_call(
             [sys.executable, "-m", "pip", "uninstall", "-y", package_name]
         )
+        
+    def _get_imports_from_script(self, script_text: str):
+        """
+        Parse the script to extract imported modules.
+        """
+        imports = set()
+
+        # Regex to match import statements
+        import_pattern = re.compile(r"^\s*(?:import|from)\s+([a-zA-Z_][\w]*)", re.MULTILINE)
+
+        for match in import_pattern.finditer(script_text):
+            imports.add(match.group(1))
+
+        return imports
+
+    def _is_module_installed(self, module_name: str):
+        """
+        Check if a module is installed by attempting to find its spec.
+        """
+        return importlib.util.find_spec(module_name) is not None
 
     def _save_output_line_to_result(self, output_mode: Literal["stdout", "stderr"], line: str):
         """
