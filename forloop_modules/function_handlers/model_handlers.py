@@ -378,7 +378,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             #     _import for _import in imports if _import not in sys.stdlib_module_names
             # ]
 
-            with CodeInterpreter() as sandbox:
+            with CodeInterpreter(api_key=sf.E2B_API_KEY) as sandbox:
                 for _import in imports:
                     sandbox.notebook.exec_cell(f"!pip install {_import}")
 
