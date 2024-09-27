@@ -1,4 +1,5 @@
 import importlib
+import importlib.util
 import os
 import re
 import subprocess
@@ -21,6 +22,7 @@ from forloop_modules.function_handlers.auxilliary.node_type_categories_manager i
 from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.globals.variable_handler import variable_handler
+from forloop_modules.utils import synchronization_flags as sf
 
 
 class LoadPythonScriptHandler(AbstractFunctionHandler):
@@ -367,8 +369,19 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             SoftPipelineError: Raised in case of an Exception during E2B execution.
         """
 
-        try:
-            with CodeInterpreter() as sandbox:
+        try:            
+            # Get list of imports from the script
+            imports = self._get_imports_from_script(script_text)
+
+            # TODO: Enable when python 3.10+ is supported
+            # imports = [
+            #     _import for _import in imports if _import not in sys.stdlib_module_names
+            # ]
+            
+            with CodeInterpreter(api_key="e2b_7c145cf98a6f95d1358897a6909332b66415b73d") as sandbox:
+                for _import in imports:
+                    sandbox.notebook.exec_cell(f"!pip install {_import}")
+
                 exec = sandbox.notebook.exec_cell(
                     script_text,
                     on_stderr=lambda stderr: self._save_output_line_to_result(
@@ -378,24 +391,6 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
                         output_mode="stdout", line=str(stdout)
                     ),
                 )
-
-                if exec.error:
-                    # Check for ImportError in stderr (if missing libraries)
-                    missing_libs = re.findall(r"No module named '(\w+)'", exec.error.traceback)
-
-                    if missing_libs:
-                        for lib in missing_libs:
-                            sandbox.notebook.exec_cell(f"!pip install {lib}")
-
-                        exec = sandbox.notebook.exec_cell(
-                            script_text,
-                            on_stderr=lambda stderr: self._save_output_line_to_result(
-                                output_mode="stderr", line=str(stderr)
-                            ),
-                            on_stdout=lambda stdout: self._save_output_line_to_result(
-                                output_mode="stdout", line=str(stdout)
-                            ),
-                        )
 
                 if exec.error:
                     self._save_output_line_to_result(
