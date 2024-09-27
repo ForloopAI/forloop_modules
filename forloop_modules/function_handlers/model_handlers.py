@@ -187,7 +187,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         else:
             ### Local execution with stdout/stderr streaming -- good for testing instead of E2B
             self._execute_python_script_with_streaming(script_text=script_text)
-            
+
             ## Local execution without stdout/stderr streaming -- stdout/stderr saved after
             ## pipeline is finished
             # self._execute_python_script(script_text=script_text)
@@ -201,7 +201,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         subprocess.check_call(
             [sys.executable, "-m", "pip", "uninstall", "-y", package_name]
         )
-        
+
     def _get_imports_from_script(self, script_text: str):
         """
         Parse the script to extract imported modules.
@@ -229,7 +229,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         Args:
             output_mode (Literal["stdout", "stderr"]): Specifies the type of output to save.
             line (str): A single line of stdout/stderr output obtained from script execution stream.
-        """        
+        """
         line = line.replace("'", '"')
         var_name = f"script_{output_mode}"
         curr_var = variable_handler.get_variable_by_name(var_name).get("value", "")
@@ -250,13 +250,13 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         Raises:
             SoftPipelineError: Raised in case of an Exception during script execution.
         """
-        
+
         missing_libs = []
 
         try:
             # Get list of imports from the script
             imports = self._get_imports_from_script(script_text)
-            
+
             # Check if each module is installed and install the missing ones
             for _import in imports:
                 if not self._is_module_installed(_import):
@@ -281,7 +281,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
         finally:
             process.wait()
-            
+
             # Uninstall the installed packages after use
             for lib in missing_libs:
                 self._uninstall_package(lib)
@@ -307,8 +307,8 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
             Args:
                 process (subprocess.Popen): Popen process execution a python script.
-            """                 
-            
+            """
+
             for stdout_line in iter(process.stdout.readline, ""):
                 if stdout_line:
                     self._save_output_line_to_result(output_mode="stdout", line=stdout_line)
@@ -321,7 +321,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         try:
             # Get list of imports from the script
             imports = self._get_imports_from_script(script_text)
-            
+
             # Check if each module is installed and install the missing ones
             for _import in imports:
                 if not self._is_module_installed(_import):
@@ -336,7 +336,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
                 text=True,
                 bufsize=1,
             )
-            
+
             # Stream stdout and stderr of the script in real-time into result vars
             _stream_output(process)
 
@@ -347,7 +347,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             process.stdout.close()
             process.stderr.close()
             process.wait()
-            
+
             # Uninstall the installed packages after use
             for lib in missing_libs:
                 self._uninstall_package(lib)
@@ -369,7 +369,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             SoftPipelineError: Raised in case of an Exception during E2B execution.
         """
 
-        try:            
+        try:
             # Get list of imports from the script
             imports = self._get_imports_from_script(script_text)
 
@@ -377,7 +377,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             # imports = [
             #     _import for _import in imports if _import not in sys.stdlib_module_names
             # ]
-            
+
             with CodeInterpreter() as sandbox:
                 for _import in imports:
                     sandbox.notebook.exec_cell(f"!pip install {_import}")
