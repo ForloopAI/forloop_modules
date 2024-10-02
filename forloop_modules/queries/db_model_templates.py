@@ -497,7 +497,7 @@ class InitialVariableModel(BaseModel):
     value: Any = "" # strings, bytes, numbers, tuples, lists, dicts, sets, booleans, and None (anything evaluatable by ast.literal_eval)
     is_result: bool = False
     type: Optional[str] = None # Type can be enforced or autoinferred
-    size: Optional[int] = None
+    size: Union[int, tuple, None] = None
     pipeline_uid: str = "0"
     project_uid: str = "0" # TODO: Is this necessary? Node is indirectly linked to a project via pipeline
 
