@@ -1,8 +1,3 @@
-IS_EXECUTION_CORE=True
-
-#if IS_EXECUTION_CORE:
-#    from src.core.variable_handler import variable_handler
-
 import json
 import pandas as pd
 import ast
