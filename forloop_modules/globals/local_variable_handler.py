@@ -496,9 +496,12 @@ class LocalVariable:
 
     @property
     def size(self) -> int:
+        if self.typ in ["DataFrame", "ndarray"]:
+            return self.value.shape
+        
         try:
             return len(self.value)
-        except:
+        except TypeError:
             return 1
 
     def __len__(self):
