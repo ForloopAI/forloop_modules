@@ -74,7 +74,18 @@ class LocalVariableHandler:
 
     @handler_mode.setter
     def handler_mode(self, value: Any) -> None:
-        raise AttributeError("Use `change_variable_mode` method to change the mode of LocalVariableHandler.")
+        raise AttributeError(
+            "Use `change_variable_mode` method to change the mode of LocalVariableHandler."
+        )
+    
+    @property
+    def last_active_dataframe_node_uid(self):
+        return self._last_active_dataframe_node_uid
+
+    # temporary until cyclic import of ncrb in cleaning handlers is resolved
+    @last_active_dataframe_node_uid.setter
+    def last_active_dataframe_node_uid(self, node_uid:int):
+        self._last_active_dataframe_node_uid = node_uid
 
     def get_variable_redis_name(self, name: str) -> str:
         if self.handler_mode == "initial_variable":
@@ -414,15 +425,6 @@ class LocalVariableHandler:
         response = ncrb_get_by_name_fn(name)
         response.raise_for_status()
         return response.json()
-
-    @property
-    def last_active_dataframe_node_uid(self):
-        return self._last_active_dataframe_node_uid
-
-    # temporary until cyclic import of ncrb in cleaning handlers is resolved
-    @last_active_dataframe_node_uid.setter
-    def last_active_dataframe_node_uid(self, node_uid:int):
-        self._last_active_dataframe_node_uid = node_uid
 
     #   TODO: fix dependencies
     #def update_data_in_variable_explorer(self, glc): #TODO Dominik: Refactor out, shouldnt be here
