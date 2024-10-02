@@ -121,7 +121,6 @@ class LocalVariableHandler:
         return name
 
     def _is_varname_duplicated(self, name: str) -> bool:
-        # names = [x.value for x in self.variables.values()]#self.stored_variable_df['Name'].tolist()  # All current variables' names
         names = list(self.variables.keys())
         checker = name in names
         return checker
