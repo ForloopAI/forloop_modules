@@ -10,7 +10,10 @@ import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
 from forloop_modules.globals.active_entity_tracker import aet
 
-#from src.df_column_category_predictor import classify_df_column_categories, DataFrameColumnCategoryAnalysis
+#from src.df_column_category_predictor import (
+#   classify_df_column_categories,
+#   DataFrameColumnCategoryAnalysis
+# )
 from forloop_modules.redis.redis_connection import (
     get_initial_variable_redis_name,
     get_variable_redis_name,
