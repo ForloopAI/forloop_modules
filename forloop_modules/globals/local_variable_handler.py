@@ -209,6 +209,25 @@ class LocalVariableHandler:
         additional_params: Optional[dict] = None,
         project_uid: Optional[str] = None,
     ) -> tuple[dict, bool]:
+        """
+        Create a new (initial)variable (or update an existing one) on the server via API call and
+        store (update, if existing) a new local (initial)variable.
+
+        Args:
+            name (str): Variable name.
+            value (Any): Variable value.
+            size (Union[int, tuple, None], optional): Variable value size (detected automatically,
+                if not provided). Defaults to None.
+            is_result (Optional[bool], optional): Marks a result variable (used to store pipeline
+                jobs results). Defaults to None.
+            additional_params (Optional[dict], optional): Optional parameters passed to redis.
+                Defaults to None.
+            project_uid (Optional[str], optional). Defaults to None.
+
+        Returns:
+            tuple[dict, bool]: variable: a variable dict from API response, is_new_variable: tells
+                if the var was created or updated
+        """        
         if additional_params is None:
             additional_params = {}
             
