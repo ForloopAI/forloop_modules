@@ -136,13 +136,15 @@ class LocalVariableHandler:
             flog.warning(f"A variable '{name}' was not found in LocalVariableHandler.")
             return
 
-        #serialization for objects
+        # serialization for objects
         if local_variable.typ in REDIS_STORED_TYPES_AS_STRINGS:
             value = kv_redis.get(self.get_variable_redis_name(name))
             value.attrs["name"] = local_variable.name
 
             variable = self.get_variable_by_name(name)
-            local_variable = LocalVariable(variable["uid"], variable["name"], value, variable["is_result"])
+            local_variable = LocalVariable(
+                variable["uid"], variable["name"], value, variable["is_result"]
+            )
             return local_variable
         else:
             return local_variable
@@ -462,7 +464,7 @@ class LocalVariableHandler:
         return response.json()
 
     #   TODO: fix dependencies
-    #def update_data_in_variable_explorer(self, glc): #TODO Dominik: Refactor out, shouldnt be here
+    # def update_data_in_variable_explorer(self, glc): #TODO Dominik: Refactor out, shouldnt be here
     #    self.is_refresh_needed = False
     #    if hasattr(glc, "variable_explorer"):
 
@@ -472,8 +474,9 @@ class LocalVariableHandler:
     # stored_variable_df = pd.DataFrame(stored_variables_list, columns=["Name", "Type", "Size", "Value"])
     # glc.variable_explorer.update_data(stored_variable_df)
 
-
-    def populate_df_analysis_record(self, name, empty_rows, duplicated_rows, empty_columns, id_columns, result):
+    def populate_df_analysis_record(
+        self, name, empty_rows, duplicated_rows, empty_columns, id_columns, result
+    ):
         df_analysis = DataFrameWizardScanAnalysis()
         df_analysis.is_analyzed = True
         df_analysis.empty_rows = empty_rows
