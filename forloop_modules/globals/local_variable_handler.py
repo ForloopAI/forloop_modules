@@ -206,9 +206,9 @@ class LocalVariableHandler:
         value: Any,
         size: Union[int, tuple, None] = None,
         is_result: Optional[bool] = None,
-        additional_params: dict = None,
-        project_uid=None,
-    ):
+        additional_params: Optional[dict] = None,
+        project_uid: Optional[str] = None,
+    ) -> tuple[dict, bool]:
         if additional_params is None:
             additional_params = {}
             
@@ -235,10 +235,9 @@ class LocalVariableHandler:
         value: Any,
         size: Union[int, tuple, None] = None,
         is_result: Optional[bool] = None,
-        additional_params: dict = None,
-        project_uid=None,
-    ):
-        #self.variable_uid_project_uid_dict[variable.uid]=project_uid #is used in API call
+        additional_params: Optional[dict] = None,
+        project_uid: Optional[str] = None,
+    ) -> dict:
         if additional_params is None:
             additional_params = {}
             
@@ -298,9 +297,9 @@ class LocalVariableHandler:
         value: Any,
         size: Union[int, tuple, None] = None,
         is_result: Optional[bool] = None,
-        additional_params: dict = None,
-        project_uid=None,
-    ):
+        additional_params: Optional[dict] = None,
+        project_uid: Optional[str] = None,
+    ) -> dict:
         if additional_params is None:
             additional_params = {}
             
