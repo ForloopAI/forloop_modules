@@ -60,14 +60,6 @@ class LocalVariableHandler:
 
         self._handler_mode: Literal["initial_variable", "variable"] = "initial_variable"
 
-    def get_variable_redis_name(self, name: str) -> str:
-        if self.handler_mode == "initial_variable":
-            return get_initial_variable_redis_name(name, aet.active_pipeline_uid)
-        elif self.handler_mode == "variable":
-            return get_variable_redis_name(name, aet.active_pipeline_job_uid)
-        else:
-            raise ValueError(f"Variable mode {self.handler_mode} is not supported.")
-
     @property
     def is_empty(self):
         return len(self.variables) == 0
@@ -79,6 +71,14 @@ class LocalVariableHandler:
     @handler_mode.setter
     def handler_mode(self, value: Any) -> None:
         raise AttributeError("Use `change_variable_mode` method to change the mode of LocalVariableHandler.")
+
+    def get_variable_redis_name(self, name: str) -> str:
+        if self.handler_mode == "initial_variable":
+            return get_initial_variable_redis_name(name, aet.active_pipeline_uid)
+        elif self.handler_mode == "variable":
+            return get_variable_redis_name(name, aet.active_pipeline_job_uid)
+        else:
+            raise ValueError(f"Variable mode {self.handler_mode} is not supported.")
 
     def change_variable_mode(self, mode: Literal["initial_variable", "variable"]) -> None:
         """Change state specifying on which type of variable is the handler currently operating."""
