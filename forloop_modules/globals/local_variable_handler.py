@@ -40,7 +40,11 @@ class File:
     data: Any=None
 
     def to_dict(self):
-        return {"path": self.path, "file_name": self.file_name, "data": self.data}  # , "suffix": self.suffix
+        return {
+            "path": self.path,
+            "file_name": self.file_name,
+            "data": self.data,
+        }  # , "suffix": self.suffix
 
 
 @dataclass
@@ -180,7 +184,8 @@ class LocalVariableHandler:
         ncrb.new_file(file.file_name)
         ncrb.upload_urls_from_file(file.path)
 
-        return(variable)
+        return variable
+
     def process_dataframe_variable_on_initialization(self, name, value):
         self.dataframe_scan_analyses_records[name] = DataFrameWizardScanAnalysis()
         value = value.rename(columns=self.get_int_to_str_col_name_mapping(value))
@@ -188,7 +193,7 @@ class LocalVariableHandler:
         value.attrs["name"] = name
 
         return value
-    
+
     def _determine_value_size(self, value: Any) -> Union[int, tuple]:
         if isinstance(value, (pd.DataFrame, np.ndarray)):
             size = value.shape
@@ -259,7 +264,7 @@ class LocalVariableHandler:
     ) -> dict:
         if additional_params is None:
             additional_params = {}
-            
+
         if size is None:
             size = self._determine_value_size(value=value)
 
@@ -269,19 +274,23 @@ class LocalVariableHandler:
             ncrb_fn = ncrb.new_variable
 
         optional_args = {"is_result": is_result} if is_result is not None else {}
-        #serialization for objects
+        # serialization for objects
         # TODO: FFS FIXME:
         if is_value_serializable(value):
             response = ncrb_fn(name=name, value=value, size=size, **optional_args)
         else:
             if is_value_redis_compatible(value):
-                kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
+                kv_redis.set(
+                    self.get_variable_redis_name(name), value, additional_params
+                )
             else:
-                data_dict={}
-                data_dict[name]=value
-                folder=".//file_transfer"
-                save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
-            #TODO: FILE TRANSFER MISSING
+                data_dict = {}
+                data_dict[name] = value
+                folder = ".//file_transfer"
+                save_data_dict_to_pickle_folder(
+                    data_dict, folder, clean_existing_folder=False
+                )
+            # TODO: FILE TRANSFER MISSING
 
             response = ncrb_fn(
                 name=name,
@@ -293,7 +302,11 @@ class LocalVariableHandler:
 
         result = response.json()
         self.create_local_variable(
-            result["uid"], result["name"], result["value"], result["is_result"], result["type"]
+            result["uid"],
+            result["name"],
+            result["value"],
+            result["is_result"],
+            result["type"],
         )
         return result
 
@@ -308,7 +321,7 @@ class LocalVariableHandler:
     ) -> dict:
         if additional_params is None:
             additional_params = {}
-            
+
         if size is None:
             size = self._determine_value_size(value=value)
 
@@ -318,7 +331,7 @@ class LocalVariableHandler:
             ncrb_update_by_uid_fn = ncrb.update_variable_by_uid
 
         variable = None
-        try: # Function to run even if no variable is found
+        try:  # Function to run even if no variable is found
             variable = self.get_variable_by_name(name)
         except Exception:
             flog.warning(f"Variable '{name}' was not found in LocalVariableHandler.")
@@ -331,7 +344,7 @@ class LocalVariableHandler:
                 "name": name,
                 "value": value,
                 "size": size,
-                "is_result": is_result
+                "is_result": is_result,
             }
 
             if is_value_serializable(value):
@@ -340,13 +353,19 @@ class LocalVariableHandler:
                 ncrb_fn_kwargs.update(value="")
 
                 if is_value_redis_compatible(value):
-                    kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
+                    kv_redis.set(
+                        self.get_variable_redis_name(name), value, additional_params
+                    )
                 else:
-                    data_dict={}
-                    data_dict[name]=value
-                    folder=".//file_transfer"
-                    save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
-                response = ncrb_update_by_uid_fn(type=type(value).__name__, **ncrb_fn_kwargs)
+                    data_dict = {}
+                    data_dict[name] = value
+                    folder = ".//file_transfer"
+                    save_data_dict_to_pickle_folder(
+                        data_dict, folder, clean_existing_folder=False
+                    )
+                response = ncrb_update_by_uid_fn(
+                    type=type(value).__name__, **ncrb_fn_kwargs
+                )
 
             result = response.json()
             self.update_local_variable(
@@ -427,7 +446,6 @@ class LocalVariableHandler:
                     name=variable.name, value="", type=type(variable.value).__name__,
                     **optional_args
                 )
-
 
     def delete_local_variable(self, var_name:str):
         self.variables.pop(var_name)
