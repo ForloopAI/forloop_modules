@@ -1,9 +1,10 @@
 import json
 import pandas as pd
+import numpy as np
 import ast
 import inspect
 
-from typing import Dict, Set, Any, Literal, Optional
+from typing import Dict, Set, Any, Literal, Optional, Union
 from dataclasses import dataclass, field
 
 import forloop_modules.flog as flog
