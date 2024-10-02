@@ -297,19 +297,6 @@ class LocalVariableHandler:
         )
         return result
 
-    def create_local_variable(self, uid: str, name, value, is_result: bool, type=None):
-        if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
-            value=ast.literal_eval(str(value))
-        elif type in REDIS_STORED_TYPES_AS_STRINGS:
-            value = kv_redis.get(self.get_variable_redis_name(name))
-
-            if isinstance(value, pd.DataFrame):
-                value = self.process_dataframe_variable_on_initialization(name, value)
-
-        variable=LocalVariable(uid, name, value, is_result)
-        self.variables[name]=variable
-        return(variable)
-
     def update_variable(
         self,
         name: str,
@@ -366,28 +353,7 @@ class LocalVariableHandler:
                 result["name"], result["value"], result["is_result"], result["type"]
             )
             return result
-
-
-        #else:
-        #    self.variables.pop(name)
-        #    self.create_variable(name, value)
-
-        #variable=self.variables[name]
-        #self.variables[name].value=value #Update
-        #return(variable)
-
-    def update_local_variable(self, name, value, is_result: bool, type=None):
-        if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
-            value=ast.literal_eval(str(value))
-        elif type in REDIS_STORED_TYPES_AS_STRINGS:
-            value = kv_redis.get(self.get_variable_redis_name(name))
-
-        variable=self.variables[name]
-        self.variables[name].value=value #Update
-        self.variables[name].is_result = is_result
-
-        return(variable)
-
+        
     def delete_variable(self, var_name: str):
         if self.last_active_df_variable is not None and var_name == self.last_active_df_variable.name:
             self.last_active_df_variable = None
@@ -401,6 +367,37 @@ class LocalVariableHandler:
         ncrb_delete_by_uid(variable["uid"])
         self.delete_local_variable(var_name)
 
+    def create_local_variable(
+        self,
+        uid: str,
+        name: str,
+        value: Any,
+        is_result: bool,
+        type: Optional[str] = None,
+    ):
+        if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
+            value = ast.literal_eval(str(value))
+        elif type in REDIS_STORED_TYPES_AS_STRINGS:
+            value = kv_redis.get(self.get_variable_redis_name(name))
+
+            if isinstance(value, pd.DataFrame):
+                value = self.process_dataframe_variable_on_initialization(name, value)
+
+        variable = LocalVariable(uid, name, value, is_result)
+        self.variables[name] = variable
+        return variable
+
+    def update_local_variable(self, name, value, is_result: bool, type=None):
+        if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
+            value = ast.literal_eval(str(value))
+        elif type in REDIS_STORED_TYPES_AS_STRINGS:
+            value = kv_redis.get(self.get_variable_redis_name(name))
+
+        variable = self.variables[name]
+        self.variables[name].value = value  # Update
+        self.variables[name].is_result = is_result
+
+        return variable
 
     def save_variables_as_initial_variables(self):
         """Save all currently loaded Variables as InitialVariables."""
