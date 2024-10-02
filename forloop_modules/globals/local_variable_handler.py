@@ -171,10 +171,32 @@ class LocalVariableHandler:
         value.attrs["name"] = name
 
         return value
+    
+    def _determine_value_size(self, value: Any) -> Union[int, tuple]:
+        if isinstance(value, (pd.DataFrame, np.ndarray)):
+            size = value.shape
+        else:
+            try:
+                size = len(value)
+            except TypeError:
+                size = 1
+                
+        return size
 
-    def new_variable(self, name, value, is_result: Optional[bool] = None, additional_params: dict = None, project_uid=None):
+    def new_variable(
+        self,
+        name: str,
+        value: Any,
+        size: Union[int, tuple, None] = None,
+        is_result: Optional[bool] = None,
+        additional_params: dict = None,
+        project_uid=None,
+    ):
         if additional_params is None:
             additional_params = {}
+            
+        if size is None:
+            size = self._determine_value_size(value=value)
 
         name = self._set_up_unique_varname(name)
 
@@ -182,18 +204,29 @@ class LocalVariableHandler:
             value = self.process_dataframe_variable_on_initialization(name, value)
 
         if name in self.variables.keys():
-            variable = self.update_variable(name, value, is_result, additional_params)
+            variable = self.update_variable(name, value, size, is_result, additional_params)
             is_new_variable=False
         else:
-            variable=self.create_variable(name, value, is_result, additional_params)
+            variable=self.create_variable(name, value, size, is_result, additional_params)
             is_new_variable=True
 
         return variable, is_new_variable
 
-    def create_variable(self, name, value, is_result: Optional[bool] = None, additional_params: dict = None, project_uid=None):
+    def create_variable(
+        self,
+        name: str,
+        value: Any,
+        size: Union[int, tuple, None] = None,
+        is_result: Optional[bool] = None,
+        additional_params: dict = None,
+        project_uid=None,
+    ):
         #self.variable_uid_project_uid_dict[variable.uid]=project_uid #is used in API call
         if additional_params is None:
             additional_params = {}
+            
+        if size is None:
+            size = self._determine_value_size(value=value)
 
         if self.handler_mode == "initial_variable":
             ncrb_fn = ncrb.new_initial_variable
@@ -204,7 +237,7 @@ class LocalVariableHandler:
         #serialization for objects
         # TODO: FFS FIXME:
         if is_value_serializable(value):
-            response = ncrb_fn(name=name, value=value, **optional_args)
+            response = ncrb_fn(name=name, value=value, size=size, **optional_args)
         else:
             if is_value_redis_compatible(value):
                 kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
@@ -215,7 +248,13 @@ class LocalVariableHandler:
                 save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
             #TODO: FILE TRANSFER MISSING
 
-            response = ncrb_fn(name=name, value="", type=type(value).__name__, **optional_args)
+            response = ncrb_fn(
+                name=name,
+                value="",
+                type=type(value).__name__,
+                size=size,
+                **optional_args,
+            )
 
         result = response.json()
         self.create_local_variable(
@@ -236,9 +275,20 @@ class LocalVariableHandler:
         self.variables[name]=variable
         return(variable)
 
-    def update_variable(self, name, value, is_result: Optional[bool] = None, additional_params: dict = None, project_uid=None):
+    def update_variable(
+        self,
+        name: str,
+        value: Any,
+        size: Union[int, tuple, None] = None,
+        is_result: Optional[bool] = None,
+        additional_params: dict = None,
+        project_uid=None,
+    ):
         if additional_params is None:
             additional_params = {}
+            
+        if size is None:
+            size = self._determine_value_size(value=value)
 
         if self.handler_mode == "initial_variable":
             ncrb_update_by_uid_fn = ncrb.update_initial_variable_by_uid
@@ -252,11 +302,13 @@ class LocalVariableHandler:
             flog.warning(f"Variable '{name}' was not found in LocalVariableHandler.")
 
         if variable is not None:
+            size = size if size is not None else variable["size"]
             is_result = is_result if is_result is not None else variable["is_result"]
             ncrb_fn_kwargs = {
                 "variable_uid": variable["uid"],
                 "name": name,
                 "value": value,
+                "size": size,
                 "is_result": is_result
             }
 
