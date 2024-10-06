@@ -10,7 +10,10 @@ import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
 from forloop_modules.globals.active_entity_tracker import aet
 
-#from src.df_column_category_predictor import classify_df_column_categories, DataFrameColumnCategoryAnalysis
+#from src.df_column_category_predictor import (
+#   classify_df_column_categories,
+#   DataFrameColumnCategoryAnalysis
+# )
 from forloop_modules.redis.redis_connection import (
     get_initial_variable_redis_name,
     get_variable_redis_name,
@@ -37,7 +40,11 @@ class File:
     data: Any=None
 
     def to_dict(self):
-        return {"path": self.path, "file_name": self.file_name, "data": self.data}  # , "suffix": self.suffix
+        return {
+            "path": self.path,
+            "file_name": self.file_name,
+            "data": self.data,
+        }  # , "suffix": self.suffix
 
 
 @dataclass
@@ -118,7 +125,6 @@ class LocalVariableHandler:
         return name
 
     def _is_varname_duplicated(self, name: str) -> bool:
-        # names = [x.value for x in self.variables.values()]#self.stored_variable_df['Name'].tolist()  # All current variables' names
         names = list(self.variables.keys())
         checker = name in names
         return checker
@@ -130,13 +136,15 @@ class LocalVariableHandler:
             flog.warning(f"A variable '{name}' was not found in LocalVariableHandler.")
             return
 
-        #serialization for objects
+        # serialization for objects
         if local_variable.typ in REDIS_STORED_TYPES_AS_STRINGS:
             value = kv_redis.get(self.get_variable_redis_name(name))
             value.attrs["name"] = local_variable.name
 
             variable = self.get_variable_by_name(name)
-            local_variable = LocalVariable(variable["uid"], variable["name"], value, variable["is_result"])
+            local_variable = LocalVariable(
+                variable["uid"], variable["name"], value, variable["is_result"]
+            )
             return local_variable
         else:
             return local_variable
@@ -178,7 +186,8 @@ class LocalVariableHandler:
         ncrb.new_file(file.file_name)
         ncrb.upload_urls_from_file(file.path)
 
-        return(variable)
+        return variable
+
     def process_dataframe_variable_on_initialization(self, name, value):
         self.dataframe_scan_analyses_records[name] = DataFrameWizardScanAnalysis()
         value = value.rename(columns=self.get_int_to_str_col_name_mapping(value))
@@ -186,7 +195,7 @@ class LocalVariableHandler:
         value.attrs["name"] = name
 
         return value
-    
+
     def _determine_value_size(self, value: Any) -> Union[int, tuple]:
         if isinstance(value, (pd.DataFrame, np.ndarray)):
             size = value.shape
@@ -204,9 +213,28 @@ class LocalVariableHandler:
         value: Any,
         size: Union[int, tuple, None] = None,
         is_result: Optional[bool] = None,
-        additional_params: dict = None,
-        project_uid=None,
-    ):
+        additional_params: Optional[dict] = None,
+        project_uid: Optional[str] = None,
+    ) -> tuple[dict, bool]:
+        """
+        Create a new (initial)variable (or update an existing one) on the server via API call and
+        store (update, if existing) a new local (initial)variable.
+
+        Args:
+            name (str): Variable name.
+            value (Any): Variable value.
+            size (Union[int, tuple, None], optional): Variable value size (detected automatically,
+                if not provided). Defaults to None.
+            is_result (Optional[bool], optional): Marks a result variable (used to store pipeline
+                jobs results). Defaults to None.
+            additional_params (Optional[dict], optional): Optional parameters passed to redis.
+                Defaults to None.
+            project_uid (Optional[str], optional). Defaults to None.
+
+        Returns:
+            tuple[dict, bool]: variable: a variable dict from API response, is_new_variable: tells
+                if the var was created or updated
+        """        
         if additional_params is None:
             additional_params = {}
             
@@ -233,13 +261,12 @@ class LocalVariableHandler:
         value: Any,
         size: Union[int, tuple, None] = None,
         is_result: Optional[bool] = None,
-        additional_params: dict = None,
-        project_uid=None,
-    ):
-        #self.variable_uid_project_uid_dict[variable.uid]=project_uid #is used in API call
+        additional_params: Optional[dict] = None,
+        project_uid: Optional[str] = None,
+    ) -> dict:
         if additional_params is None:
             additional_params = {}
-            
+
         if size is None:
             size = self._determine_value_size(value=value)
 
@@ -249,19 +276,23 @@ class LocalVariableHandler:
             ncrb_fn = ncrb.new_variable
 
         optional_args = {"is_result": is_result} if is_result is not None else {}
-        #serialization for objects
+        # serialization for objects
         # TODO: FFS FIXME:
         if is_value_serializable(value):
             response = ncrb_fn(name=name, value=value, size=size, **optional_args)
         else:
             if is_value_redis_compatible(value):
-                kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
+                kv_redis.set(
+                    self.get_variable_redis_name(name), value, additional_params
+                )
             else:
-                data_dict={}
-                data_dict[name]=value
-                folder=".//file_transfer"
-                save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
-            #TODO: FILE TRANSFER MISSING
+                data_dict = {}
+                data_dict[name] = value
+                folder = ".//file_transfer"
+                save_data_dict_to_pickle_folder(
+                    data_dict, folder, clean_existing_folder=False
+                )
+            # TODO: FILE TRANSFER MISSING
 
             response = ncrb_fn(
                 name=name,
@@ -273,22 +304,13 @@ class LocalVariableHandler:
 
         result = response.json()
         self.create_local_variable(
-            result["uid"], result["name"], result["value"], result["is_result"], result["type"]
+            result["uid"],
+            result["name"],
+            result["value"],
+            result["is_result"],
+            result["type"],
         )
         return result
-
-    def create_local_variable(self, uid: str, name, value, is_result: bool, type=None):
-        if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
-            value=ast.literal_eval(str(value))
-        elif type in REDIS_STORED_TYPES_AS_STRINGS:
-            value = kv_redis.get(self.get_variable_redis_name(name))
-
-            if isinstance(value, pd.DataFrame):
-                value = self.process_dataframe_variable_on_initialization(name, value)
-
-        variable=LocalVariable(uid, name, value, is_result)
-        self.variables[name]=variable
-        return(variable)
 
     def update_variable(
         self,
@@ -296,12 +318,12 @@ class LocalVariableHandler:
         value: Any,
         size: Union[int, tuple, None] = None,
         is_result: Optional[bool] = None,
-        additional_params: dict = None,
-        project_uid=None,
-    ):
+        additional_params: Optional[dict] = None,
+        project_uid: Optional[str] = None,
+    ) -> dict:
         if additional_params is None:
             additional_params = {}
-            
+
         if size is None:
             size = self._determine_value_size(value=value)
 
@@ -311,7 +333,7 @@ class LocalVariableHandler:
             ncrb_update_by_uid_fn = ncrb.update_variable_by_uid
 
         variable = None
-        try: # Function to run even if no variable is found
+        try:  # Function to run even if no variable is found
             variable = self.get_variable_by_name(name)
         except Exception:
             flog.warning(f"Variable '{name}' was not found in LocalVariableHandler.")
@@ -324,7 +346,7 @@ class LocalVariableHandler:
                 "name": name,
                 "value": value,
                 "size": size,
-                "is_result": is_result
+                "is_result": is_result,
             }
 
             if is_value_serializable(value):
@@ -333,41 +355,26 @@ class LocalVariableHandler:
                 ncrb_fn_kwargs.update(value="")
 
                 if is_value_redis_compatible(value):
-                    kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
+                    kv_redis.set(
+                        self.get_variable_redis_name(name), value, additional_params
+                    )
                 else:
-                    data_dict={}
-                    data_dict[name]=value
-                    folder=".//file_transfer"
-                    save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
-                response = ncrb_update_by_uid_fn(type=type(value).__name__, **ncrb_fn_kwargs)
+                    data_dict = {}
+                    data_dict[name] = value
+                    folder = ".//file_transfer"
+                    save_data_dict_to_pickle_folder(
+                        data_dict, folder, clean_existing_folder=False
+                    )
+                response = ncrb_update_by_uid_fn(
+                    type=type(value).__name__, **ncrb_fn_kwargs
+                )
 
             result = response.json()
             self.update_local_variable(
                 result["name"], result["value"], result["is_result"], result["type"]
             )
             return result
-
-
-        #else:
-        #    self.variables.pop(name)
-        #    self.create_variable(name, value)
-
-        #variable=self.variables[name]
-        #self.variables[name].value=value #Update
-        #return(variable)
-
-    def update_local_variable(self, name, value, is_result: bool, type=None):
-        if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
-            value=ast.literal_eval(str(value))
-        elif type in REDIS_STORED_TYPES_AS_STRINGS:
-            value = kv_redis.get(self.get_variable_redis_name(name))
-
-        variable=self.variables[name]
-        self.variables[name].value=value #Update
-        self.variables[name].is_result = is_result
-
-        return(variable)
-
+        
     def delete_variable(self, var_name: str):
         if self.last_active_df_variable is not None and var_name == self.last_active_df_variable.name:
             self.last_active_df_variable = None
@@ -381,6 +388,37 @@ class LocalVariableHandler:
         ncrb_delete_by_uid(variable["uid"])
         self.delete_local_variable(var_name)
 
+    def create_local_variable(
+        self,
+        uid: str,
+        name: str,
+        value: Any,
+        is_result: bool,
+        type: Optional[str] = None,
+    ):
+        if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
+            value = ast.literal_eval(str(value))
+        elif type in REDIS_STORED_TYPES_AS_STRINGS:
+            value = kv_redis.get(self.get_variable_redis_name(name))
+
+            if isinstance(value, pd.DataFrame):
+                value = self.process_dataframe_variable_on_initialization(name, value)
+
+        variable = LocalVariable(uid, name, value, is_result)
+        self.variables[name] = variable
+        return variable
+
+    def update_local_variable(self, name, value, is_result: bool, type=None):
+        if type in JSON_SERIALIZABLE_TYPES_AS_STRINGS and type != "str":
+            value = ast.literal_eval(str(value))
+        elif type in REDIS_STORED_TYPES_AS_STRINGS:
+            value = kv_redis.get(self.get_variable_redis_name(name))
+
+        variable = self.variables[name]
+        self.variables[name].value = value  # Update
+        self.variables[name].is_result = is_result
+
+        return variable
 
     def save_variables_as_initial_variables(self):
         """Save all currently loaded Variables as InitialVariables."""
@@ -411,7 +449,6 @@ class LocalVariableHandler:
                     **optional_args
                 )
 
-
     def delete_local_variable(self, var_name:str):
         self.variables.pop(var_name)
 
@@ -427,7 +464,7 @@ class LocalVariableHandler:
         return response.json()
 
     #   TODO: fix dependencies
-    #def update_data_in_variable_explorer(self, glc): #TODO Dominik: Refactor out, shouldnt be here
+    # def update_data_in_variable_explorer(self, glc): #TODO Dominik: Refactor out, shouldnt be here
     #    self.is_refresh_needed = False
     #    if hasattr(glc, "variable_explorer"):
 
@@ -437,8 +474,9 @@ class LocalVariableHandler:
     # stored_variable_df = pd.DataFrame(stored_variables_list, columns=["Name", "Type", "Size", "Value"])
     # glc.variable_explorer.update_data(stored_variable_df)
 
-
-    def populate_df_analysis_record(self, name, empty_rows, duplicated_rows, empty_columns, id_columns, result):
+    def populate_df_analysis_record(
+        self, name, empty_rows, duplicated_rows, empty_columns, id_columns, result
+    ):
         df_analysis = DataFrameWizardScanAnalysis()
         df_analysis.is_analyzed = True
         df_analysis.empty_rows = empty_rows
