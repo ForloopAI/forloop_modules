@@ -415,13 +415,13 @@ class RunFunctionHandler(AbstractFunctionHandler):
 
         self.direct_execute(selected_function, new_var_name, args_list)
 
-    def direct_execute(self, selected_function, new_var_name, *args):
+    def direct_execute(self, selected_function, new_var_name):
         
         # HACK: Disable the execution of the node with some feedback for a user until we implement security checks
         raise SoftPipelineError("Execution of this node is temporarily disabled.")
-        
-        args = args[0]
 
+        args = []
+        
         imports = defined_functions_dict[selected_function.__name__]["imports"]
         imports = list(set(imports))
 

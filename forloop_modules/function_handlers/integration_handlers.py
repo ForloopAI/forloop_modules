@@ -175,7 +175,9 @@ class SlackNotificationHandler(AbstractFunctionHandler):
         fdl.comboentry(name="channel_name", text="team-collaboration", options=channels, row=1)
         fdl.label("Text:")
         fdl.entry(name="text", text="", input_types=["str"], required=True, row=2)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        fdl.label("File")
+        fdl.entry(name="file_name", text="/path/to/file", input_types=["str"], required=False, row=3)
+        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True, row=4)
 
         return fdl
 
@@ -187,12 +189,11 @@ class SlackNotificationHandler(AbstractFunctionHandler):
 
         self.direct_execute(channel_name, text)
 
-    def direct_execute(self, channel_name, text, file_name=None, *args):
+    def direct_execute(self, channel_name, text, file_name=None):
         inp = Input()
         inp.assign("channel_name", channel_name)
         inp.assign("text", text)
         inp.assign("file_name", file_name)
-        inp.assign("args", args)
 
         try:
             self.input_execute(inp)
@@ -200,7 +201,7 @@ class SlackNotificationHandler(AbstractFunctionHandler):
             flog.warning(e)
 
     def input_execute(self, inp):
-        send_message_to_slack_direct_execute(other_config.SLACK_TOKEN, inp("channel_name"), inp("text"), inp("file_name"), inp("args"))
+        send_message_to_slack_direct_execute(other_config.SLACK_TOKEN, inp("channel_name"), inp("text"), inp("file_name"))
         
     def _post_message_to_slack(self, client, channel_id: str, text: str = 'Test message'):
 
@@ -232,12 +233,12 @@ class SlackNotificationHandler(AbstractFunctionHandler):
         except SlackApiError as e:
             print(f"Error uploading file: {e}")
 
-    def export_code(self, *args):
+    def export_code(self, node_details_form):
         code = """
         """
         return (code)
 
-    def export_imports(self, *args):
+    def export_imports(self):
         imports = []
         return imports
 
@@ -267,7 +268,9 @@ class EmailNotificationHandler(AbstractFunctionHandler):
         fdl.entry(name="message", text="", input_types=["str"], required=True, row=3)
         fdl.label("Remember login")
         fdl.checkbox(name="remember_login", bool_value=True, row=4)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        fdl.label("File")
+        fdl.entry(name="attachment_filename", text="/path/to/file", input_types=["str"], required=False, row=5)
+        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True, row=6)
 
         return fdl
 
@@ -468,15 +471,15 @@ class PipedriveConnectHandler(AbstractFunctionHandler):
 
         return fdl
 
-    def direct_execute(self, com_dom_name, pip_token):
-        global company_domain_name, pipedrive_token
+    def direct_execute(self, company_domain_name, pipedrive_token):
+        global company_domain_name_, pipedrive_token_
 
         inp = Input()
-        inp.assign("company_domain_name", com_dom_name)
-        inp.assign("pipedrive_token", pip_token)
+        inp.assign("company_domain_name", company_domain_name)
+        inp.assign("pipedrive_token", pipedrive_token)
 
         try:
-            company_domain_name, pipedrive_token = self.input_execute(inp)
+            company_domain_name_, pipedrive_token_ = self.input_execute(inp)
         except Exception as e:
             flog.error(message=f"{e}")
     
@@ -525,17 +528,17 @@ class PipedriveGetStagesHandler(AbstractFunctionHandler):
         return fdl
 
     def get_stages(self):
-        global company_domain_name, pipedrive_token
+        global company_domain_name_, pipedrive_token_
 
-        url = "https://" + company_domain_name + ".pipedrive.com/api/v1/stages?api_token=" + pipedrive_token
+        url = "https://" + company_domain_name_ + ".pipedrive.com/api/v1/stages?api_token=" + pipedrive_token_
 
         response = requests.get(url)
         print(response)
         
         return (response.json())
 
-    def direct_execute(self, variable_name):
-        if variable_name in variable_handler.variables:
+    def direct_execute(self, new_var_name):
+        if new_var_name in variable_handler.variables:
             inp = Input()
             
             try:
@@ -543,7 +546,7 @@ class PipedriveGetStagesHandler(AbstractFunctionHandler):
             except Exception as e:
                 flog.error(message=f"{e}")
 
-            variable_handler.new_variable(variable_name, stages)
+            variable_handler.new_variable(new_var_name, stages)
             #variable_handler.update_data_in_variable_explorer(glc)
     
     def input_execute(self, inp):
@@ -600,17 +603,17 @@ class PipedriveGetUsersHandler(AbstractFunctionHandler):
         return fdl
 
     def get_users(self):
-        global company_domain_name, pipedrive_token
+        global company_domain_name_, pipedrive_token_
 
-        url = "https://" + company_domain_name + ".pipedrive.com/api/v1/users?api_token=" + pipedrive_token
+        url = "https://" + company_domain_name_ + ".pipedrive.com/api/v1/users?api_token=" + pipedrive_token_
 
         response = requests.get(url)
         print(response)
         # print(response.content)
         return (response.json())
 
-    def direct_execute(self, variable_name):
-        if variable_name in variable_handler.variables:
+    def direct_execute(self, new_var_name):
+        if new_var_name in variable_handler.variables:
             inp = Input()
             
             try:
@@ -618,7 +621,7 @@ class PipedriveGetUsersHandler(AbstractFunctionHandler):
             except Exception as e:
                 flog.error(message=f"{e}")
 
-            variable_handler.new_variable(variable_name, users)
+            variable_handler.new_variable(new_var_name, users)
             ##variable_handler.update_data_in_variable_explorer(glc)
     
     def input_execute(self, inp):
@@ -679,9 +682,9 @@ class PipedriveAddPersonHandler(AbstractFunctionHandler):
         return fdl
 
     def add_person(self, name, email, phone):
-        global company_domain_name, pipedrive_token
+        global company_domain_name_, pipedrive_token_
 
-        url = "https://" + company_domain_name + ".pipedrive.com/api/v1/persons?api_token=" + pipedrive_token
+        url = "https://" + company_domain_name_ + ".pipedrive.com/api/v1/persons?api_token=" + pipedrive_token_
 
         payload = {"name": name, "email": email, "phone": phone}
 
@@ -762,9 +765,9 @@ class PipedriveAddDealHandler(AbstractFunctionHandler):
         return fdl
 
     def add_deal(self, title, stage_id, user_id):
-        global company_domain_name, pipedrive_token
+        global company_domain_name_, pipedrive_token_
 
-        url = "https://" + company_domain_name + ".pipedrive.com/api/v1/deals?api_token=" + pipedrive_token
+        url = "https://" + company_domain_name_ + ".pipedrive.com/api/v1/deals?api_token=" + pipedrive_token_
 
         payload = {"title": title, "stage_id": stage_id, "user_id": user_id}
         response = requests.post(url, data=payload)
@@ -838,10 +841,10 @@ class PipedriveDeleteDealHandler(AbstractFunctionHandler):
         return fdl
 
     def delete_deal(self, deal_id):
-        global company_domain_name, pipedrive_token
+        global company_domain_name_, pipedrive_token_
 
-        url = "https://" + company_domain_name + ".pipedrive.com/api/v1/deals/" + str(
-            deal_id) + "?api_token=" + pipedrive_token
+        url = "https://" + company_domain_name_ + ".pipedrive.com/api/v1/deals/" + str(
+            deal_id) + "?api_token=" + pipedrive_token_
         # payload={"stateId":1,"title":"CZ, Praha – CZ, Brno","currencyId":1,"loadingAddress":{"label":None,"placeId":None,"buildingNumber":None,"street":"Václavské náměstí","city":"Praha","zipCode":"110 00","countryCode":"CZ","gps":{"latitude":50.08528,"longitude":14.42623}},"loadingDates":{"isInterval":True,"openingTimeInMinutes":480,"closingTimeInMinutes":1200,"interval":{"referenceDate":"2021-05-21T00:00:00.000Z","includeWeekends":False}},"unloadingAddress":{"label":None,"placeId":None,"buildingNumber":None,"street":None,"city":"Brno","zipCode":"602 00","countryCode":"CZ","gps":{"latitude":49.19876,"longitude":16.59706}},"unloadingDates":{"isInterval":True,"openingTimeInMinutes":480,"closingTimeInMinutes":1200,"interval":{"referenceDate":"2021-05-28T00:00:00.000Z","includeWeekends":False}},"userTimeZone":120,"ftl":True,"packets":[{"weight":15000,"count":1,"itemTypeId":3,"length":13600,"width":2450,"height":2700}],"isDangerous":False,"isUnstackable":False,"hydraulicPlatform":False,"hydraulicArm":False,"walkingFloor":False,"antiSlipFloor":False,"dump":False,"validTillUtcTime":"2021-05-27T22:00:00.000Z","regionId":1,"mailToContacts":False,"requestUuid":"99c38e97-80a5-4e6b-93f2-5bb9d3152425","loadTypeId":1,"carTypeId":32}
         response = requests.delete(url)
 
@@ -906,9 +909,9 @@ class PipedriveAddNoteHandler(AbstractFunctionHandler):
         return fdl
 
     def add_note(self, content, deal_id):
-        global company_domain_name, pipedrive_token
+        global company_domain_name_, pipedrive_token_
 
-        url = "https://" + company_domain_name + ".pipedrive.com/api/v1/notes?api_token=" + pipedrive_token
+        url = "https://" + company_domain_name_ + ".pipedrive.com/api/v1/notes?api_token=" + pipedrive_token_
         payload = {"content": content, "deal_id": deal_id}
 
         response = requests.post(url, data=payload)
@@ -1619,16 +1622,16 @@ class AirtableConnectHandler(AbstractFunctionHandler):
 
         return fdl
 
-    def direct_execute(self, apikey_var, base_id_var):
-        global apikey, base_id
+    def direct_execute(self, apikey, base_id):
+        global apikey_, base_id_
 
-        if apikey_var != "" and base_id_var != "":
+        if apikey != "" and base_id != "":
             inp = Input()
-            inp.assign("apikey", apikey_var)
-            inp.assign("base_id", base_id_var)
+            inp.assign("apikey", apikey)
+            inp.assign("base_id", base_id)
 
             try:
-                apikey, base_id = self.input_execute(inp)
+                apikey_, base_id_ = self.input_execute(inp)
             except Exception as e:
                 flog.error(message=f"{e}")
 
@@ -1687,14 +1690,14 @@ class AirtableAddRecordHandler(AbstractFunctionHandler):
         return fdl
 
     def direct_execute(self, table_name, record):
-        global apikey, base_id
+        global apikey_, base_id_
 
-        if apikey != "" and base_id != "":
+        if apikey_ != "" and base_id != "":
             inp = Input()
             inp.assign("table_name", table_name)
             inp.assign("record", record)
-            inp.assign("apikey", apikey)
-            inp.assign("base_id", base_id)
+            inp.assign("apikey", apikey_)
+            inp.assign("base_id", base_id_)
 
             try:
                 response = self.input_execute(inp)
@@ -1789,15 +1792,15 @@ class AirtableParseDataHandler(AbstractFunctionHandler):
             ncrb.update_node_by_uid(node_detail_form.node_uid, params=params_dict)
 
     def direct_execute(self, table_name: str, filename, operation):
-        global apikey, base_id
+        global apikey_, base_id_
 
-        if apikey != "" and base_id != "":
+        if apikey_ != "" and base_id_ != "":
             inp = Input()
             inp.assign("filename", filename)
             inp.assign("table_name", table_name)
             inp.assign("operation", operation)
-            inp.assign("apikey", apikey)
-            inp.assign("base_id", base_id)
+            inp.assign("apikey", apikey_)
+            inp.assign("base_id", base_id_)
 
             try:
                 created_batch = self.input_execute(inp)
@@ -1917,14 +1920,14 @@ class AirtableReadTableHandler(AbstractFunctionHandler):
         return fdl
 
     def direct_execute(self, table_name, new_var_name):
-        global apikey, base_id
+        global apikey_, base_id_
 
-        if apikey != "" and base_id != "":
+        if apikey_ != "" and base_id_ != "":
             inp = Input()
             inp.assign("table_name", table_name)
             inp.assign("new_var_name", new_var_name)
-            inp.assign("apikey", apikey)
-            inp.assign("base_id", base_id)
+            inp.assign("apikey", apikey_)
+            inp.assign("base_id", base_id_)
 
             try:
                 table_data = self.input_execute(inp)

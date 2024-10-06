@@ -72,7 +72,7 @@ class OpenBrowserHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
         fdl.label("Show browser:")
@@ -243,7 +243,7 @@ class LoadWebsiteHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
         fdl.label("URL")
@@ -355,7 +355,7 @@ class DismissCookiesHandler(AbstractFunctionHandler):
         self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
         fdl.label("This node automatically detects cookies")
@@ -433,7 +433,7 @@ class NextPageHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
         fdl.label("URL prefix")
@@ -523,7 +523,7 @@ class ClickXPathHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label("Click XPath element")
         fdl.label("XPath")
@@ -598,7 +598,7 @@ class ClickNameHandler(AbstractFunctionHandler):
         )
     
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label("Click on element with given text")
         fdl.label("Text")
@@ -668,41 +668,41 @@ class ClickIdHandler(AbstractFunctionHandler):
         self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
 
         self.docs.add_parameter_table_row(
-            title="ID",
-            name="id",
+            title="Element ID",
+            name="element_id",
             description="ID of web page element to click on",
             typ="string",
             example=['listing-details', 'pagination-elem']
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
-        fdl.label("Click element by id")
-        fdl.label("Id")
-        fdl.entry(name="id", text="", input_types=["str"], required=True, row=1)
+        fdl.label("Click element by ID")
+        fdl.label("Element ID")
+        fdl.entry(name="element_id", text="", input_types=["str"], required=True, row=1)
 
         return fdl
 
     def execute(self, node_detail_form):
-        click_id = node_detail_form.get_chosen_value_by_name("id", variable_handler)
+        click_id = node_detail_form.get_chosen_value_by_name("element_id", variable_handler)
 
         self.direct_execute(click_id)
 
     def execute_with_params(self, params):
-        click_id = params["id"]
+        click_id = params["element_id"]
 
         self.direct_execute(click_id)
 
-    def direct_execute(self, click_id):
+    def direct_execute(self, element_id):
         function = "exec"
-        inp = "self.browser.find_element_by_id('" + click_id + "').click()"
+        inp = "self.browser.find_element_by_id('" + element_id + "').click()"
         # docrawl_core.spider_functions={"function":function,"input":inp,"done":"False"}
         spider_functions = Var({"function": function, "input": inp, "done": False})
         save_variables(kept_variables)
 
     def export_code(self, node_detail_form):
-        click_id = node_detail_form.get_chosen_value_by_name("id", variable_handler)
+        click_id = node_detail_form.get_chosen_value_by_name("element_id", variable_handler)
 
         code = f"""
         # Specify the ID of the element you want to click
@@ -747,7 +747,7 @@ class CloseBrowserHandler(AbstractFunctionHandler):
         self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label("Close browser after scraping")
 
@@ -804,7 +804,7 @@ class GetCurrentURLHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
         fdl.label("Output variable")
@@ -890,7 +890,7 @@ class WaitUntilElementIsLocatedHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
         fdl.label("XPath")
@@ -992,7 +992,7 @@ class ScrollWebPageHandler(AbstractFunctionHandler):
     def make_form_dict_list(self, node_detail_form=None):
         options = ["Up", "Down"]
 
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
         fdl.label("Scroll direction")
@@ -1125,7 +1125,7 @@ class ScanWebPageHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
         fdl.label("Tables")
@@ -1341,7 +1341,7 @@ class ExtractXPathHandler(AbstractFunctionHandler):
         options = ["w+", "a+"]
         options_2 = ['GridView']
 
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label("Extract HTML element by XPath")
         fdl.label("XPath")
@@ -1527,7 +1527,7 @@ class ExtractMultipleXPathHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label("Extract multiple HTML elements by XPath")
         fdl.label("XPaths")
@@ -1645,7 +1645,7 @@ class ExtractTableXPathHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label("Extract HTML table element by XPath")
         fdl.label("XPath Rows")
@@ -1744,7 +1744,7 @@ class ExtractPageSourceHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
         fdl.label("Output variable")
@@ -1817,7 +1817,7 @@ class RefreshPageSourceHandler(AbstractFunctionHandler):
         self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
 
@@ -1889,7 +1889,7 @@ class DownloadImageHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
         fdl.label("Image URL")
@@ -2003,7 +2003,7 @@ class DownloadImagesXPathHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
         fdl.label("XPath")
@@ -2111,7 +2111,7 @@ class SetProxyHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
         fdl.label("IP")
@@ -2473,7 +2473,7 @@ class FindPageElementsHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, *args, node_detail_form=None):
-        fdl = FormDictList()
+        fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
         fdl.label("Page source")

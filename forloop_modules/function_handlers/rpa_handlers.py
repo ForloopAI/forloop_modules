@@ -32,6 +32,9 @@ class ClickHandler(AbstractFunctionHandler):
         self.fn_name = "Click"
         self.type_category = ntcm.categories.rpa
 
+        super().__init__()
+
+
     def make_form_dict_list(self, *args, node_detail_form=None):
 
         fdl = FormDictList()
@@ -88,13 +91,16 @@ class ClickHandler(AbstractFunctionHandler):
 
 
 
-class ClickImageHandler:  # TODO: AbstractFunctionHandler
+class ClickImageHandler(AbstractFunctionHandler):
     def __init__(self):
         self.icon_type = "ClickImage"
         self.fn_name = "Click Image"
 
         self.type_category = ntcm.categories.rpa
         self.docs_category = DocsCategories.webscraping_and_rpa
+
+        super().__init__()
+
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -146,7 +152,7 @@ class ClickImageHandler:  # TODO: AbstractFunctionHandler
 
 
 
-class WriteHandler(AbstractFunctionHandler):  # TODO AbstractFunctionHandler
+class WriteHandler(AbstractFunctionHandler):
     def __init__(self):
         self.is_cloud_compatible = False
         self.icon_type = "Write"
@@ -154,6 +160,9 @@ class WriteHandler(AbstractFunctionHandler):  # TODO AbstractFunctionHandler
 
         self.type_category = ntcm.categories.rpa
         self.docs_category = DocsCategories.webscraping_and_rpa
+
+        super().__init__()
+
         
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -205,6 +214,9 @@ class UseKeyHandler(AbstractFunctionHandler):
         
         self.type_category = ntcm.categories.rpa
         self.docs_category = DocsCategories.webscraping_and_rpa
+
+        super().__init__()
+
 
     def make_form_dict_list(self, *args, node_detail_form=None, **kwargs):
         
