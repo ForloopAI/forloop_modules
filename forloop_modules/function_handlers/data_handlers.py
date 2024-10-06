@@ -502,10 +502,13 @@ class DfToListHandler(AbstractFunctionHandler):
 
     def direct_execute(self, df_entry, column_name, new_var_name):
         # df_entry[column_name] = df_entry[column_name].fillna("")
-        inp = Input()
+        col_names = column_name.split(",")
+        if len(col_names) == 1:
+            col_names = col_names[0] # Unpack from the implicit list if just one column
 
+        inp = Input()
         inp.assign("df_entry", df_entry)
-        inp.assign("column_name", column_name)
+        inp.assign("column_names", col_names)
 
         try:
             new_value = self.input_execute(inp)
@@ -520,8 +523,7 @@ class DfToListHandler(AbstractFunctionHandler):
         #variable_handler.update_data_in_variable_explorer(glc)
 
     def input_execute(self, inp):
-        column_names=inp("column_name").split(",")
-        new_value = inp("df_entry")[column_names].values.tolist()
+        new_value = inp("df_entry")[inp("column_names")].values.tolist()
         return new_value
 
     def export_code(self, node_detail_form):
