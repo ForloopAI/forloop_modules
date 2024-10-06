@@ -1,8 +1,12 @@
 import importlib
+import importlib.util
 import os
 import re
 import subprocess
 import sys
+from typing import Literal
+
+from e2b_code_interpreter import CodeInterpreter
 
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
@@ -18,6 +22,7 @@ from forloop_modules.function_handlers.auxilliary.node_type_categories_manager i
 from forloop_modules.globals.active_entity_tracker import aet
 from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.globals.variable_handler import variable_handler
+from forloop_modules.utils import synchronization_flags as sf
 
 
 class LoadPythonScriptHandler(AbstractFunctionHandler):
@@ -34,9 +39,21 @@ class LoadPythonScriptHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("File path:")
-        fdl.entry(name="file_path", text="", required=True, type="file", file_types=file_types, row=1)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", 
-                   frontend_implementation=True, focused=True)
+        fdl.entry(
+            name="file_path",
+            text="",
+            required=True,
+            type="file",
+            file_types=file_types,
+            row=1,
+        )
+        fdl.button(
+            function=self.execute,
+            function_args=node_detail_form,
+            text="Execute",
+            frontend_implementation=True,
+            focused=True,
+        )
 
         return fdl
 
@@ -70,9 +87,21 @@ class LoadJupyterScriptHandler(AbstractFunctionHandler):
         fdl = FormDictList()
         fdl.label(self.fn_name)
         fdl.label("File path:")
-        fdl.entry(name="file_path", text="", required=True, type="file", file_types=file_types, row=1)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", 
-                   frontend_implementation=True, focused=True)
+        fdl.entry(
+            name="file_path",
+            text="",
+            required=True,
+            type="file",
+            file_types=file_types,
+            row=1,
+        )
+        fdl.button(
+            function=self.execute,
+            function_args=node_detail_form,
+            text="Execute",
+            frontend_implementation=True,
+            focused=True,
+        )
 
         return fdl
 
@@ -115,8 +144,13 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             if response.status_code == 200:
                 scripts = response.json()["result"]["scripts"]
                 
-                # TODO: Using aet.project_uid is ok on local but incorrect in general --> change when allowed to run on remote
-                script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
+                # TODO: Using aet.project_uid is ok on local but incorrect in general --> change
+                # when allowed to run on remote
+                script_names = [
+                    script["script_name"]
+                    for script in scripts
+                    if script["project_uid"] == aet.project_uid
+                ]
         except Exception as e:
             flog.warning(e)
         
@@ -124,7 +158,12 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         fdl.label(self.fn_name)
         fdl.label("Script:")
         fdl.combobox(name="script_name", options=script_names, row=1)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        fdl.button(
+            function=self.execute,
+            function_args=node_detail_form,
+            text="Execute",
+            focused=True,
+        )
 
         return fdl
 
@@ -135,22 +174,25 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
     def direct_execute(self, script_name):
         """
-        DANGER: The code runs without any checks!
-
-        TODO 1: Solve security issues when running the code.
-        TODO 2: Solve scanning for packages used by script and pip installing of the missing ones.
+        DANGER: The code runs without any checks! In production, use the E2B solution only!
         """
-
-        # HACK: Disable the execution of the node with some feedback for a user until we implement security checks
-        # raise SoftPipelineError("Execution of this node is temporarily disabled.")
 
         script = su.get_script_by_name(script_name)
         script_text = script.get("text", "")
 
-        self._execute_python_script(script_text=script_text)
+        variable_handler.new_variable("script_stdout", "", is_result=True)
+        variable_handler.new_variable("script_stderr", "", is_result=True)
 
-        ### Experimental implementation with stdout/stderr streaming
-        # self._execute_python_script_with_streaming(script_text=script_text)
+        if sf.E2B_API_KEY:
+            ### Experimental E2B solution:
+            self._execute_python_script_with_e2b(script_text=script_text)
+        else:
+            ### Local execution with stdout/stderr streaming -- good for testing instead of E2B
+            self._execute_python_script_with_streaming(script_text=script_text)
+
+            ## Local execution without stdout/stderr streaming -- stdout/stderr saved after
+            ## pipeline is finished
+            # self._execute_python_script(script_text=script_text)
 
     def _install_package(self, package_name: str):
         """Install a package using pip and the current python executable."""
@@ -161,6 +203,41 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         subprocess.check_call(
             [sys.executable, "-m", "pip", "uninstall", "-y", package_name]
         )
+
+    def _get_imports_from_script(self, script_text: str):
+        """
+        Parse the script to extract imported modules.
+        """
+        imports = set()
+
+        # Regex to match import statements
+        import_pattern = re.compile(r"^\s*(?:import|from)\s+([a-zA-Z_][\w]*)", re.MULTILINE)
+
+        for match in import_pattern.finditer(script_text):
+            imports.add(match.group(1))
+
+        return imports
+
+    def _is_module_installed(self, module_name: str):
+        """
+        Check if a module is installed by attempting to find its spec.
+        """
+        return importlib.util.find_spec(module_name) is not None
+
+    def _save_output_line_to_result(self, output_mode: Literal["stdout", "stderr"], line: str):
+        """
+        Adds a current stdout/stderr line to script_stdout/script_stderr result variable.
+
+        Args:
+            output_mode (Literal["stdout", "stderr"]): Specifies the type of output to save.
+            line (str): A single line of stdout/stderr output obtained from script execution stream.
+        """
+        line = line.replace("'", '"')
+        var_name = f"script_{output_mode}"
+        curr_var = variable_handler.get_variable_by_name(var_name).get("value", "")
+        curr_var += line
+
+        variable_handler.new_variable(var_name, curr_var, is_result=True)
 
     def _execute_python_script(self, script_text: str):
         """
@@ -175,46 +252,31 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         Raises:
             SoftPipelineError: Raised in case of an Exception during script execution.
         """
-        # First attempt to run the script
-        process = subprocess.Popen(
-            [sys.executable, "-u", "-c", script_text],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+
+        missing_libs = []
 
         try:
+            # Get list of imports from the script
+            imports = self._get_imports_from_script(script_text)
+
+            # Check if each module is installed and install the missing ones
+            for _import in imports:
+                if not self._is_module_installed(_import):
+                    self._install_package(_import)
+                    missing_libs.append(_import)
+
+            process = subprocess.Popen(
+                [sys.executable, "-u", "-c", script_text],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
             stdout, stderr = process.communicate()
 
-            # Check for ImportError in stderr (if missing libraries)
-            missing_libs = re.findall(r"No module named '(\w+)'", stderr)
-
-            if missing_libs:
-                for lib in missing_libs:
-                    print(f"Installing missing library: {lib}")
-                    self._install_package(lib)
-
-                # Re-run the script after installing missing libraries
-                process = subprocess.Popen(
-                    [sys.executable, "-u", "-c", script_text],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                )
-                stdout, stderr = process.communicate()
-
-                # Uninstall the installed packages after use
-                for lib in missing_libs:
-                    print(f"Uninstalling library: {lib}")
-                    self._uninstall_package(lib)
-
-            # Save stdout and stderr into result variables and print them
             if stdout:
                 variable_handler.new_variable("script_stdout", stdout, is_result=True)
-                print(f"stdout:\n{stdout}")
             if stderr:
                 variable_handler.new_variable("script_stderr", stderr, is_result=True)
-                print(f"stderr:\n{stderr}")
 
         except Exception as e:
             raise SoftPipelineError(f"Error while executing the script: {e}")
@@ -222,14 +284,17 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         finally:
             process.wait()
 
+            # Uninstall the installed packages after use
+            for lib in missing_libs:
+                self._uninstall_package(lib)
+
     def _execute_python_script_with_streaming(self, script_text: str):
         """
         Executes Python script (obtained from FL Script object) text via subprocess.Popen method
         with continuous streaming of stdout and stderr.
 
-        TODO: Replicate the library installation procedure from _execute_python_script if this
-              method is pereferred
-        TODO: Solve streaming to FE (currently not supported)
+        Missing libraries, if present in the script, are installed via pip and uninstalled after the
+        execution.
 
         Args:
             script_text (str): Contents of .py script to be executed.
@@ -237,55 +302,107 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         Raises:
             SoftPipelineError: Raised in case of an Exception during script execution.
         """
-        stdout_var_name = "script_stdout"
-        stderr_var_name = "script_stderr"
-        variable_handler.new_variable(stdout_var_name, "", is_result=True)
-        variable_handler.new_variable(stderr_var_name, "", is_result=True)
 
-        # Execute the script in real-time using the current Python interpreter
-        process = subprocess.Popen(
-            [sys.executable, "-u", "-c", script_text],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,  # Line-buffering for real-time output
-        )
+        def _stream_output(process: subprocess.Popen):
+            """
+            Streams stdout and stderr line by line in real-time and saves them into result vars.
 
-        # Reading stdout and stderr line by line
-        try:
-            # Print stdout in real-time with a delay
+            Args:
+                process (subprocess.Popen): Popen process execution a python script.
+            """
+
             for stdout_line in iter(process.stdout.readline, ""):
-                # time.sleep(1)  # Delay before printing
-                curr_stdout = variable_handler.get_variable_by_name(
-                    stdout_var_name
-                ).get("value", "")
-                curr_stdout += stdout_line
-                variable_handler.new_variable(
-                    stdout_var_name, curr_stdout, is_result=True
-                )
-                print(f"stdout: {stdout_line}", end="")
-
-            # Print stderr in real-time with a delay
+                if stdout_line:
+                    self._save_output_line_to_result(output_mode="stdout", line=stdout_line)
             for stderr_line in iter(process.stderr.readline, ""):
-                # time.sleep(1)  # Delay before printing
-                curr_stderr = variable_handler.get_variable_by_name(
-                    stderr_var_name
-                ).get("value", "")
-                curr_stderr += f"\n{stderr_line}"
-                variable_handler.new_variable(
-                    stderr_var_name, curr_stderr, is_result=True
-                )
-                print(f"stderr: {stderr_line}", end="")
+                if stderr_line:
+                    self._save_output_line_to_result(output_mode="stderr", line=stderr_line)
+        
+        missing_libs = []
+
+        try:
+            # Get list of imports from the script
+            imports = self._get_imports_from_script(script_text)
+
+            # Check if each module is installed and install the missing ones
+            for _import in imports:
+                if not self._is_module_installed(_import):
+                    self._install_package(_import)
+                    missing_libs.append(_import)
+
+            # Execute the script in a subprocess
+            process = subprocess.Popen(
+                [sys.executable, "-u", "-c", script_text],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+            )
+
+            # Stream stdout and stderr of the script in real-time into result vars
+            _stream_output(process)
 
         except Exception as e:
             raise SoftPipelineError(f"Error while executing the script: {e}")
 
         finally:
-            # Ensure the process has completed
             process.stdout.close()
             process.stderr.close()
             process.wait()
-            
+
+            # Uninstall the installed packages after use
+            for lib in missing_libs:
+                self._uninstall_package(lib)
+
+    def _execute_python_script_with_e2b(self, script_text: str):
+        """
+        Executes Python script (obtained from FL Script object) text in an E2B code interpreter.
+
+        E2B code interpreter (sandbox) is described in their docs: https://e2b.dev/docs
+        Missing libraries, if present in the script, are installed via pip (in the E2B sandbox,
+        not in our environment).
+
+        Important: E2B_API_KEY must be present in .env file in root for successful operation.
+
+        Args:
+            script_text (str): Contents of .py script to be executed.
+
+        Raises:
+            SoftPipelineError: Raised in case of an Exception during E2B execution.
+        """
+
+        try:
+            # Get list of imports from the script
+            imports = self._get_imports_from_script(script_text)
+
+            # TODO: Enable when python 3.10+ is supported
+            # imports = [
+            #     _import for _import in imports if _import not in sys.stdlib_module_names
+            # ]
+
+            with CodeInterpreter(api_key=sf.E2B_API_KEY) as sandbox:
+                for _import in imports:
+                    sandbox.notebook.exec_cell(f"!pip install {_import}")
+
+                exec = sandbox.notebook.exec_cell(
+                    script_text,
+                    on_stderr=lambda stderr: self._save_output_line_to_result(
+                        output_mode="stderr", line=str(stderr)
+                    ),
+                    on_stdout=lambda stdout: self._save_output_line_to_result(
+                        output_mode="stdout", line=str(stdout)
+                    ),
+                )
+
+                if exec.error:
+                    self._save_output_line_to_result(
+                        output_mode="stderr", line=exec.error.traceback
+                    )
+
+        except Exception as e:
+            raise SoftPipelineError(f"Error while executing the script via E2B: {e}")
+
+
 class RunJupyterScriptHandler(AbstractFunctionHandler):
     """
     DANGER ZONE: This handler is allowed for local use only for now! Don't allow it in production!
@@ -307,8 +424,13 @@ class RunJupyterScriptHandler(AbstractFunctionHandler):
             if response.status_code == 200:
                 scripts = response.json()["result"]["scripts"]
                 
-                # TODO: Using aet.project_uid is ok on local but incorrect in general --> change when allowed to run on remote
-                script_names = [script["script_name"] for script in scripts if script["project_uid"] == aet.project_uid]
+                # TODO: Using aet.project_uid is ok on local but incorrect in general --> change
+                # when allowed to run on remote
+                script_names = [
+                    script["script_name"]
+                    for script in scripts
+                    if script["project_uid"] == aet.project_uid
+                ]
         except Exception as e:
             flog.warning(e)
         
@@ -316,7 +438,12 @@ class RunJupyterScriptHandler(AbstractFunctionHandler):
         fdl.label(self.fn_name)
         fdl.label("Script:")
         fdl.combobox(name="script_name", options=script_names, row=1)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        fdl.button(
+            function=self.execute,
+            function_args=node_detail_form,
+            text="Execute",
+            focused=True,
+        )
 
         return fdl
 
@@ -332,7 +459,8 @@ class RunJupyterScriptHandler(AbstractFunctionHandler):
         TODO: Solve security issues when running the code.
         """
         
-        # HACK: Disable the execution of the node with some feedback for a user until we implement security checks
+        # HACK: Disable the execution of the node with some feedback for a user until we implement
+        # security checks
         raise SoftPipelineError("Execution of this node is temporarily disabled.")
     
         script = su.get_script_by_name(script_name)
@@ -403,7 +531,12 @@ class TrainModelHandler(AbstractFunctionHandler):
         fdl.entry(name="model_filename", text="", row=3)
         fdl.label("Train Function Name")
         fdl.entry(name="model_function_name", text="", row=4)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        fdl.button(
+            function=self.execute,
+            function_args=node_detail_form,
+            text="Execute",
+            focused=True,
+        )
 
         return fdl
 
@@ -438,13 +571,22 @@ class PredictModelValuesHandler:
         fdl.entry(name="model_filename", text="", input_types=["str"], row=2)
         fdl.label("Predict Function Name")
         fdl.entry(name="model_function_name", text="", input_types=["str"], row=3)
-        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        fdl.button(
+            function=self.execute,
+            function_args=node_detail_form,
+            text="Execute",
+            focused=True,
+        )
 
         return fdl
 
     def execute(self, node_detail_form):
-        model_filename = node_detail_form.get_chosen_value_by_name("model_filename", variable_handler)
-        model_function_name = node_detail_form.get_chosen_value_by_name("model_function_name", variable_handler)
+        model_filename = node_detail_form.get_chosen_value_by_name(
+            "model_filename", variable_handler
+        )
+        model_function_name = node_detail_form.get_chosen_value_by_name(
+            "model_function_name", variable_handler
+        )
 
         my_module = importlib.import_module(model_filename)
         input_data = 123
@@ -476,8 +618,11 @@ class PredictModelValuesHandler:
         #variable_handler.update_data_in_variable_explorer(glc)
         """
 
-        return (code.format(input_data='"' + input_data + '"', model_filename='"' + model_filename + '"',
-                            model_function_name='"' + model_function_name + '"'))
+        return code.format(
+            input_data='"' + input_data + '"',
+            model_filename='"' + model_filename + '"',
+            model_function_name='"' + model_function_name + '"',
+        )
 
     def export_imports(self, *args):
         imports = ["import importlib"]

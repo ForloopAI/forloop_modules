@@ -16,6 +16,9 @@ class RedisConfig:
 
     VARIABLE_KEY: str = "pipeline_job:{pipeline_job_uid}:variable:{variable_name}"
     INITIAL_VARIABLE_KEY: str = "pipeline:{pipeline_uid}:initial_variable:{variable_name}"
+    
+    # This key stores a bool value signaling variable changes to streaming endpoints
+    VARS_CHANGED_KEY: str = "pipeline_job:{pipeline_job_uid}:vars_changed"
 
     JOB_KEY: str = "jobs"
     JOB_INDEX_NAME: str = "index"
