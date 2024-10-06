@@ -1,17 +1,11 @@
-
-
-from functools import lru_cache
 from typing import Optional
 
-from pydantic_settings import BaseSettings
+from dataclasses import dataclass
 from forloop_modules.utils import synchronization_flags
 
 
-class RedisConfig(BaseSettings):
-    class Config:
-        env_file = '.env'
-        env_file_encoding = 'utf-8'
-
+@dataclass
+class RedisConfig:
     # None values for Host and Password are correct options:
     # in-memory local caching will be used instead of a Redis server
     FORLOOP_REDIS_HOST: Optional[str] = None # localhost doesn't work for devs with DummyKVRedis
@@ -38,9 +32,6 @@ class RedisConfig(BaseSettings):
     
     LAST_ACTIVE_SCRIPT_KEY_TEMPLATE: str = "project:{project_uid}:last_active_script_uid"
 
-@lru_cache
-def get_redis_config() -> RedisConfig:
-    return RedisConfig()
 
 redis_config = RedisConfig()
 
