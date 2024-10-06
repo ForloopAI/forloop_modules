@@ -1,29 +1,33 @@
-IS_EXECUTION_CORE=True
-
-#if IS_EXECUTION_CORE:
-#    from src.core.variable_handler import variable_handler
-
-import json
-import pandas as pd
 import ast
-import inspect
-
-from typing import Dict, Set, Any, Literal, Optional
+import json
 from dataclasses import dataclass, field
+from typing import Any, Dict, Literal, Optional, Set, Union
+
+import numpy as np
+import pandas as pd
 
 import forloop_modules.flog as flog
+import forloop_modules.queries.node_context_requests_backend as ncrb
+from forloop_modules.globals.active_entity_tracker import aet
 
 #from src.df_column_category_predictor import classify_df_column_categories, DataFrameColumnCategoryAnalysis
+from forloop_modules.redis.redis_connection import (
+    get_initial_variable_redis_name,
+    get_variable_redis_name,
+    kv_redis,
+)
+from forloop_modules.utils.definitions import (
+    JSON_SERIALIZABLE_TYPES_AS_STRINGS,
+    REDIS_STORED_TYPES_AS_STRINGS,
+)
+from forloop_modules.utils.pickle_serializer import (
+    save_data_dict_to_pickle_folder,
+)
+from forloop_modules.utils.various import (
+    is_value_redis_compatible,
+    is_value_serializable,
+)
 
-from forloop_modules.redis.config.config import redis_config
-from forloop_modules.utils.pickle_serializer import save_data_dict_to_pickle_folder
-from forloop_modules.utils.pickle_serializer import load_data_dict_from_pickle_folder
-from forloop_modules.globals.active_entity_tracker import aet
-from forloop_modules.redis.redis_connection import kv_redis, get_variable_redis_name, get_initial_variable_redis_name
-from forloop_modules.utils.definitions import JSON_SERIALIZABLE_TYPES, JSON_SERIALIZABLE_TYPES_AS_STRINGS, REDIS_STORED_TYPES, REDIS_STORED_TYPES_AS_STRINGS
-from forloop_modules.utils.various import is_value_serializable, is_value_redis_compatible
-#import src.forloop_code_eval as fce
-import forloop_modules.queries.node_context_requests_backend as ncrb
 
 @dataclass
 class File:
@@ -60,14 +64,6 @@ class LocalVariableHandler:
 
         self._handler_mode: Literal["initial_variable", "variable"] = "initial_variable"
 
-    def get_variable_redis_name(self, name: str) -> str:
-        if self.handler_mode == "initial_variable":
-            return get_initial_variable_redis_name(name, aet.active_pipeline_uid)
-        elif self.handler_mode == "variable":
-            return get_variable_redis_name(name, aet.active_pipeline_job_uid)
-        else:
-            raise ValueError(f"Variable mode {self.handler_mode} is not supported.")
-
     @property
     def is_empty(self):
         return len(self.variables) == 0
@@ -78,7 +74,26 @@ class LocalVariableHandler:
 
     @handler_mode.setter
     def handler_mode(self, value: Any) -> None:
-        raise AttributeError("Use `change_variable_mode` method to change the mode of LocalVariableHandler.")
+        raise AttributeError(
+            "Use `change_variable_mode` method to change the mode of LocalVariableHandler."
+        )
+    
+    @property
+    def last_active_dataframe_node_uid(self):
+        return self._last_active_dataframe_node_uid
+
+    # temporary until cyclic import of ncrb in cleaning handlers is resolved
+    @last_active_dataframe_node_uid.setter
+    def last_active_dataframe_node_uid(self, node_uid:int):
+        self._last_active_dataframe_node_uid = node_uid
+
+    def get_variable_redis_name(self, name: str) -> str:
+        if self.handler_mode == "initial_variable":
+            return get_initial_variable_redis_name(name, aet.active_pipeline_uid)
+        elif self.handler_mode == "variable":
+            return get_variable_redis_name(name, aet.active_pipeline_job_uid)
+        else:
+            raise ValueError(f"Variable mode {self.handler_mode} is not supported.")
 
     def change_variable_mode(self, mode: Literal["initial_variable", "variable"]) -> None:
         """Change state specifying on which type of variable is the handler currently operating."""
@@ -171,10 +186,32 @@ class LocalVariableHandler:
         value.attrs["name"] = name
 
         return value
+    
+    def _determine_value_size(self, value: Any) -> Union[int, tuple]:
+        if isinstance(value, (pd.DataFrame, np.ndarray)):
+            size = value.shape
+        else:
+            try:
+                size = len(value)
+            except TypeError:
+                size = 1
+                
+        return size
 
-    def new_variable(self, name, value, is_result: Optional[bool] = None, additional_params: dict = None, project_uid=None):
+    def new_variable(
+        self,
+        name: str,
+        value: Any,
+        size: Union[int, tuple, None] = None,
+        is_result: Optional[bool] = None,
+        additional_params: dict = None,
+        project_uid=None,
+    ):
         if additional_params is None:
             additional_params = {}
+            
+        if size is None:
+            size = self._determine_value_size(value=value)
 
         name = self._set_up_unique_varname(name)
 
@@ -182,18 +219,29 @@ class LocalVariableHandler:
             value = self.process_dataframe_variable_on_initialization(name, value)
 
         if name in self.variables.keys():
-            variable = self.update_variable(name, value, is_result, additional_params)
+            variable = self.update_variable(name, value, size, is_result, additional_params)
             is_new_variable=False
         else:
-            variable=self.create_variable(name, value, is_result, additional_params)
+            variable=self.create_variable(name, value, size, is_result, additional_params)
             is_new_variable=True
 
         return variable, is_new_variable
 
-    def create_variable(self, name, value, is_result: Optional[bool] = None, additional_params: dict = None, project_uid=None):
+    def create_variable(
+        self,
+        name: str,
+        value: Any,
+        size: Union[int, tuple, None] = None,
+        is_result: Optional[bool] = None,
+        additional_params: dict = None,
+        project_uid=None,
+    ):
         #self.variable_uid_project_uid_dict[variable.uid]=project_uid #is used in API call
         if additional_params is None:
             additional_params = {}
+            
+        if size is None:
+            size = self._determine_value_size(value=value)
 
         if self.handler_mode == "initial_variable":
             ncrb_fn = ncrb.new_initial_variable
@@ -204,7 +252,7 @@ class LocalVariableHandler:
         #serialization for objects
         # TODO: FFS FIXME:
         if is_value_serializable(value):
-            response = ncrb_fn(name=name, value=value, **optional_args)
+            response = ncrb_fn(name=name, value=value, size=size, **optional_args)
         else:
             if is_value_redis_compatible(value):
                 kv_redis.set(self.get_variable_redis_name(name), value, additional_params)
@@ -215,7 +263,13 @@ class LocalVariableHandler:
                 save_data_dict_to_pickle_folder(data_dict,folder,clean_existing_folder=False)
             #TODO: FILE TRANSFER MISSING
 
-            response = ncrb_fn(name=name, value="", type=type(value).__name__, **optional_args)
+            response = ncrb_fn(
+                name=name,
+                value="",
+                type=type(value).__name__,
+                size=size,
+                **optional_args,
+            )
 
         result = response.json()
         self.create_local_variable(
@@ -236,9 +290,20 @@ class LocalVariableHandler:
         self.variables[name]=variable
         return(variable)
 
-    def update_variable(self, name, value, is_result: Optional[bool] = None, additional_params: dict = None, project_uid=None):
+    def update_variable(
+        self,
+        name: str,
+        value: Any,
+        size: Union[int, tuple, None] = None,
+        is_result: Optional[bool] = None,
+        additional_params: dict = None,
+        project_uid=None,
+    ):
         if additional_params is None:
             additional_params = {}
+            
+        if size is None:
+            size = self._determine_value_size(value=value)
 
         if self.handler_mode == "initial_variable":
             ncrb_update_by_uid_fn = ncrb.update_initial_variable_by_uid
@@ -252,11 +317,13 @@ class LocalVariableHandler:
             flog.warning(f"Variable '{name}' was not found in LocalVariableHandler.")
 
         if variable is not None:
+            size = size if size is not None else variable["size"]
             is_result = is_result if is_result is not None else variable["is_result"]
             ncrb_fn_kwargs = {
                 "variable_uid": variable["uid"],
                 "name": name,
                 "value": value,
+                "size": size,
                 "is_result": is_result
             }
 
@@ -359,15 +426,6 @@ class LocalVariableHandler:
         response.raise_for_status()
         return response.json()
 
-    @property
-    def last_active_dataframe_node_uid(self):
-        return self._last_active_dataframe_node_uid
-
-    # temporary until cyclic import of ncrb in cleaning handlers is resolved
-    @last_active_dataframe_node_uid.setter
-    def last_active_dataframe_node_uid(self, node_uid:int):
-        self._last_active_dataframe_node_uid = node_uid
-
     #   TODO: fix dependencies
     #def update_data_in_variable_explorer(self, glc): #TODO Dominik: Refactor out, shouldnt be here
     #    self.is_refresh_needed = False
@@ -444,9 +502,12 @@ class LocalVariable:
 
     @property
     def size(self) -> int:
+        if self.typ in ["DataFrame", "ndarray"]:
+            return self.value.shape
+        
         try:
             return len(self.value)
-        except:
+        except TypeError:
             return 1
 
     def __len__(self):
