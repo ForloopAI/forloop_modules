@@ -301,6 +301,23 @@ class LoadWebsiteHandler(AbstractFunctionHandler):
                         suh.webscraping_client.set_browser_meta_data(browser_meta_data)
 
             suh.webscraping_client.load_website(url)
+            
+            # get headers and cookies
+            headers = suh.webscraping_client.get_browser_headers()
+            cookies = suh.webscraping_client.get_browser_cookies()
+            requests = suh.webscraping_client.get_browser_requests()
+            
+            # get active pipeline uid
+            pipeline_uid=aet.active_pipeline_uid
+            
+            redis_key = f'pipeline_{pipeline_uid}_browser_headers'
+            kv_redis.set(key=redis_key, value=headers)
+            
+            redis_key = f'pipeline_{pipeline_uid}_browser_cookies'
+            kv_redis.set(key=redis_key, value=cookies)
+            
+            redis_key = f'pipeline_{pipeline_uid}_browser_requests'
+            kv_redis.set(key=redis_key, value=requests)
 
             # Take screenshot of current page
             if take_screenshot:
