@@ -783,6 +783,12 @@ class APIConvertToScrapingNode(BaseModel):
     selected_elements_xpaths: list
     pipeline_uid: str
     project_uid: str
+
+class APITemplatePipelineMapping(BaseModel):
+    template_name: str
+    pipeline_uid: str
+    owner_user_uid: str
+    screenshot: Optional[str] = None
     
 class APICopyTemplateBody(BaseModel):
     project_uid: str
