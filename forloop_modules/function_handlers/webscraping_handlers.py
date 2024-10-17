@@ -310,13 +310,13 @@ class LoadWebsiteHandler(AbstractFunctionHandler):
             # get active pipeline uid
             pipeline_uid=aet.active_pipeline_uid
             
-            redis_key = f'pipeline_{pipeline_uid}_browser_headers'
+            redis_key = f'pipeline:{pipeline_uid}:browser_headers'
             kv_redis.set(key=redis_key, value=headers)
             
-            redis_key = f'pipeline_{pipeline_uid}_browser_cookies'
+            redis_key = f'pipeline:{pipeline_uid}:browser_cookies'
             kv_redis.set(key=redis_key, value=cookies)
             
-            redis_key = f'pipeline_{pipeline_uid}_browser_requests'
+            redis_key = f'pipeline:{pipeline_uid}:browser_requests'
             kv_redis.set(key=redis_key, value=requests)
 
             # Take screenshot of current page
