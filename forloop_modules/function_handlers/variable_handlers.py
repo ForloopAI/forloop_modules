@@ -1,24 +1,26 @@
 import ast
-import httpx
 import math
-from collections.abc import Iterable
-from collections.abc import Hashable
+from collections.abc import Hashable, Iterable
 from copy import deepcopy
 from typing import Any
+
+import httpx
 
 import forloop_modules.flog as flog
 import forloop_modules.function_handlers.auxilliary.forloop_code_eval as fce
 import forloop_modules.queries.node_context_requests_backend as ncrb
-
-from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
-from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
-from forloop_modules.function_handlers.auxilliary.docs import Docs
-from forloop_modules.globals.variable_handler import variable_handler, LocalVariable
-from forloop_modules.globals.docs_categories import DocsCategories
-
-from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
 from forloop_modules.errors.errors import CriticalPipelineError, SoftPipelineError
-
+from forloop_modules.function_handlers.auxilliary.abstract_function_handler import (
+    AbstractFunctionHandler,
+    Input,
+)
+from forloop_modules.function_handlers.auxilliary.docs import Docs
+from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
+from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import (
+    ntcm,
+)
+from forloop_modules.globals.docs_categories import DocsCategories
+from forloop_modules.globals.variable_handler import LocalVariable, variable_handler
 
 ####### PROBLEMATIC IMPORTS TODO: REFACTOR #######
 #from src.gui.gui_layout_context import glc
