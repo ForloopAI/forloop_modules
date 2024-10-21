@@ -923,33 +923,11 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
 
         return d.get(key)
 
-    def _join_dictionaries(self, dict_var, *args):
-        """
-        init_dict ... variable
-        dict_to_add ... argument
-        """
-
-        dict_to_add = args[0]
-
-        new_value = None
-
-        if type(dict_to_add) == dict:
-            new_value = {**dict_var, **dict_to_add}
-        else:
-            try:
-                eval_arg = ast.literal_eval(dict_to_add)
-                if type(eval_arg) == dict:
-                    new_value = {**dict_var, **eval_arg}
-                else:
-                    pass
-                    #POPUPTODO
-                    #glc.show_warning_popup_message("Wrong argument format.")
-            except:
-                pass
-                #POPUPTODO
-                #glc.show_warning_popup_message("wrong argument format.")
-
-        return new_value
+    def _join_dictionaries(self, d_1: dict, d_2: dict, *args):
+        if isinstance(d_2, dict):
+            raise CriticalPipelineError(f"{self.icon_type}: Both arguments must of type 'dict'.")
+        
+        return {**d_1, **d_2}
 
     def _delete_dict_entry(self, dict_var, *args):
         """
