@@ -929,20 +929,13 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         
         return {**d_1, **d_2}
 
-    def _delete_dict_entry(self, dict_var, *args):
-        """
-        dict_var ... variable
-        key ... argument
-        """
-
-        key = args[0]
-
-        try:
-            new_value = dict_var.copy()
-            new_value.pop(key)
-        except Exception as e:
-            flog.error(e)
-            return None
+    def _delete_dict_entry(self, d: dict, key: Hashable, *args):
+        if not isinstance(key, Hashable):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: provided dictionary key is unhashable."
+            )
+            
+        pop_value = d.pop(key, None)
 
         return new_value
 
