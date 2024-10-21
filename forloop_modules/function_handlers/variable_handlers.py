@@ -939,30 +939,15 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
 
         return pop_value
 
-    def _add_dict_entry(self, dict_var, *args):
+    def _add_dict_entry(self, d: dict, key: Hashable, value: Any, *args):        
+        if not isinstance(key, Hashable):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: provided dictionary key is unhashable."
+            )
+        
+        d[key] = value
 
-        key = args[0]
-        value = args[1]
-
-        try:
-            key = float(key) if '.' in key else int(key)
-        except Exception as e:
-            flog.warning('Dict key not parsed.')
-
-        try:
-            value = ast.literal_eval(value)
-        except Exception as e:
-            flog.warning('Dict value not parsed.')
-
-
-        try:
-            dict_var[key] = value
-        except Exception as e:
-            #POPUPTODO
-            #glc.show_warning_popup_message(e)
-            return None
-
-        return dict_var
+        return d
 
     def _invert_dictionary(self, dict_var, *args):
         """
