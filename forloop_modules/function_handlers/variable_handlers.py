@@ -915,53 +915,49 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
-    
-    def _get_value_by_key(self, d: dict, key: Hashable, *args: Any):        
+
+    def _get_value_by_key(self, d: dict, key: Hashable, *args: Any):
         if not isinstance(key, Hashable):
-            raise CriticalPipelineError(
-                f"{self.icon_type}: provided dictionary key is unhashable."
-            )
+            raise CriticalPipelineError(f"{self.icon_type}: provided dictionary key is unhashable.")
 
         return d.get(key)
 
     def _join_dictionaries(self, d_1: dict, d_2: dict, *args):
         if isinstance(d_2, dict):
             raise CriticalPipelineError(f"{self.icon_type}: Both arguments must of type 'dict'.")
-        
+
         return {**d_1, **d_2}
 
     def _delete_dict_entry(self, d: dict, key: Hashable, *args):
         if not isinstance(key, Hashable):
-            raise CriticalPipelineError(
-                f"{self.icon_type}: provided dictionary key is unhashable."
-            )
-            
+            raise CriticalPipelineError(f"{self.icon_type}: provided dictionary key is unhashable.")
+
         pop_value = d.pop(key, None)
 
         return pop_value
 
-    def _add_dict_entry(self, d: dict, key: Hashable, value: Any, *args):        
+    def _add_dict_entry(self, d: dict, key: Hashable, value: Any, *args):
         if not isinstance(key, Hashable):
-            raise CriticalPipelineError(
-                f"{self.icon_type}: provided dictionary key is unhashable."
-            )
-        
+            raise CriticalPipelineError(f"{self.icon_type}: provided dictionary key is unhashable.")
+
         d[key] = value
 
         return d
 
-    def _invert_dictionary(self, d: dict, *args):        
+    def _invert_dictionary(self, d: dict, *args):
         has_unique_values = len(d) == len(set(d.values()))
         if not has_unique_values:
             raise SoftPipelineError(
                 f"{self.icon_type}: provided dictionary must have unique values."
             )
-        
+
         all_values_hashable = all(isinstance(x, Hashable) for x in d.values())
         if not all_values_hashable:
-            raise SoftPipelineError(f"{self.icon_type}: all dictionary values must be hashable.")
-        
-        return {v: k for k, v in d.items()}   
+            raise SoftPipelineError(
+                f"{self.icon_type}: all dictionary values must be hashable."
+            )
+
+        return {v: k for k, v in d.items()}
 
     def direct_execute(self, var_name, dict_op, arg_1, arg_2, new_var_name):
         functions = {
@@ -971,7 +967,7 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
             "Join Dictionaries": self._join_dictionaries,
             "Delete Value by Key": self._delete_dict_entry,
             "Invert Dictionary": self._invert_dictionary,
-            "Add key" : self._add_dict_entry
+            "Add key": self._add_dict_entry,
         }
 
         try:
@@ -985,17 +981,17 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
                 raise CriticalPipelineError(
                     f"{self.icon_type}: critical error occured during dict variable fetching."
                 ) from e
-            
+
         dict_var = dict_var.get("value")
 
         if not isinstance(dict_var, dict):
             raise CriticalPipelineError(
                 f"{self.icon_type}: Provided variable must be of type 'dict'."
             )
-            
+
         arg_1 = self._evaluate_argument(arg=arg_1)
         arg_2 = self._evaluate_argument(arg=arg_2)
-            
+
         dict_function = functions[dict_op]
         result = dict_function(dict_var, arg_1, arg_2)
 
