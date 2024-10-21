@@ -949,28 +949,18 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
 
         return d
 
-    def _invert_dictionary(self, dict_var, *args):
-        """
-        dict_var ... variable
-        """
-
-        argument = args[0]
+    def _invert_dictionary(self, d: dict, *args):        
+        has_unique_values = len(d) == len(set(d.values()))
+        if not has_unique_values:
+            raise SoftPipelineError(
+                f"{self.icon_type}: provided dictionary must have unique values."
+            )
         
-        try:
-            has_unique_values = len(dict_var) == len(set(dict_var.values()))
-        except Exception as e:
-            #POPUPTODO
-            #glc.show_warning_popup_message(e)
-            return None
-
-        if has_unique_values:
-            new_value = {v: k for k, v in dict_var.items()}
-        else:
-            #POPUPTODO
-            #glc.show_warning_popup_message("Dictionary values must be unique.", "Inversion impossible")
-            return None
-
-        return new_value
+        all_values_hashable = all(isinstance(x, Hashable) for x in d.values())
+        if not all_values_hashable:
+            raise SoftPipelineError(f"{self.icon_type}: all dictionary values must be hashable.")
+        
+        return {v: k for k, v in d.items()}   
 
     def dict_modify_existing_variable(self, variable_name, dict_operation, argument, argument2, new_variable_name):
         functions = {
