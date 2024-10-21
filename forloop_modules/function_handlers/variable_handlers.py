@@ -1,6 +1,7 @@
 import ast
 import math
 from collections.abc import Iterable
+from collections.abc import Hashable
 from copy import deepcopy
 from typing import Any
 
@@ -15,7 +16,7 @@ from forloop_modules.globals.variable_handler import variable_handler, LocalVari
 from forloop_modules.globals.docs_categories import DocsCategories
 
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
-from forloop_modules.errors.errors import CriticalPipelineError
+from forloop_modules.errors.errors import CriticalPipelineError, SoftPipelineError
 
 
 ####### PROBLEMATIC IMPORTS TODO: REFACTOR #######
@@ -913,22 +914,14 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
+    
+    def _get_value_by_key(self, d: dict, key: Hashable, *args: Any):        
+        if not isinstance(key, Hashable):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: provided dictionary key is unhashable."
+            )
 
-    def _get_value_by_key(self, dict_var, *args):
-        """
-        dict_var ... variable
-        key ... argument
-        """
-
-        key = args[0]
-
-        try:
-            new_value = dict_var[key]
-        except KeyError:
-            flog.error('Key Error Exception Raised, argument is not a dictionary key.')
-            new_value = None
-
-        return new_value
+        return d.get(key)
 
     def _join_dictionaries(self, dict_var, *args):
         """
