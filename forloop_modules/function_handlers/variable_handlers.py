@@ -937,7 +937,7 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
             
         pop_value = d.pop(key, None)
 
-        return new_value
+        return pop_value
 
     def _add_dict_entry(self, dict_var, *args):
 
