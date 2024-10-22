@@ -930,15 +930,6 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
 
         self.direct_execute(var_name, dict_op, arg_1, arg_2, new_var_name)
     
-    def execute_with_params(self, params):
-        var_name = params["var_name"]
-        dict_op = params["dict_op"]
-        arg_1 = params["arg_1"]
-        arg_2 = params["arg_2"]
-        new_var_name = params["new_var_name"]
-
-        self.direct_execute(var_name, dict_op, arg_1, arg_2, new_var_name)
-    
     def direct_execute(self, var_name, dict_op, arg_1, arg_2, new_var_name):
         functions = {
             "Get Value By Key": self._get_value_by_key,
