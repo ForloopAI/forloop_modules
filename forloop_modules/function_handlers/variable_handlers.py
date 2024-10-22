@@ -63,33 +63,33 @@ class NewVariableHandler(AbstractFunctionHandler):
         fdl.label("Variable name")
         fdl.entry(name="var_name", text="", category="new_var", input_types=["str"], show_info=True, row=1)
         fdl.label("Value")
-        fdl.entry(name="variable_value", text="", category="arguments", required=True, show_info=True, row=2)
+        fdl.entry(name="var_value", text="", category="arguments", required=True, show_info=True, row=2)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
 
     def execute(self, node_detail_form):
         var_name = node_detail_form.get_chosen_value_by_name("var_name", variable_handler)
-        variable_value = node_detail_form.get_chosen_value_by_name("variable_value", variable_handler)
+        var_value = node_detail_form.get_chosen_value_by_name("var_value", variable_handler)
 
-        self.direct_execute(var_name, variable_value)
+        self.direct_execute(var_name, var_value)
 
     def execute_with_params(self, params):
         var_name = params["var_name"]
-        variable_value = params["variable_value"]
+        var_value = params["var_value"]
         
-        self.direct_execute(var_name, variable_value)
+        self.direct_execute(var_name, var_value)
 
-    def direct_execute(self, var_name, variable_value):
-        variable_value = self._evaluate_argument(variable_value, pass_syntax_err=True)
-        variable_handler.new_variable(var_name, variable_value) 
+    def direct_execute(self, var_name, var_value):
+        var_value = self._evaluate_argument(var_value, pass_syntax_err=True)
+        variable_handler.new_variable(var_name, var_value) 
 
     def input_execute(self, inp):
         # TODO: Needs to deal with saving into "var_name" from input
         # TODO: inp("var_name") = inp("var_value")
-        variable_value = inp("variable_value")
+        var_value = inp("var_value")
         
-        return variable_value
+        return var_value
 
     def export_code(self, node_detail_form):
         var_name = (
@@ -97,14 +97,14 @@ class NewVariableHandler(AbstractFunctionHandler):
                 "var_name", is_input_variable_name=True
             )
         )
-        variable_value = (
+        var_value = (
             node_detail_form.get_variable_name_or_input_value_by_element_name(
-                "variable_value"
+                "var_value"
             )
         )
 
         code = f"""
-        {var_name} = {variable_value}
+        {var_name} = {var_value}
         """
 
         return code
