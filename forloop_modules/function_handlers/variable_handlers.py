@@ -14,6 +14,9 @@ from forloop_modules.function_handlers.auxilliary.abstract_function_handler impo
     AbstractFunctionHandler,
     Input,
 )
+from forloop_modules.function_handlers.auxilliary.data_types_validation import (
+    validate_hashable_dict_key,
+)
 from forloop_modules.function_handlers.auxilliary.docs import Docs
 from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import (
@@ -919,8 +922,7 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         return fdl
 
     def _get_value_by_key(self, d: dict, key: Hashable, *args: Any):
-        if not isinstance(key, Hashable):
-            raise CriticalPipelineError(f"{self.icon_type}: provided dictionary key is unhashable.")
+        validate_hashable_dict_key(key)
 
         return d.get(key)
 
@@ -931,17 +933,13 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         return {**d_1, **d_2}
 
     def _delete_dict_entry(self, d: dict, key: Hashable, *args):
-        if not isinstance(key, Hashable):
-            raise CriticalPipelineError(f"{self.icon_type}: provided dictionary key is unhashable.")
-
+        validate_hashable_dict_key(key)
         pop_value = d.pop(key, None)
 
         return pop_value
 
     def _add_dict_entry(self, d: dict, key: Hashable, value: Any, *args):
-        if not isinstance(key, Hashable):
-            raise CriticalPipelineError(f"{self.icon_type}: provided dictionary key is unhashable.")
-
+        validate_hashable_dict_key(key)
         d[key] = value
 
         return d
