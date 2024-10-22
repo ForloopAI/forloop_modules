@@ -920,45 +920,25 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
+    
+    def execute(self, node_detail_form):
+        var_name = node_detail_form.get_chosen_value_by_name("var_name", variable_handler)
+        dict_op = node_detail_form.get_chosen_value_by_name("dict_op", variable_handler)
+        arg_1 = node_detail_form.get_chosen_value_by_name("arg_1", variable_handler)
+        arg_2 = node_detail_form.get_chosen_value_by_name("arg_2", variable_handler)
+        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
-    def _get_value_by_key(self, d: dict, key: Hashable, *args: Any):
-        validate_hashable_dict_key(key)
+        self.direct_execute(var_name, dict_op, arg_1, arg_2, new_var_name)
+    
+    def execute_with_params(self, params):
+        var_name = params["var_name"]
+        dict_op = params["dict_op"]
+        arg_1 = params["arg_1"]
+        arg_2 = params["arg_2"]
+        new_var_name = params["new_var_name"]
 
-        return d.get(key)
-
-    def _join_dictionaries(self, d_1: dict, d_2: dict, *args):
-        if isinstance(d_2, dict):
-            raise CriticalPipelineError(f"{self.icon_type}: Both arguments must of type 'dict'.")
-
-        return {**d_1, **d_2}
-
-    def _delete_dict_entry(self, d: dict, key: Hashable, *args):
-        validate_hashable_dict_key(key)
-        pop_value = d.pop(key, None)
-
-        return pop_value
-
-    def _add_dict_entry(self, d: dict, key: Hashable, value: Any, *args):
-        validate_hashable_dict_key(key)
-        d[key] = value
-
-        return d
-
-    def _invert_dictionary(self, d: dict, *args):
-        has_unique_values = len(d) == len(set(d.values()))
-        if not has_unique_values:
-            raise SoftPipelineError(
-                f"{self.icon_type}: provided dictionary must have unique values."
-            )
-
-        all_values_hashable = all(isinstance(x, Hashable) for x in d.values())
-        if not all_values_hashable:
-            raise SoftPipelineError(
-                f"{self.icon_type}: all dictionary values must be hashable."
-            )
-
-        return {v: k for k, v in d.items()}
-
+        self.direct_execute(var_name, dict_op, arg_1, arg_2, new_var_name)
+    
     def direct_execute(self, var_name, dict_op, arg_1, arg_2, new_var_name):
         functions = {
             "Get Value By Key": self._get_value_by_key,
@@ -1006,23 +986,43 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         else:
             variable_handler.new_variable(new_var_name, result)
 
-    def execute_with_params(self, params):
-        var_name = params["var_name"]
-        dict_op = params["dict_op"]
-        arg_1 = params["arg_1"]
-        arg_2 = params["arg_2"]
-        new_var_name = params["new_var_name"]
+    def _get_value_by_key(self, d: dict, key: Hashable, *args: Any):
+        validate_hashable_dict_key(key)
 
-        self.direct_execute(var_name, dict_op, arg_1, arg_2, new_var_name)
+        return d.get(key)
 
-    def execute(self, node_detail_form):
-        var_name = node_detail_form.get_chosen_value_by_name("var_name", variable_handler)
-        dict_op = node_detail_form.get_chosen_value_by_name("dict_op", variable_handler)
-        arg_1 = node_detail_form.get_chosen_value_by_name("arg_1", variable_handler)
-        arg_2 = node_detail_form.get_chosen_value_by_name("arg_2", variable_handler)
-        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
+    def _join_dictionaries(self, d_1: dict, d_2: dict, *args):
+        if isinstance(d_2, dict):
+            raise CriticalPipelineError(f"{self.icon_type}: Both arguments must of type 'dict'.")
 
-        self.direct_execute(var_name, dict_op, arg_1, arg_2, new_var_name)
+        return {**d_1, **d_2}
+
+    def _delete_dict_entry(self, d: dict, key: Hashable, *args):
+        validate_hashable_dict_key(key)
+        pop_value = d.pop(key, None)
+
+        return pop_value
+
+    def _add_dict_entry(self, d: dict, key: Hashable, value: Any, *args):
+        validate_hashable_dict_key(key)
+        d[key] = value
+
+        return d
+
+    def _invert_dictionary(self, d: dict, *args):
+        has_unique_values = len(d) == len(set(d.values()))
+        if not has_unique_values:
+            raise SoftPipelineError(
+                f"{self.icon_type}: provided dictionary must have unique values."
+            )
+
+        all_values_hashable = all(isinstance(x, Hashable) for x in d.values())
+        if not all_values_hashable:
+            raise SoftPipelineError(
+                f"{self.icon_type}: all dictionary values must be hashable."
+            )
+
+        return {v: k for k, v in d.items()}
 
     def export_code(self, node_detail_form):
         var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("var_name", is_input_variable_name=True)
