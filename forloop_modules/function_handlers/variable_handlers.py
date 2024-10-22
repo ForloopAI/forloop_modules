@@ -81,51 +81,27 @@ class NewVariableHandler(AbstractFunctionHandler):
         self.direct_execute(variable_name, variable_value)
 
     def direct_execute(self, variable_name, variable_value):
+        variable_value = self._evaluate_argument(variable_value, pass_syntax_err=True)
+        variable_handler.new_variable(variable_name, variable_value) 
 
-        inp = Input()
-        
-        inp.assign("variable_name", variable_name)
-        if type(variable_value)==str:
-            try:
-                variable_value=ast.literal_eval(variable_value) #works for integers, floats, ...
-            except Exception: #Handling of this error ValueError: malformed node or string: <ast.Name object at 0x0000018DF791CC70> 22:12:53 NewVariableHandler: Error executing NewVariableHandler: malformed node or string: <ast.Name object at 0x0000018DF791CC70> 
-                if "'" in variable_value:
-                    variable_value=variable_value.replace("'",'"') #scraped text can contain apostrophe ' symbol - for example on news websites
-                variable_value=ast.literal_eval("'"+variable_value+"'")
-        #print("VARIABLE_VALUE",variable_value,type(variable_value))
-        inp.assign("variable_value", variable_value)
-        
-        try:
-            variable_value = self.input_execute(inp)
-        except Exception as e:
-            flog.error(f"Error executing NewVariableHandler: {e}")
-            
-        variable_handler.new_variable(variable_name, variable_value)  
-        #variable_handler.update_data_in_variable_explorer(glc)
-
-        """
-        try:
-            variable_value = ast.literal_eval(variable_value)
-        except (ValueError, SyntaxError):
-            variable_value = variable_value
-
-        #response=ncrb.new_variable(variable_name, str(variable_value)) #TEMPORARY DISABLE - DO NOT ERASE
-        #print("CONTENT",response.content)
-        #print(variable,type(variable),variable.uid)
-        variable_handler.new_variable(variable_name, variable_value)  
-        ##variable_handler.update_data_in_variable_explorer(glc)
-        """
-
-    # TODO: Needs to deal with saving into "variable_name" from input
-    # TODO: inp("var_name") = inp("var_value")
-    def input_execute(self, inp): #ast.literal_eval(inp("variable_value")) was wrong
+    def input_execute(self, inp):
+        # TODO: Needs to deal with saving into "variable_name" from input
+        # TODO: inp("var_name") = inp("var_value")
         variable_value = inp("variable_value")
         
         return variable_value
 
     def export_code(self, node_detail_form):
-        variable_name = node_detail_form.get_variable_name_or_input_value_by_element_name("variable_name", is_input_variable_name=True)
-        variable_value = node_detail_form.get_variable_name_or_input_value_by_element_name("variable_value")
+        variable_name = (
+            node_detail_form.get_variable_name_or_input_value_by_element_name(
+                "variable_name", is_input_variable_name=True
+            )
+        )
+        variable_value = (
+            node_detail_form.get_variable_name_or_input_value_by_element_name(
+                "variable_value"
+            )
+        )
 
         code = f"""
         {variable_name} = {variable_value}
