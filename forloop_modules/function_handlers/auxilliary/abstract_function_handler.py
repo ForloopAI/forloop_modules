@@ -175,7 +175,7 @@ class AbstractFunctionHandler(abc.ABC):
             return ast.literal_eval(arg)
         except (ValueError, TypeError):
             return arg
-        except SyntaxError:
+        except SyntaxError as e:
             if pass_syntax_err:
                 return arg
             else:
