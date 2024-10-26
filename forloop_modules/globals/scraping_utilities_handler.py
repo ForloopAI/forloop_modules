@@ -689,16 +689,16 @@ class ScrapingUtilitiesHandler:
             element_data = element['data']
         else:
             #in future this is preferred            
-            assert "text" in element["data"].keys()
+            assert "textContent" in element["data"].keys()
             assert "attributes" in element["data"].keys()
-            assert "tag_name" in element["data"].keys()
+            assert "tagName" in element["data"].keys()
             
             if element_type in [ElementType.LINK, ElementType.BUTTON]:
-                element_data = element['data']['text'] if extract_text_from_link else element['data']['attributes'].get('href')
+                element_data = element['data']['textContent'] if extract_text_from_link else element['data']['attributes'].get('href')
             elif element_type == ElementType.IMAGE:
                 element_data = element['data']['attributes'].get('src')
             else:
-                element_data = element['data']['text']
+                element_data = element['data']['textContent']
 
         return element_data
     
