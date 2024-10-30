@@ -944,7 +944,8 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
 
         if dict_op == "Delete Value by Key":
             variable_handler.new_variable(var_name, dict_var)
-            variable_handler.new_variable(new_var_name, result)
+            if new_var_name:
+                variable_handler.new_variable(new_var_name, result)
         elif dict_op == "Add key":
             if new_var_name:
                 variable_handler.new_variable(new_var_name, dict_var)
