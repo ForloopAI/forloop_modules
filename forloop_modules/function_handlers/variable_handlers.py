@@ -133,16 +133,14 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
         fdl.label("Variable name")
         fdl.entry(name="variable_name", text="", input_types=["str", "var_name"], required=True, show_info=True, row=1)
         fdl.label("Convert to type")
-        # TODO: Should be renamed to new_variable_type
-        fdl.combobox(name="variable_type", options=options, show_info=True, row=2)
+        fdl.combobox(name="new_var_type", options=options, show_info=True, row=2)
         fdl.label("New variable name")
         fdl.entry(name="new_variable_name", text="", category="new_var", input_types=["str"], row=3)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
 
-    # TODO: Should be renamed to new_variable_type
-    def direct_execute(self, variable_name, variable_type, new_variable_name):
+    def direct_execute(self, variable_name, new_var_type, new_variable_name):
         if variable_name in variable_handler.variables:
             variable = variable_handler.variables[variable_name]
             old_type = fce.eval_expression(variable.typ, globals(), locals())
@@ -150,17 +148,15 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
             variable_value = variable.value
             variable_value = old_type(variable_value)
 
-            variable_type = fce.eval_expression(variable_type, globals(), locals())
+            new_var_type = fce.eval_expression(new_var_type, globals(), locals())
 
             inp = Input()
             inp.assign("variable_value", variable_value)
             inp.assign("variable_name", variable_name)
-            # TODO: Should be renamed to new_variable_type
-            inp.assign("variable_type", variable_type)
+            inp.assign("new_var_type", new_var_type)
 
             try:
                 new_value = self.input_execute(inp)
-                #new_value = self.direct_execute_core(variable_name, variable_type) #bug - how can you assign name of variable to value?!
             except TypeError as e:
                 flog.error("TypeError Exception Raised, undefined conversion called.")
                 new_value = ""
@@ -179,43 +175,43 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
     #  and then choose to show either var name or value in code export, while in input execute we only use value
     # TODO: value should be saved into new_variable_name instead of converted_value
     def input_execute(self, inp):
-        if type(inp("variable_value")) == dict and inp("variable_type") == list:
+        if type(inp("variable_value")) == dict and inp("new_var_type") == list:
             converted_value = list(list(pair) for pair in inp("variable_value").items())
-        elif type(inp("variable_value")) == str and inp("variable_type") == dict:
+        elif type(inp("variable_value")) == str and inp("new_var_type") == dict:
             converted_value = ast.literal_eval(inp("variable_value"))
         
         else:
-            converted_value = inp("variable_type")(inp("variable_value"))
+            converted_value = inp("new_var_type")(inp("variable_value"))
 
         return converted_value
     
     #! Introduced for an experimental codeview approach -- functionality is the same, # No it is not the same functionality
-    def direct_execute_core(self, variable_name, variable_type):
-        new_variable_name = variable_type(variable_name)
+    def direct_execute_core(self, variable_name, new_var_type):
+        new_variable_name = new_var_type(variable_name)
         
         return new_variable_name
 
     def execute_with_params(self, params):
         variable_name = params["variable_name"]
-        variable_type = params["variable_type"]
+        new_var_type = params["new_var_type"]
         new_variable_name = params["new_variable_name"]
 
-        self.direct_execute(variable_name, variable_type, new_variable_name)
+        self.direct_execute(variable_name, new_var_type, new_variable_name)
 
     def execute(self, node_detail_form):
         variable_name = node_detail_form.get_chosen_value_by_name("variable_name", variable_handler)
-        variable_type = node_detail_form.get_chosen_value_by_name("variable_type", variable_handler)
+        new_var_type = node_detail_form.get_chosen_value_by_name("new_var_type", variable_handler)
         new_variable_name = node_detail_form.get_chosen_value_by_name("new_variable_name", variable_handler)
 
-        self.direct_execute(variable_name, variable_type, new_variable_name)
+        self.direct_execute(variable_name, new_var_type, new_variable_name)
 
     def export_code(self, node_detail_form):
         variable_name = node_detail_form.get_variable_name_or_input_value_by_element_name("variable_name", is_input_variable_name=True)
-        variable_type = node_detail_form.get_variable_name_or_input_value_by_element_name("variable_type", is_input_variable_name=True)
+        new_var_type = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_type", is_input_variable_name=True)
         new_variable_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_variable_name", is_input_variable_name=True)
 
         code = f"""
-        {new_variable_name} = {variable_type}({variable_name})
+        {new_variable_name} = {new_var_type}({variable_name})
         """
 
         return code
