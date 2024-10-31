@@ -391,7 +391,6 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
             print(e)
         """
 
-        # return(code.format(variable_name= '"' + variable_name + '"', math_operation= '"' + math_operation + '"', new_variable_name= '"' + new_variable_name + '"', argument= '"' + argument + '"', to_show = math_function_dict[math_operation](variable_handler.variables[variable_name].value, argument)))
         return code
 
     def export_imports(self, *args):
