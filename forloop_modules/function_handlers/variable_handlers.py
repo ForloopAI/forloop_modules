@@ -76,13 +76,6 @@ class NewVariableHandler(AbstractFunctionHandler):
         var_value = self._evaluate_argument(var_value, pass_syntax_err=True)
         variable_handler.new_variable(var_name, var_value) 
 
-    def input_execute(self, inp):
-        # TODO: Needs to deal with saving into "var_name" from input
-        # TODO: inp("var_name") = inp("var_value")
-        var_value = inp("var_value")
-        
-        return var_value
-
     def export_code(self, node_detail_form):
         var_name = (
             node_detail_form.get_variable_name_or_input_value_by_element_name(
