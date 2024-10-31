@@ -25,14 +25,6 @@ from forloop_modules.function_handlers.auxilliary.node_type_categories_manager i
 from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.globals.variable_handler import LocalVariable, variable_handler
 
-####### PROBLEMATIC IMPORTS TODO: REFACTOR #######
-#from src.gui.gui_layout_context import glc
-#import src.gui.components.gui_components as gc
-#from src.gui.item_detail_form import ItemDetailForm #independent on GLC - but is Frontend -> Should separate to two classes
-####### PROBLEMATIC IMPORTS TODO: REFACTOR #######
-
-################################ VARIABLE HANDLERS #################################
-
 
 class NewVariableHandler(AbstractFunctionHandler):
     """
@@ -187,7 +179,6 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
                 new_variable_name = variable_name
 
             variable_handler.new_variable(new_variable_name, new_value)
-            #variable_handler.update_data_in_variable_explorer(glc)
 
     # TODO: Cant do inp("variable_name") = inp("variable_value")
     #  probably should introduce complex input variable
@@ -354,7 +345,6 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
                 new_variable_name = variable_name
 
             variable_handler.new_variable(new_variable_name, new_value)
-            #variable_handler.update_data_in_variable_explorer(glc)
         
     def input_execute(self, inp):
         new_value = self.resolve_type_error_list(inp("variable_value"), inp("argument"), inp("math_operation"))
