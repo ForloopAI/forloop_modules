@@ -251,11 +251,12 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
         
     def _init_docs(self):
         parameter_description = """
-        Math Modify Variable Node requires 3-4 parameters to succesfully perform a mathematical operation on a variable. 
-        The last parameter, New variable name, is optional in a sense that if left blank the value of the chosen 
-        variable will be rewritten adequately to the performed operation. However if a new name is inserted a new 
-        variable bearing the new name with the value of the old one corrected by the mathematical operation will be 
-        created while preserving the old variable.
+        Math Modify Variable Node requires 3-4 parameters to succesfully perform a mathematical
+        operation on a variable. The last parameter, New variable name, is optional in a sense that
+        if left blank the value of the chosen variable will be rewritten adequately to the performed
+        operation. However if a new name is inserted a new variable bearing the new name with the
+        value of the old one corrected by the mathematical operation will be created while
+        preserving the old variable.
         """
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
         self.docs.add_parameter_table_row(title="Variable name", name="variable_name",
