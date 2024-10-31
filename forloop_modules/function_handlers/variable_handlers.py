@@ -297,22 +297,26 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
             new_value = math_function(stored_var, argument_var)
 
         except TypeError:
-            if type(stored_var) == list:
+            if isinstance(stored_var, list):
                 new_value = []
                 for list_element in stored_var:
                     try:
-                        new_value.append(eval(str(list_element) + math_operation + str(argument_var)))
+                        new_value.append(
+                            eval(str(list_element) + math_operation + str(argument_var))
+                        )
                     except TypeError:
                         new_value.append(list_element)
                     except (ZeroDivisionError, OverflowError) as e:
-                        flog.error(f"Error while resolving TypeError: {e}")
-                        return None
+                        raise CriticalPipelineError(
+                            f"{self.icon_type}: critical error occured during execution."
+                        ) from e
 
         except (ZeroDivisionError, OverflowError) as e:
-            flog.error(f"Error while resolving error type: {e}")
-            return None
+            raise CriticalPipelineError(
+                f"{self.icon_type}: critical error occured during execution."
+            ) from e
 
-        return (new_value)
+        return new_value
 
     def direct_execute(self, variable_name, math_operation, argument, new_variable_name):
         if not isinstance(argument, (int, float)):
