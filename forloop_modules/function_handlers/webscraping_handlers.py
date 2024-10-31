@@ -24,7 +24,7 @@ from forloop_modules.globals.scraping_utilities_handler import suh
 from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.globals.variable_handler import variable_handler
 from forloop_modules.errors.errors import CriticalPipelineError, SoftPipelineError
-from forloop_modules.redis.redis_connection import kv_redis
+from forloop_modules.redis.redis_connection import kv_redis, redis_config
 import forloop_modules.queries.node_context_requests_backend as ncrb
 from docrawl.errors import SpiderFunctionError
 #from src.gui.gui_layout_context import glc
@@ -302,22 +302,11 @@ class LoadWebsiteHandler(AbstractFunctionHandler):
 
             suh.webscraping_client.load_website(url)
             
-            # get headers and cookies
-            headers = suh.webscraping_client.get_browser_headers()
-            cookies = suh.webscraping_client.get_browser_cookies()
-            requests = suh.webscraping_client.get_browser_requests()
+            # get page data (headers, cookies, requests)
+            page_data = suh.webscraping_client.get_page_data()
             
-            # get active pipeline uid
-            pipeline_uid=aet.active_pipeline_uid
-            
-            redis_key = f'pipeline:{pipeline_uid}:browser_headers'
-            kv_redis.set(key=redis_key, value=headers)
-            
-            redis_key = f'pipeline:{pipeline_uid}:browser_cookies'
-            kv_redis.set(key=redis_key, value=cookies)
-            
-            redis_key = f'pipeline:{pipeline_uid}:browser_requests'
-            kv_redis.set(key=redis_key, value=requests)
+            redis_page_data_key = redis_config.PAGE_DATA_KEY_TEMPLATE.format(pipeline_uid=aet.active_pipeline_uid)
+            kv_redis.set(redis_page_data_key, page_data)
 
             # Take screenshot of current page
             if take_screenshot:
