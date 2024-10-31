@@ -314,6 +314,13 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
         return (new_value)
 
     def direct_execute(self, variable_name, math_operation, argument, new_variable_name):
+        if not isinstance(argument, (int, float)):
+            raise CriticalPipelineError(f"{self.icon_type}: argument must be a number.")
+        
+        if not new_variable_name:
+            # If new var name is not provided --> change the initial var (in-place change)
+            new_variable_name = variable_name
+
         if variable_name in variable_handler.variables:
             variable = variable_handler.variables[variable_name]
             variable_value = variable.value
@@ -325,17 +332,7 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
             inp.assign("argument", eval(argument))
             inp.assign("new_variable_name", new_variable_name)
 
-            try:
-                new_value = self.input_execute(inp)
-
-                if new_value is None:
-                    # break
-                    pass
-            except Exception as e:
-                flog.error(message=f"{e}")
-
-            if len(inp("new_variable_name")) == 0:
-                new_variable_name = variable_name
+            new_value = self.input_execute(inp)
 
             variable_handler.new_variable(new_variable_name, new_value)
         
