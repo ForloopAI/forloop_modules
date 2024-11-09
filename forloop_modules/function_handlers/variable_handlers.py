@@ -683,19 +683,19 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
                 f"{self.icon_type}: variable '{variable_name}' does not exist."
             )
 
-        variable = variable_handler.variables[variable_name]
+        variable = variable_handler.variables[variable_name].value
 
         if not isinstance(variable, list):
             raise CriticalPipelineError(f"{self.icon_type}: variable must be of type 'list'.")
         
-        var_value_copy = deepcopy(variable.value)
+        var_copy = deepcopy(variable)
         argument = self._evaluate_argument(argument)
 
-        result = self.list_operations[list_operation](var_value_copy, argument)
+        result = self.list_operations[list_operation](var_copy, argument)
 
-        if var_value_copy != variable.value:
+        if var_copy != variable:
             # if updated list value differs from the original one --> resave variable
-            variable_handler.new_variable(variable_name, var_value_copy)
+            variable_handler.new_variable(variable_name, var_copy)
 
         if new_variable_name:
             variable_handler.new_variable(new_variable_name, result)
