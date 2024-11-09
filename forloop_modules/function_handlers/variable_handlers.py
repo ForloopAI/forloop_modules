@@ -599,12 +599,12 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
             "Get Element": lambda var, arg: var[arg],
             "Append": lambda var, arg: var.append(arg),
             "Remove": lambda var, arg: var.remove(arg),
-            "Pop": lambda old_list, arg: old_list.pop(arg),
+            "Pop": self._pop,
             "Index": lambda var, arg: var.index(arg),
             "Join Lists (Concat)": self._join_lists,
             "Difference Lists": self._difference_lists,
             "Find Duplicates": self._find_duplicates,
-            "Deduplicate": lambda var, arg: list(set(var)),
+            "Deduplicate": lambda var, _: list(set(var)),
             "Filter Substrings": self._filter_substring_occurences,
             "Join Elements": self._join_elements_in_string,
         }
@@ -679,78 +679,88 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
         self, variable_name: str, list_operation: str, argument: str, new_variable_name: str
     ) -> None:
         if variable_name not in variable_handler.variables:
-            raise CriticalPipelineError(f"Variable '{variable_name}' not found in Variables.")
+            raise CriticalPipelineError(
+                f"{self.icon_type}: variable '{variable_name}' does not exist."
+            )
 
         variable = variable_handler.variables[variable_name]
-        variable_value = deepcopy(variable.value)
+
+        if not isinstance(variable, list):
+            raise CriticalPipelineError(f"{self.icon_type}: variable must be of type 'list'.")
+        
+        var_value_copy = deepcopy(variable.value)
         argument = self._evaluate_argument(argument)
 
-        inp = Input()
-        inp.assign("list_variable", variable_value)
-        inp.assign("list_operation", self.list_operations.get(list_operation))
-        inp.assign("argument", argument)
+        result = self.list_operations[list_operation](var_value_copy, argument)
 
-        try:
-            list_operation_result, updated_list = self.input_execute(inp)
-        except Exception as e:
-            raise CriticalPipelineError("ListModifyVariable handler failed to execute: "+str(e)) from e
+        if var_value_copy != variable.value:
+            # if updated list value differs from the original one --> resave variable
+            variable_handler.new_variable(variable_name, var_value_copy)
 
-        # 'updated_list' is always to be saved under 'variable_name' 
-        if updated_list != variable.value:
-            variable_handler.new_variable(variable_name, updated_list)
-        # 'list_operation_result' is always to be saved under 'new_variable_name'
-        if len(new_variable_name) != 0:
-            variable_handler.new_variable(new_variable_name, list_operation_result)
+        if new_variable_name:
+            variable_handler.new_variable(new_variable_name, result)
 
     def input_execute(self, inp: Input) -> tuple[Any, list]:
         list_operation_result = inp("list_operation")(inp("list_variable"), inp("argument"))
 
         return list_operation_result, inp("list_variable")
+    
+    def _pop(self, var: list, index: int):
+        if index is None:
+            return var.pop()
+        
+        if not isinstance(index, int):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: provided argument (idnex) must be of type 'int'."
+            )
+        
+        return var.pop(index)
 
-    def _join_lists(self, list_variable: list, argument: list) -> list:
-        new_value = None
+    def _join_lists(self, var: list, arg: list) -> list:
+        if not isinstance(arg, list):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: provided argument must be of type 'list',"
+            )
+        
+        return var + arg
 
-        if type(argument) == list:
-            new_value = list_variable + argument
-        else:
-            for j, stored_variable in enumerate(variable_handler.variables.values()):
-                if stored_variable.name == argument:
-                    new_value = list_variable + stored_variable.value
+    def _difference_lists(self, var: list, arg: list) -> list:
+        if not isinstance(arg,  list):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: provided argument must be of type 'list',"
+            )
+        
+        return list(set(var) - set(arg))
 
-        return new_value
-
-    def _difference_lists(self, list_variable: list, argument: Any) -> list:
-        new_value = None
-
-        if type(argument) == list:
-            new_value = list(set(list_variable) - set(argument))
-        else:
-            for j, stored_variable in enumerate(variable_handler.variables.values()):
-                if stored_variable.name == argument:
-                    new_value = list(set(list_variable) - set(stored_variable.value))
-
-        return new_value
-
-    def _find_duplicates(self, list_variable: list, *args: list) -> list:
+    def _find_duplicates(self, var: list, *args: Any) -> list:
         seen = set()
-        duplicates = []
-        for x in list_variable:
-            if x in seen:
-                duplicates.append(x)
-            seen.add(x)
-        duplicates = list(set(duplicates))  # deduplicate duplicates :)
+        duplicates = set()
 
-        return duplicates
+        for x in var:
+            if x in seen:
+                duplicates.add(x)
+            seen.add(x)
+
+        return list(duplicates)
 
     def _filter_substring_occurences(self, list_variable: list, argument: list) -> list:
         """filters list based on occurence of a specific substring"""
         result = [x for x in list_variable if argument not in x]
         return result
 
-    def _join_elements_in_string(self, list_variable: Iterable[str], argument: str) -> str:
+    def _join_elements_in_string(self, var: list[str], arg: str) -> str:
         """joins elements in one particular string based on joining delimiter"""
-        result = argument.join(list_variable)
-        return result
+        if not all(isinstance(x, str) for x in var):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: variable must be list of strings ('list[str]')."
+            )
+        
+        if not isinstance(arg, str):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: provided argument must be a 'str' delimiter."
+            )
+        
+        return arg.join(var)
 
     def export_code(self, node_detail_form):
         variable_name = node_detail_form.get_variable_name_or_input_value_by_element_name("variable_name", is_input_variable_name=True)
@@ -806,7 +816,6 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
         else:
             code = ""
 
-            # return(code.format(variable_name= '"' + variable_name + '"', list_operation= '"' + list_operation + '"', argument= '"' + argument + '"', new_variable_name= '"' + new_variable_name + '"'))
         return code
 
     def export_imports(self, *args):
