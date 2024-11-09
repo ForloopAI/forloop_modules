@@ -151,6 +151,8 @@ class AbstractFunctionHandler(abc.ABC):
         returns the argument unchanged. Raises `CriticalPipelineError` for
         `SyntaxError`, `MemoryError`, or `RecursionError`.
 
+        If `arg` is an empty string, i.e. `arg == ""` it is evaluated as None.
+
         If `pass_syntax_err` == True, `CriticalPipelineError` is NOT raised in case of `SyntaxError`.
 
         Args:
@@ -166,10 +168,10 @@ class AbstractFunctionHandler(abc.ABC):
             CriticalPipelineError: For critical errors during evaluation.
         """
 
-        # Skip evaluation of empty strings
+        # Return None for empty strings
         is_arg_non_empty_str = arg and isinstance(arg, str)
         if not is_arg_non_empty_str:
-            return arg
+            return None
 
         try:
             return ast.literal_eval(arg)
