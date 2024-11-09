@@ -707,13 +707,6 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
 
         return list_operation_result, inp("list_variable")
 
-    def _evaluate_argument(self, argument: str) -> Any:
-        """Evaluate and cast if the 'argument' is of python type or return it without a change."""
-        try:
-            return ast.literal_eval(argument)
-        except (ValueError, SyntaxError, TypeError):
-            return argument
-
     def _join_lists(self, list_variable: list, argument: list) -> list:
         new_value = None
 
