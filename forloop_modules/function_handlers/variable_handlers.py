@@ -1,30 +1,29 @@
 import ast
 import math
-from collections.abc import Iterable
+from collections.abc import Hashable, Iterable
 from copy import deepcopy
 from typing import Any
+
+import httpx
 
 import forloop_modules.flog as flog
 import forloop_modules.function_handlers.auxilliary.forloop_code_eval as fce
 import forloop_modules.queries.node_context_requests_backend as ncrb
-
-from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
-from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
+from forloop_modules.errors.errors import CriticalPipelineError, SoftPipelineError
+from forloop_modules.function_handlers.auxilliary.abstract_function_handler import (
+    AbstractFunctionHandler,
+    Input,
+)
+from forloop_modules.function_handlers.auxilliary.data_types_validation import (
+    validate_hashable_dict_key,
+)
 from forloop_modules.function_handlers.auxilliary.docs import Docs
-from forloop_modules.globals.variable_handler import variable_handler, LocalVariable
+from forloop_modules.function_handlers.auxilliary.form_dict_list import FormDictList
+from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import (
+    ntcm,
+)
 from forloop_modules.globals.docs_categories import DocsCategories
-
-from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
-from forloop_modules.errors.errors import CriticalPipelineError
-
-
-####### PROBLEMATIC IMPORTS TODO: REFACTOR #######
-#from src.gui.gui_layout_context import glc
-#import src.gui.components.gui_components as gc
-#from src.gui.item_detail_form import ItemDetailForm #independent on GLC - but is Frontend -> Should separate to two classes
-####### PROBLEMATIC IMPORTS TODO: REFACTOR #######
-
-################################ VARIABLE HANDLERS #################################
+from forloop_modules.globals.variable_handler import LocalVariable, variable_handler
 
 
 class NewVariableHandler(AbstractFunctionHandler):
@@ -54,74 +53,43 @@ class NewVariableHandler(AbstractFunctionHandler):
         fdl = FormDictList(docs=self.docs)
         fdl.label("Add New Variable")
         fdl.label("Variable name")
-        fdl.entry(name="variable_name", text="", category="new_var", input_types=["str"], show_info=True, row=1)
+        fdl.entry(name="var_name", text="", category="new_var", input_types=["str"], show_info=True, row=1)
         fdl.label("Value")
-        fdl.entry(name="variable_value", text="", category="arguments", required=True, show_info=True, row=2)
+        fdl.entry(name="var_value", text="", category="arguments", required=True, show_info=True, row=2)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
 
     def execute(self, node_detail_form):
-        variable_name = node_detail_form.get_chosen_value_by_name("variable_name", variable_handler)
-        variable_value = node_detail_form.get_chosen_value_by_name("variable_value", variable_handler)
+        var_name = node_detail_form.get_chosen_value_by_name("var_name", variable_handler)
+        var_value = node_detail_form.get_chosen_value_by_name("var_value", variable_handler)
 
-        self.direct_execute(variable_name, variable_value)
+        self.direct_execute(var_name, var_value)
 
     def execute_with_params(self, params):
-        variable_name = params["variable_name"]
-        variable_value = params["variable_value"]
+        var_name = params["var_name"]
+        var_value = params["var_value"]
         
-        self.direct_execute(variable_name, variable_value)
+        self.direct_execute(var_name, var_value)
 
-    def direct_execute(self, variable_name, variable_value):
-
-        inp = Input()
-        
-        inp.assign("variable_name", variable_name)
-        if type(variable_value)==str:
-            try:
-                variable_value=ast.literal_eval(variable_value) #works for integers, floats, ...
-            except Exception: #Handling of this error ValueError: malformed node or string: <ast.Name object at 0x0000018DF791CC70> 22:12:53 NewVariableHandler: Error executing NewVariableHandler: malformed node or string: <ast.Name object at 0x0000018DF791CC70> 
-                if "'" in variable_value:
-                    variable_value=variable_value.replace("'",'"') #scraped text can contain apostrophe ' symbol - for example on news websites
-                variable_value=ast.literal_eval("'"+variable_value+"'")
-        #print("VARIABLE_VALUE",variable_value,type(variable_value))
-        inp.assign("variable_value", variable_value)
-        
-        try:
-            variable_value = self.input_execute(inp)
-        except Exception as e:
-            flog.error(f"Error executing NewVariableHandler: {e}")
-            
-        variable_handler.new_variable(variable_name, variable_value)  
-        #variable_handler.update_data_in_variable_explorer(glc)
-
-        """
-        try:
-            variable_value = ast.literal_eval(variable_value)
-        except (ValueError, SyntaxError):
-            variable_value = variable_value
-
-        #response=ncrb.new_variable(variable_name, str(variable_value)) #TEMPORARY DISABLE - DO NOT ERASE
-        #print("CONTENT",response.content)
-        #print(variable,type(variable),variable.uid)
-        variable_handler.new_variable(variable_name, variable_value)  
-        ##variable_handler.update_data_in_variable_explorer(glc)
-        """
-
-    # TODO: Needs to deal with saving into "variable_name" from input
-    # TODO: inp("var_name") = inp("var_value")
-    def input_execute(self, inp): #ast.literal_eval(inp("variable_value")) was wrong
-        variable_value = inp("variable_value")
-        
-        return variable_value
+    def direct_execute(self, var_name, var_value):
+        var_value = self._evaluate_argument(var_value, pass_syntax_err=True)
+        variable_handler.new_variable(var_name, var_value) 
 
     def export_code(self, node_detail_form):
-        variable_name = node_detail_form.get_variable_name_or_input_value_by_element_name("variable_name", is_input_variable_name=True)
-        variable_value = node_detail_form.get_variable_name_or_input_value_by_element_name("variable_value")
+        var_name = (
+            node_detail_form.get_variable_name_or_input_value_by_element_name(
+                "var_name", is_input_variable_name=True
+            )
+        )
+        var_value = (
+            node_detail_form.get_variable_name_or_input_value_by_element_name(
+                "var_value"
+            )
+        )
 
         code = f"""
-        {variable_name} = {variable_value}
+        {var_name} = {var_value}
         """
 
         return code
@@ -165,16 +133,14 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
         fdl.label("Variable name")
         fdl.entry(name="variable_name", text="", input_types=["str", "var_name"], required=True, show_info=True, row=1)
         fdl.label("Convert to type")
-        # TODO: Should be renamed to new_variable_type
-        fdl.combobox(name="variable_type", options=options, show_info=True, row=2)
+        fdl.combobox(name="new_var_type", options=options, show_info=True, row=2)
         fdl.label("New variable name")
         fdl.entry(name="new_variable_name", text="", category="new_var", input_types=["str"], row=3)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
 
-    # TODO: Should be renamed to new_variable_type
-    def direct_execute(self, variable_name, variable_type, new_variable_name):
+    def direct_execute(self, variable_name, new_var_type, new_variable_name):
         if variable_name in variable_handler.variables:
             variable = variable_handler.variables[variable_name]
             old_type = fce.eval_expression(variable.typ, globals(), locals())
@@ -182,17 +148,15 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
             variable_value = variable.value
             variable_value = old_type(variable_value)
 
-            variable_type = fce.eval_expression(variable_type, globals(), locals())
+            new_var_type = fce.eval_expression(new_var_type, globals(), locals())
 
             inp = Input()
             inp.assign("variable_value", variable_value)
             inp.assign("variable_name", variable_name)
-            # TODO: Should be renamed to new_variable_type
-            inp.assign("variable_type", variable_type)
+            inp.assign("new_var_type", new_var_type)
 
             try:
                 new_value = self.input_execute(inp)
-                #new_value = self.direct_execute_core(variable_name, variable_type) #bug - how can you assign name of variable to value?!
             except TypeError as e:
                 flog.error("TypeError Exception Raised, undefined conversion called.")
                 new_value = ""
@@ -204,7 +168,6 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
                 new_variable_name = variable_name
 
             variable_handler.new_variable(new_variable_name, new_value)
-            #variable_handler.update_data_in_variable_explorer(glc)
 
     # TODO: Cant do inp("variable_name") = inp("variable_value")
     #  probably should introduce complex input variable
@@ -212,43 +175,43 @@ class ConvertVariableTypeHandler(AbstractFunctionHandler):
     #  and then choose to show either var name or value in code export, while in input execute we only use value
     # TODO: value should be saved into new_variable_name instead of converted_value
     def input_execute(self, inp):
-        if type(inp("variable_value")) == dict and inp("variable_type") == list:
+        if type(inp("variable_value")) == dict and inp("new_var_type") == list:
             converted_value = list(list(pair) for pair in inp("variable_value").items())
-        elif type(inp("variable_value")) == str and inp("variable_type") == dict:
+        elif type(inp("variable_value")) == str and inp("new_var_type") == dict:
             converted_value = ast.literal_eval(inp("variable_value"))
         
         else:
-            converted_value = inp("variable_type")(inp("variable_value"))
+            converted_value = inp("new_var_type")(inp("variable_value"))
 
         return converted_value
     
     #! Introduced for an experimental codeview approach -- functionality is the same, # No it is not the same functionality
-    def direct_execute_core(self, variable_name, variable_type):
-        new_variable_name = variable_type(variable_name)
+    def direct_execute_core(self, variable_name, new_var_type):
+        new_variable_name = new_var_type(variable_name)
         
         return new_variable_name
 
     def execute_with_params(self, params):
         variable_name = params["variable_name"]
-        variable_type = params["variable_type"]
+        new_var_type = params["new_var_type"]
         new_variable_name = params["new_variable_name"]
 
-        self.direct_execute(variable_name, variable_type, new_variable_name)
+        self.direct_execute(variable_name, new_var_type, new_variable_name)
 
     def execute(self, node_detail_form):
         variable_name = node_detail_form.get_chosen_value_by_name("variable_name", variable_handler)
-        variable_type = node_detail_form.get_chosen_value_by_name("variable_type", variable_handler)
+        new_var_type = node_detail_form.get_chosen_value_by_name("new_var_type", variable_handler)
         new_variable_name = node_detail_form.get_chosen_value_by_name("new_variable_name", variable_handler)
 
-        self.direct_execute(variable_name, variable_type, new_variable_name)
+        self.direct_execute(variable_name, new_var_type, new_variable_name)
 
     def export_code(self, node_detail_form):
         variable_name = node_detail_form.get_variable_name_or_input_value_by_element_name("variable_name", is_input_variable_name=True)
-        variable_type = node_detail_form.get_variable_name_or_input_value_by_element_name("variable_type", is_input_variable_name=True)
+        new_var_type = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_type", is_input_variable_name=True)
         new_variable_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_variable_name", is_input_variable_name=True)
 
         code = f"""
-        {new_variable_name} = {variable_type}({variable_name})
+        {new_variable_name} = {new_var_type}({variable_name})
         """
 
         return code
@@ -284,11 +247,12 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
         
     def _init_docs(self):
         parameter_description = """
-        Math Modify Variable Node requires 3-4 parameters to succesfully perform a mathematical operation on a variable. 
-        The last parameter, New variable name, is optional in a sense that if left blank the value of the chosen 
-        variable will be rewritten adequately to the performed operation. However if a new name is inserted a new 
-        variable bearing the new name with the value of the old one corrected by the mathematical operation will be 
-        created while preserving the old variable.
+        Math Modify Variable Node requires 3-4 parameters to succesfully perform a mathematical
+        operation on a variable. The last parameter, New variable name, is optional in a sense that
+        if left blank the value of the chosen variable will be rewritten adequately to the performed
+        operation. However if a new name is inserted a new variable bearing the new name with the
+        value of the old one corrected by the mathematical operation will be created while
+        preserving the old variable.
         """
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
         self.docs.add_parameter_table_row(title="Variable name", name="variable_name",
@@ -329,24 +293,35 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
             new_value = math_function(stored_var, argument_var)
 
         except TypeError:
-            if type(stored_var) == list:
+            if isinstance(stored_var, list):
                 new_value = []
                 for list_element in stored_var:
                     try:
-                        new_value.append(eval(str(list_element) + math_operation + str(argument_var)))
+                        new_value.append(
+                            eval(str(list_element) + math_operation + str(argument_var))
+                        )
                     except TypeError:
                         new_value.append(list_element)
                     except (ZeroDivisionError, OverflowError) as e:
-                        flog.error(f"Error while resolving TypeError: {e}")
-                        return None
+                        raise CriticalPipelineError(
+                            f"{self.icon_type}: critical error occured during execution."
+                        ) from e
 
         except (ZeroDivisionError, OverflowError) as e:
-            flog.error(f"Error while resolving error type: {e}")
-            return None
+            raise CriticalPipelineError(
+                f"{self.icon_type}: critical error occured during execution."
+            ) from e
 
-        return (new_value)
+        return new_value
 
     def direct_execute(self, variable_name, math_operation, argument, new_variable_name):
+        if not isinstance(argument, (int, float)):
+            raise CriticalPipelineError(f"{self.icon_type}: argument must be a number.")
+        
+        if not new_variable_name:
+            # If new var name is not provided --> change the initial var (in-place change)
+            new_variable_name = variable_name
+
         if variable_name in variable_handler.variables:
             variable = variable_handler.variables[variable_name]
             variable_value = variable.value
@@ -358,20 +333,9 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
             inp.assign("argument", eval(argument))
             inp.assign("new_variable_name", new_variable_name)
 
-            try:
-                new_value = self.input_execute(inp)
-
-                if new_value is None:
-                    # break
-                    pass
-            except Exception as e:
-                flog.error(message=f"{e}")
-
-            if len(inp("new_variable_name")) == 0:
-                new_variable_name = variable_name
+            new_value = self.input_execute(inp)
 
             variable_handler.new_variable(new_variable_name, new_value)
-            #variable_handler.update_data_in_variable_explorer(glc)
         
     def input_execute(self, inp):
         new_value = self.resolve_type_error_list(inp("variable_value"), inp("argument"), inp("math_operation"))
@@ -418,7 +382,6 @@ class MathModifyVariableHandler(AbstractFunctionHandler):
             print(e)
         """
 
-        # return(code.format(variable_name= '"' + variable_name + '"', math_operation= '"' + math_operation + '"', new_variable_name= '"' + new_variable_name + '"', argument= '"' + argument + '"', to_show = math_function_dict[math_operation](variable_handler.variables[variable_name].value, argument)))
         return code
 
     def export_imports(self, *args):
@@ -636,12 +599,12 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
             "Get Element": lambda var, arg: var[arg],
             "Append": lambda var, arg: var.append(arg),
             "Remove": lambda var, arg: var.remove(arg),
-            "Pop": lambda old_list, arg: old_list.pop(arg),
+            "Pop": self._pop,
             "Index": lambda var, arg: var.index(arg),
             "Join Lists (Concat)": self._join_lists,
             "Difference Lists": self._difference_lists,
             "Find Duplicates": self._find_duplicates,
-            "Deduplicate": lambda var, arg: list(set(var)),
+            "Deduplicate": lambda var, _: list(set(var)),
             "Filter Substrings": self._filter_substring_occurences,
             "Join Elements": self._join_elements_in_string,
         }
@@ -716,85 +679,90 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
         self, variable_name: str, list_operation: str, argument: str, new_variable_name: str
     ) -> None:
         if variable_name not in variable_handler.variables:
-            raise CriticalPipelineError(f"Variable '{variable_name}' not found in Variables.")
+            raise CriticalPipelineError(
+                f"{self.icon_type}: variable '{variable_name}' does not exist."
+            )
 
-        variable = variable_handler.variables[variable_name]
-        variable_value = deepcopy(variable.value)
+        variable = variable_handler.variables[variable_name].value
+
+        if not isinstance(variable, list):
+            raise CriticalPipelineError(f"{self.icon_type}: variable must be of type 'list'.")
+        
+        var_copy = deepcopy(variable)
         argument = self._evaluate_argument(argument)
 
-        inp = Input()
-        inp.assign("list_variable", variable_value)
-        inp.assign("list_operation", self.list_operations.get(list_operation))
-        inp.assign("argument", argument)
+        result = self.list_operations[list_operation](var_copy, argument)
 
-        try:
-            list_operation_result, updated_list = self.input_execute(inp)
-        except Exception as e:
-            raise CriticalPipelineError("ListModifyVariable handler failed to execute: "+str(e)) from e
+        if var_copy != variable:
+            # if updated list value differs from the original one --> resave variable
+            variable_handler.new_variable(variable_name, var_copy)
 
-        # 'updated_list' is always to be saved under 'variable_name' 
-        if updated_list != variable.value:
-            variable_handler.new_variable(variable_name, updated_list)
-        # 'list_operation_result' is always to be saved under 'new_variable_name'
-        if len(new_variable_name) != 0:
-            variable_handler.new_variable(new_variable_name, list_operation_result)
+        if new_variable_name:
+            variable_handler.new_variable(new_variable_name, result)
 
     def input_execute(self, inp: Input) -> tuple[Any, list]:
-        list_operation_result = inp("list_operation")(inp("list_variable"), inp("argument"))
+        list_operation_result = inp("list_operation")(
+            inp("list_variable"), inp("argument")
+        )
 
         return list_operation_result, inp("list_variable")
 
-    def _evaluate_argument(self, argument: str) -> Any:
-        """Evaluate and cast if the 'argument' is of python type or return it without a change."""
-        try:
-            return ast.literal_eval(argument)
-        except (ValueError, SyntaxError, TypeError):
-            return argument
+    def _pop(self, var: list, index: int):
+        if index is None:
+            return var.pop()
 
-    def _join_lists(self, list_variable: list, argument: list) -> list:
-        new_value = None
+        if not isinstance(index, int):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: provided argument (idnex) must be of type 'int'."
+            )
 
-        if type(argument) == list:
-            new_value = list_variable + argument
-        else:
-            for j, stored_variable in enumerate(variable_handler.variables.values()):
-                if stored_variable.name == argument:
-                    new_value = list_variable + stored_variable.value
+        return var.pop(index)
 
-        return new_value
+    def _join_lists(self, var: list, arg: list) -> list:
+        if not isinstance(arg, list):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: provided argument must be of type 'list',"
+            )
 
-    def _difference_lists(self, list_variable: list, argument: Any) -> list:
-        new_value = None
+        return var + arg
 
-        if type(argument) == list:
-            new_value = list(set(list_variable) - set(argument))
-        else:
-            for j, stored_variable in enumerate(variable_handler.variables.values()):
-                if stored_variable.name == argument:
-                    new_value = list(set(list_variable) - set(stored_variable.value))
+    def _difference_lists(self, var: list, arg: list) -> list:
+        if not isinstance(arg, list):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: provided argument must be of type 'list',"
+            )
 
-        return new_value
+        return list(set(var) - set(arg))
 
-    def _find_duplicates(self, list_variable: list, *args: list) -> list:
+    def _find_duplicates(self, var: list, *args: Any) -> list:
         seen = set()
-        duplicates = []
-        for x in list_variable:
-            if x in seen:
-                duplicates.append(x)
-            seen.add(x)
-        duplicates = list(set(duplicates))  # deduplicate duplicates :)
+        duplicates = set()
 
-        return duplicates
+        for x in var:
+            if x in seen:
+                duplicates.add(x)
+            seen.add(x)
+
+        return list(duplicates)
 
     def _filter_substring_occurences(self, list_variable: list, argument: list) -> list:
         """filters list based on occurence of a specific substring"""
         result = [x for x in list_variable if argument not in x]
         return result
 
-    def _join_elements_in_string(self, list_variable: Iterable[str], argument: str) -> str:
+    def _join_elements_in_string(self, var: list[str], arg: str) -> str:
         """joins elements in one particular string based on joining delimiter"""
-        result = argument.join(list_variable)
-        return result
+        if not all(isinstance(x, str) for x in var):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: variable must be list of strings ('list[str]')."
+            )
+
+        if not isinstance(arg, str):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: provided argument must be a 'str' delimiter."
+            )
+
+        return arg.join(var)
 
     def export_code(self, node_detail_form):
         variable_name = node_detail_form.get_variable_name_or_input_value_by_element_name("variable_name", is_input_variable_name=True)
@@ -850,7 +818,6 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
         else:
             code = ""
 
-            # return(code.format(variable_name= '"' + variable_name + '"', list_operation= '"' + list_operation + '"', argument= '"' + argument + '"', new_variable_name= '"' + new_variable_name + '"'))
         return code
 
     def export_imports(self, *args):
@@ -879,19 +846,19 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         the old one modified by the selected operation will be created while preserving the old variable.
         """
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
-        self.docs.add_parameter_table_row(title="Variable name", name="variable_name",
+        self.docs.add_parameter_table_row(title="Variable name", name="var_name",
                                           description="A name of the variable (dictionary) present in the variable explorer which would be used for the operation.",
                                           typ="string", example="dict_var")
-        self.docs.add_parameter_table_row(title="List operation", name="dictionary_operation",
+        self.docs.add_parameter_table_row(title="List operation", name="dict_op",
                                           description="A string operation to be perfomed on the selected variable. It can be selected as one of the options of the combobox.",
                                           )
-        self.docs.add_parameter_table_row(title="Argument", name="argument",
+        self.docs.add_parameter_table_row(title="Argument", name="arg_1",
                                           description="A first argument of a given operation (can be left blank - get keys, get values).",
                                           typ="Any", example="'name' | 'key_1'")
-        self.docs.add_parameter_table_row(title="Argument 2", name="argument2",
+        self.docs.add_parameter_table_row(title="Argument 2", name="arg_2",
                                           description="A second argument of agiven operation (can be left blank).",
                                           typ="Any", example="'new value' | [1,2,3] | {'name': 'John'}")
-        self.docs.add_parameter_table_row(title="New variable name", name="new_variable_name",
+        self.docs.add_parameter_table_row(title="New variable name", name="new_var_name",
                                           description="Name of the new variable whose value will be equal to the old value modifed by the selected operation. If left blank the initial variable will get overwritten.",
                                           typ="string", example="dict_operation_result")
 
@@ -901,228 +868,138 @@ class DictionaryModifyVariableHandler(AbstractFunctionHandler):
         fdl = FormDictList(docs=self.docs)
         fdl.label(self.fn_name)
         fdl.label("Variable name")
-        fdl.entry(name="variable_name", text="", input_types=["str", "var_name"], required=True, row=1)
+        fdl.entry(name="var_name", text="", input_types=["str", "var_name"], required=True, row=1)
         fdl.label("Dictionary operation")
-        fdl.combobox(name="dictionary_operation", options=options, row=2)
+        fdl.combobox(name="dict_op", options=options, row=2)
         fdl.label("Argument 1")
-        fdl.entry(name="argument", text="", row=3)
+        fdl.entry(name="arg_1", text="", row=3)
         fdl.label("Argument 2")
-        fdl.entry(name="argument2", text="", row=4)
+        fdl.entry(name="arg_2", text="", row=4)
         fdl.label("New variable name")
-        fdl.entry(name="new_variable_name", text="", category="new_var", input_types=["str"], row=5)
+        fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=5)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
+    
+    def execute(self, node_detail_form):
+        var_name = node_detail_form.get_chosen_value_by_name("var_name", variable_handler)
+        dict_op = node_detail_form.get_chosen_value_by_name("dict_op", variable_handler)
+        arg_1 = node_detail_form.get_chosen_value_by_name("arg_1", variable_handler)
+        arg_2 = node_detail_form.get_chosen_value_by_name("arg_2", variable_handler)
+        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
-    def _get_value_by_key(self, dict_var, *args):
-        """
-        dict_var ... variable
-        key ... argument
-        """
-
-        key = args[0]
-
-        try:
-            new_value = dict_var[key]
-        except KeyError:
-            flog.error('Key Error Exception Raised, argument is not a dictionary key.')
-            new_value = None
-
-        return new_value
-
-    def _join_dictionaries(self, dict_var, *args):
-        """
-        init_dict ... variable
-        dict_to_add ... argument
-        """
-
-        dict_to_add = args[0]
-
-        new_value = None
-
-        if type(dict_to_add) == dict:
-            new_value = {**dict_var, **dict_to_add}
-        else:
-            try:
-                eval_arg = ast.literal_eval(dict_to_add)
-                if type(eval_arg) == dict:
-                    new_value = {**dict_var, **eval_arg}
-                else:
-                    pass
-                    #POPUPTODO
-                    #glc.show_warning_popup_message("Wrong argument format.")
-            except:
-                pass
-                #POPUPTODO
-                #glc.show_warning_popup_message("wrong argument format.")
-
-        return new_value
-
-    def _delete_dict_entry(self, dict_var, *args):
-        """
-        dict_var ... variable
-        key ... argument
-        """
-
-        key = args[0]
-
-        try:
-            new_value = dict_var.copy()
-            new_value.pop(key)
-        except Exception as e:
-            flog.error(e)
-            return None
-
-        return new_value
-
-    def _add_dict_entry(self, dict_var, *args):
-
-        key = args[0]
-        value = args[1]
-
-        try:
-            key = float(key) if '.' in key else int(key)
-        except Exception as e:
-            flog.warning('Dict key not parsed.')
-
-        try:
-            value = ast.literal_eval(value)
-        except Exception as e:
-            flog.warning('Dict value not parsed.')
-
-
-        try:
-            dict_var[key] = value
-        except Exception as e:
-            #POPUPTODO
-            #glc.show_warning_popup_message(e)
-            return None
-
-        return dict_var
-
-    def _invert_dictionary(self, dict_var, *args):
-        """
-        dict_var ... variable
-        """
-
-        argument = args[0]
-        
-        try:
-            has_unique_values = len(dict_var) == len(set(dict_var.values()))
-        except Exception as e:
-            #POPUPTODO
-            #glc.show_warning_popup_message(e)
-            return None
-
-        if has_unique_values:
-            new_value = {v: k for k, v in dict_var.items()}
-        else:
-            #POPUPTODO
-            #glc.show_warning_popup_message("Dictionary values must be unique.", "Inversion impossible")
-            return None
-
-        return new_value
-
-    def dict_modify_existing_variable(self, variable_name, dict_operation, argument, argument2, new_variable_name):
+        self.direct_execute(var_name, dict_op, arg_1, arg_2, new_var_name)
+    
+    def direct_execute(self, var_name, dict_op, arg_1, arg_2, new_var_name):
         functions = {
             "Get Value By Key": self._get_value_by_key,
-            "Keys": lambda variable, argument, argument2: list(variable.keys()),
-            "Values": lambda variable, argument, argument2: list(variable.values()),
+            "Keys": lambda dict_var, *args: list(dict_var),
+            "Values": lambda dict_var, *args: list(dict_var.values()),
             "Join Dictionaries": self._join_dictionaries,
             "Delete Value by Key": self._delete_dict_entry,
             "Invert Dictionary": self._invert_dictionary,
-            "Add key" : self._add_dict_entry
-        }        
+            "Add key": self._add_dict_entry,
+        }
 
-        for i, stored_variable in enumerate(variable_handler.variables.values()):
-            if stored_variable.name == variable_name:
+        try:
+            dict_var = variable_handler.get_variable_by_name(name=var_name)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                raise CriticalPipelineError(
+                    f"{self.icon_type}: variable named {var_name} does not exist."
+                ) from e
+            else:
+                raise CriticalPipelineError(
+                    f"{self.icon_type}: critical error occured during dict variable fetching."
+                ) from e
 
-                dict_copy = stored_variable.value.copy()
+        dict_var = dict_var.get("value")
 
-                dict_function = functions[dict_operation]
-                new_value = dict_function(dict_copy, argument, argument2)
+        if not isinstance(dict_var, dict):
+            raise CriticalPipelineError(
+                f"{self.icon_type}: Provided variable must be of type 'dict'."
+            )
 
-                if len(new_variable_name) == 0:
-                    new_variable_name = variable_name
+        arg_1 = self._evaluate_argument(arg=arg_1)
+        arg_2 = self._evaluate_argument(arg=arg_2)
 
-                if new_value is not None:
-                    variable_handler.new_variable(new_variable_name, new_value)
+        dict_function = functions[dict_op]
+        result = dict_function(dict_var, arg_1, arg_2)
 
-                break
+        if dict_op == "Delete Value by Key":
+            variable_handler.new_variable(var_name, dict_var)
+            if new_var_name:
+                variable_handler.new_variable(new_var_name, result)
+        elif dict_op == "Add key":
+            if new_var_name:
+                variable_handler.new_variable(new_var_name, dict_var)
+            else:
+                variable_handler.new_variable(var_name, dict_var)
+        else:
+            variable_handler.new_variable(new_var_name, result)
 
+    def _get_value_by_key(self, d: dict, key: Hashable, *args: Any):
+        validate_hashable_dict_key(key)
 
-    def direct_execute(self, variable_name, dictionary_operation, argument, argument2, new_variable_name):
-        self.dict_modify_existing_variable(variable_name, dictionary_operation, argument, argument2, new_variable_name)
-        #variable_handler.update_data_in_variable_explorer(glc)
-    
-    #? Why is this here if it's wrong?
-    # TODO: Refactor or delete.
-    # def input_execute_wrong(self, functions, inp): #probably wrong
-    #     try:
-    #         dict_operation_result, updated_variable_value = self.input_execute(inp)
-    #     except Exception as e:
-    #         flog.error("Error in Dict Modify Variable")
-    #         return None
+        return d.get(key)
 
-    #     if dict_operation_result:
-    #         if len(new_variable_name) == 0:
-    #             new_variable_name = "dict_operation_result"
+    def _join_dictionaries(self, d_1: dict, d_2: dict, *args):
+        if isinstance(d_2, dict):
+            raise CriticalPipelineError(f"{self.icon_type}: Both arguments must of type 'dict'.")
 
-    #         variable_handler.new_variable(new_variable_name, dict_operation_result)
-    #     variable_handler.new_variable(inp("variable_name"), updated_variable_value)
-    #     #variable_handler.update_data_in_variable_explorer(glc)
-    #     """
-    #     self.dict_modify_existing_variable(variable_name, dict_operation, argument, new_variable_name)
-    #     #variable_handler.update_data_in_variable_explorer(glc)
-    #     """
-    
-    def input_execute(self, inp):
-        new_value = inp("dict_operation")(inp("variable_value"), inp("argument"))
+        return {**d_1, **d_2}
 
-        return new_value, inp("variable_value")
+    def _delete_dict_entry(self, d: dict, key: Hashable, *args):
+        validate_hashable_dict_key(key)
+        pop_value = d.pop(key, None)
 
+        return pop_value
 
-    def execute_with_params(self, params):
-        variable_name = params["variable_name"]
-        dictionary_operation = params["dictionary_operation"]
-        argument = params["argument"]
-        argument2 = params["argument2"]
-        new_variable_name = params["new_variable_name"]
+    def _add_dict_entry(self, d: dict, key: Hashable, value: Any, *args):
+        validate_hashable_dict_key(key)
+        d[key] = value
 
-        self.direct_execute(variable_name, dictionary_operation, argument, argument2, new_variable_name)
+        return d
 
-    def execute(self, node_detail_form):
-        variable_name = node_detail_form.get_chosen_value_by_name("variable_name", variable_handler)
-        dictionary_operation = node_detail_form.get_chosen_value_by_name("dictionary_operation", variable_handler)
-        argument = node_detail_form.get_chosen_value_by_name("argument", variable_handler)
-        argument2 = node_detail_form.get_chosen_value_by_name("argument2", variable_handler)
-        new_variable_name = node_detail_form.get_chosen_value_by_name("new_variable_name", variable_handler)
+    def _invert_dictionary(self, d: dict, *args):
+        has_unique_values = len(d) == len(set(d.values()))
+        if not has_unique_values:
+            raise SoftPipelineError(
+                f"{self.icon_type}: provided dictionary must have unique values."
+            )
 
-        self.direct_execute(variable_name, dictionary_operation, argument, argument2, new_variable_name)
+        all_values_hashable = all(isinstance(x, Hashable) for x in d.values())
+        if not all_values_hashable:
+            raise SoftPipelineError(
+                f"{self.icon_type}: all dictionary values must be hashable."
+            )
+
+        return {v: k for k, v in d.items()}
 
     def export_code(self, node_detail_form):
-        variable_name = node_detail_form.get_variable_name_or_input_value_by_element_name("variable_name", is_input_variable_name=True)
-        dictionary_operation = node_detail_form.get_chosen_value_by_name("dictionary_operation", variable_handler)
-        argument = node_detail_form.get_variable_name_or_input_value_by_element_name("argument")
-        argument2 = node_detail_form.get_variable_name_or_input_value_by_element_name("argument2")
-        new_variable_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_variable_name", is_input_variable_name=True)
+        var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("var_name", is_input_variable_name=True)
+        dict_op = node_detail_form.get_chosen_value_by_name("dict_op", variable_handler)
+        arg_1 = node_detail_form.get_variable_name_or_input_value_by_element_name("arg_1")
+        arg_2 = node_detail_form.get_variable_name_or_input_value_by_element_name("arg_2")
+        new_var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_name", is_input_variable_name=True)
 
         dict_function_dict = {
-            "Get Value By Key": lambda var, arg, arg2: f"{var}[{arg}]",
-            "Keys": lambda var, arg, arg2: f"list({var}.keys())",
-            "Values": lambda var, arg, arg2: f"list({var}.values())",
-            "Join Dictionaries": lambda var, arg, arg2: f"{{**{var}, **{arg}}}",
-            "Delete Value by Key": lambda var, arg, arg2: f"{var}.pop('{arg}')",
-            "Invert Dictionary": lambda var, arg, arg2: f"{{v: k for k, v in {var}.items()}}",
-            "Add key" : lambda var, arg, arg2: f"{var}[{arg}] = {arg2}"
+            "Get Value By Key": lambda var, key, *args: f"{var}.get({key})",
+            "Keys": lambda var, *args: f"list({var})",
+            "Values": lambda var, *args: f"list({var}.values())",
+            "Join Dictionaries": lambda dict_var, sec_dict, *args: f"{{**{dict_var}, **{sec_dict}}}",
+            "Delete Value by Key": lambda var, key, *args: f"{var}.pop('{key}', None)",
+            "Invert Dictionary": lambda var, *args: f"{{v: k for k, v in {var}.items()}}",
+            "Add key" : lambda var, key, value: f"{var}[{key}] = {value}"
         }
 
         code = f"""
-        {dict_function_dict[dictionary_operation](variable_name, argument, argument2)}
+        {dict_function_dict[dict_op](var_name, arg_1, arg_2)}
         """
         
-        if dictionary_operation not in ["Delete Value by Key", "Add key"]:
-            code = f"{new_variable_name} = {code.strip()}" # Add new variable initialization for the cases where it makes sense
+        if dict_op != "Add key":
+            # Add new variable initialization for the cases where it makes sense
+            code = f"{new_var_name} = {code.strip()}"
 
         return code
 
