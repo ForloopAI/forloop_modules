@@ -701,19 +701,21 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
             variable_handler.new_variable(new_variable_name, result)
 
     def input_execute(self, inp: Input) -> tuple[Any, list]:
-        list_operation_result = inp("list_operation")(inp("list_variable"), inp("argument"))
+        list_operation_result = inp("list_operation")(
+            inp("list_variable"), inp("argument")
+        )
 
         return list_operation_result, inp("list_variable")
-    
+
     def _pop(self, var: list, index: int):
         if index is None:
             return var.pop()
-        
+
         if not isinstance(index, int):
             raise CriticalPipelineError(
                 f"{self.icon_type}: provided argument (idnex) must be of type 'int'."
             )
-        
+
         return var.pop(index)
 
     def _join_lists(self, var: list, arg: list) -> list:
@@ -721,15 +723,15 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
             raise CriticalPipelineError(
                 f"{self.icon_type}: provided argument must be of type 'list',"
             )
-        
+
         return var + arg
 
     def _difference_lists(self, var: list, arg: list) -> list:
-        if not isinstance(arg,  list):
+        if not isinstance(arg, list):
             raise CriticalPipelineError(
                 f"{self.icon_type}: provided argument must be of type 'list',"
             )
-        
+
         return list(set(var) - set(arg))
 
     def _find_duplicates(self, var: list, *args: Any) -> list:
@@ -754,12 +756,12 @@ class ListModifyVariableHandler(AbstractFunctionHandler):
             raise CriticalPipelineError(
                 f"{self.icon_type}: variable must be list of strings ('list[str]')."
             )
-        
+
         if not isinstance(arg, str):
             raise CriticalPipelineError(
                 f"{self.icon_type}: provided argument must be a 'str' delimiter."
             )
-        
+
         return arg.join(var)
 
     def export_code(self, node_detail_form):
