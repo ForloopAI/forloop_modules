@@ -109,16 +109,22 @@ class NodeDetailForm:
         handler = pipeline_function_handler_dict.get(self.typ)
         
         if handler is not None:
-            try: #Try Except clause because some handlers might not have node_detail_form as argument of make_form_dict_list yet
-                if len(form_dict_list_options)==0:
-                    form_dict_list_options={"node_detail_form":self}  #Temporary -> this should be later used everywhere and get rid of image_component
-                else:
-                    form_dict_list_options["node_detail_form"]=self #if options are not empty, append it to the dictionary (e.g. LoadExcel)
-                self.form_dict_list = handler.make_form_dict_list(image_component,**form_dict_list_options) #this works little bit cyclically but it works! (node_detail_form sent to make_form_dict_list which then changes form_dict_list of the node (self))
-            except TypeError as e: #if make_form_dict_list doesn't have node_detail_form argument
-                flog.error(e)
-                form_dict_list_options.pop("node_detail_form")
-                self.form_dict_list = handler.make_form_dict_list(image_component,**form_dict_list_options)  #!!!!
+            self.form_dict_list = handler.make_form_dict_list(None, node_detail_form = self)
+            
+            ##### 16.10.2024 - Replaced by new form_dict_list mechanisms #####
+            #try: #Try Except clause because some handlers might not have node_detail_form as argument of make_form_dict_list yet
+            #    if len(form_dict_list_options)==0:
+            #        form_dict_list_options={"node_detail_form":self}  #Temporary -> this should be later used everywhere and get rid of image_component
+            #    else:
+            #        form_dict_list_options["node_detail_form"]=self #if options are not empty, append it to the dictionary (e.g. LoadExcel)
+            #    self.form_dict_list = handler.make_form_dict_list(image_component,**form_dict_list_options) #this works little bit cyclically but it works! (node_detail_form sent to make_form_dict_list which then changes form_dict_list of the node (self))
+            #except TypeError as e: #if make_form_dict_list doesn't have node_detail_form argument
+            #    flog.error(e)
+            #    form_dict_list_options.pop("node_detail_form")
+            #    self.form_dict_list = handler.make_form_dict_list(image_component,**form_dict_list_options)  #!!!!
+            ##### 16.10.2024 - Replaced by new form_dict_list mechanisms #####
+
+
         else:
             self.form_dict_list=[]
         #else:
