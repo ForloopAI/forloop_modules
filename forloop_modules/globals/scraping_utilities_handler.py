@@ -629,7 +629,7 @@ class ScrapingUtilitiesHandler:
         xpath = self.detect_cookies_xpath_preparation()
     
         # self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png'))) #needs to run before the scanner so there is enough time for the parallel thread
-        self.webscraping_client.take_screenshot()
+        #self.webscraping_client.take_screenshot()
         self.webscraping_client.scan_web_page(**scraping_options, timeout = 60) #Duration: ~3s
         
     
@@ -651,7 +651,7 @@ class ScrapingUtilitiesHandler:
             # Close cookies popup
             self.webscraping_client.click_xpath(button_xpath)
             # self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png'))) #TODO: The scanning finishes before the screenshot thread - need to either 1) refresh screenshot multiple times in FE (optimal), or 2) run this not in thread when cookies detected
-            self.webscraping_client.take_screenshot()
+        self.webscraping_client.take_screenshot()
 
 
         # [::-1] needed to ensure that FE rectangles are not overlapped (bigger elements do not cover smaller)
