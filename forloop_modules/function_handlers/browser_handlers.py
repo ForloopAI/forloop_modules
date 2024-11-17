@@ -446,7 +446,38 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         # Convert Base64 to WEBP
         png_img_data = BytesIO(base64.b64decode(screenshot_base64))
         webp_img_data = BytesIO()
-        Image.open(png_img_data).save(webp_img_data, 'WEBP', quality=70)
+
+        def resize_screenshot_with_max_dimension(screenshot_image, max_dimension=16383) -> tuple[Image, int]:
+            """
+            Resizes an image so that no dimension exceeds the specified max_dimension.
+            The other dimension is scaled proportionally.
+
+            :param screenshot_image: PIL.Image object of screenshot
+            :param max_dimension: Maximum allowed size for width or height for WEBP by Pillow lib
+            :return: Resized PIL.Image object
+            :return: scaling factor
+            """
+            width, height = screenshot_image.size
+
+            if width > max_dimension or height > max_dimension:
+                print('Current screenshot image exceeds maximum size for .webp (16383px).')
+                scaling_factor = min(max_dimension / width, max_dimension / height)
+
+                new_width = int(width * scaling_factor)
+                new_height = int(height * scaling_factor)
+
+                screenshot_image = screenshot_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                print(f'Screenshot resized: {width}x{height} -> {new_width}x{new_height}.')
+            else:
+                scaling_factor = 1
+
+            return screenshot_image, scaling_factor
+
+        img = Image.open(png_img_data)
+
+        # PIL allows to save max 16383px long images in WEBP format
+        image_resized, scaling_factor = resize_screenshot_with_max_dimension(img)
+        image_resized.save(webp_img_data, 'WEBP', quality=70)
         webp_img_data.seek(0)
         screenshot = base64.b64encode(webp_img_data.getvalue()).decode("utf-8")
 
