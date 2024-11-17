@@ -54,21 +54,20 @@ RESOURCES = {
     "initial_variables": ["get_all", "get", "new", "delete"],
 }
 
-
-
-db_api_body_template ={"projects":APIProject,
-                "triggers":APITrigger,
-                "datasets":APIDataset,
-                "dbtables":APIDbTable,
-                "scripts":APIScript,
-                "files":APIFile,
-                "databases":APIDatabase,
-                "pipelines":APIPipeline,
-                "edges": APIEdge,
-                "variables": APIVariable,
-                "popups": APIPopup,
-                "initial_variables": APIInitialVariable
-                }
+DB_API_BODY_TEMPLATE = {
+    "projects": APIProject,
+    "triggers": APITrigger,
+    "datasets": APIDataset,
+    "dbtables": APIDbTable,
+    "scripts": APIScript,
+    "files": APIFile,
+    "databases": APIDatabase,
+    "pipelines": APIPipeline,
+    "edges": APIEdge,
+    "variables": APIVariable,
+    "popups": APIPopup,
+    "initial_variables": APIInitialVariable,
+}
 
 #! Auxiliary function - sets project_uid and pipeline_uid into factory functions' payloads
 def set_stored_project_uid_and_pipeline_uid_to_factory_payload(payload: dict):
@@ -188,14 +187,14 @@ for resource_name, actions in RESOURCES.items():
             fn = get_factory(resource_name_singular)
             function_name = f'{action}_{resource_name_singular}_by_uid'
         elif action == 'new':
-            model = db_api_body_template[resource_name]
+            model = DB_API_BODY_TEMPLATE[resource_name]
             fn = new_factory(resource_name, model)
             function_name = f'{action}_{resource_name_singular}'
         elif action == 'delete':
             fn = delete_factory(resource_name_singular)
             function_name = f'{action}_{resource_name_singular}_by_uid'
         elif action == 'update':
-            model = db_api_body_template[resource_name]
+            model = DB_API_BODY_TEMPLATE[resource_name]
             fn = update_factory(resource_name_singular, model)
             function_name = f'{action}_{resource_name_singular}_by_uid'
         else:
