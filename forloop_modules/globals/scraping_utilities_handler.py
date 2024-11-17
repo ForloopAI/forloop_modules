@@ -571,7 +571,9 @@ class ScrapingUtilitiesHandler:
         flog.warning('\n'.join(generalised_xpaths))
     
         results = []
-        expected_optimal = np.log(20)
+
+        # Most probable numbers of similar items (e.g. real estate listings, blog posts, table rows, ...) on a page
+        possible_optimums = [20, 50, 100]
 
         webpage_elements_history = []
     
@@ -588,14 +590,16 @@ class ScrapingUtilitiesHandler:
             flog.warning(f'Using XPath: {generalised_xpath}')
             flog.warning(f'Num of elements found: {num_of_elements}')
     
-            # How far is point from expected optimal
-            distance_from_optimal = abs(expected_optimal - np.log(num_of_elements))
-            flog.warning(f'Distance from optimal: {distance_from_optimal}')
-            results.append(distance_from_optimal)
+            # How far is point from expected optimum
+            distances_from_optimums = [abs(np.log(x) - np.log(num_of_elements)) for x in possible_optimums]
+            best_distance = min(distances_from_optimums)
+            flog.warning(f'Best distance: {best_distance} from optimums: {list(zip(possible_optimums, distances_from_optimums))}')
+
+            results.append(best_distance)
             webpage_elements_history.append(webpage_elements)
 
-            # If it's already the best possible XPath (number of elements is 20) or very close to optimum -> break
-            if distance_from_optimal <= 0.3:
+            # If it's already the best possible XPath (number of elements is very close to one of 20/50/100) -> break
+            if best_distance <= 0.3:
                 flog.warning('Found most probable optimum, exiting cycle')
                 break
 
