@@ -256,7 +256,7 @@ def get_project_uid() -> Optional[str]:
 ############### Nodes #################
 
 
-def new_node(pos, typ, params_dict: Optional[dict] = None, fields: Optional[list] = None, visible: Optional[bool] = True):
+def new_node(pos: list[int, int], typ: str, params_dict: Optional[dict] = None, fields: Optional[list] = None, visible: Optional[bool] = True) -> Response:
     project_uid = aet.project_uid
     pipeline_uid = aet.active_pipeline_uid
     
@@ -269,7 +269,9 @@ def new_node(pos, typ, params_dict: Optional[dict] = None, fields: Optional[list
         "project_uid": project_uid,
         "visible": visible
     }
-    payload = {k:v for k,v in payload.items() if v is not None} # sending None breaks node reflection, no need to send empty field on node generation
+
+    # sending None breaks node reflection, no need to send empty field on node generation
+    payload = {k:v for k,v in payload.items() if v is not None}
 
 
     flog.info(f'New Node payload: {payload}')
@@ -282,7 +284,7 @@ def new_node(pos, typ, params_dict: Optional[dict] = None, fields: Optional[list
     return response
 
 
-def direct_execute_node(node_uid):
+def direct_execute_node(node_uid: str) -> Response:
     
     payload = dict()
 
@@ -297,7 +299,7 @@ def direct_execute_node(node_uid):
 
 
 
-def export_node_code(node_uid):
+def export_node_code(node_uid: str) -> Response:
     
 
     payload = dict()
@@ -313,7 +315,7 @@ def export_node_code(node_uid):
     
 
 
-def get_node_by_uid(node_uid):
+def get_node_by_uid(node_uid: str) -> Response:
     url = f'{BASE_API}/nodes/{node_uid}'
 
     response = http_client.get(url)
@@ -322,14 +324,14 @@ def get_node_by_uid(node_uid):
     return response
 
 
-def get_all_nodes():
+def get_all_nodes() -> Response:
     url = f'{BASE_API}/nodes'
     response = http_client.get(url)
     flog.debug(f'GET all Nodes response: {response.text}')
 
     return response
     
-def delete_node_by_uid(node_uid):
+def delete_node_by_uid(node_uid: str) -> Response:
     url = f'{BASE_API}/nodes/{node_uid}'
     response = http_client.delete(url)
     flog.info(f'DELETE Node response: {response.text}')
@@ -337,7 +339,7 @@ def delete_node_by_uid(node_uid):
     return response
     
 
-def delete_all_nodes():
+def delete_all_nodes() -> Response:
     pipeline_uid = aet.active_pipeline_uid
     url = f'{BASE_API}/pipelines/{pipeline_uid}/nodes'
     response = http_client.delete(url)
@@ -345,7 +347,7 @@ def delete_all_nodes():
     return response
 
 
-def move_node_by_uid(node_uid, new_pos):
+def move_node_by_uid(node_uid: str, new_pos: list[int, int]) -> Response:
     payload = {
         "new_pos": new_pos,
     }
@@ -357,7 +359,7 @@ def move_node_by_uid(node_uid, new_pos):
     flog.info(f'Move Node response: {response.text}')
     return response
 
-def node_breakpoint_status(node_uid, breakpoint_status):
+def node_breakpoint_status(node_uid: str, breakpoint_status) -> Response:
     payload = {
         "uid": node_uid,
         "status": breakpoint_status,
@@ -369,7 +371,7 @@ def node_breakpoint_status(node_uid, breakpoint_status):
     flog.info(f'Node breakpoint status: {response.text}')
     return response
 
-def node_disabled_status(node_uid, disabled_status):
+def node_disabled_status(node_uid: str, disabled_status) -> Response:
     payload = {
         "uid": node_uid,
         "status": disabled_status,
@@ -381,13 +383,19 @@ def node_disabled_status(node_uid, disabled_status):
     flog.info(f'Node disabled status: {response.text}')
     return response
 
-def update_node_params_by_node_detail_form(node_detail_form):
+def update_node_params_by_node_detail_form(node_detail_form) -> Response:
     node_params = node_detail_form.node_params.params_dict_repr()
     node_uid = node_detail_form.node_uid
     update_node_by_uid(node_uid, params=node_params)
 
 
-def update_node_by_uid(node_uid, pos=None, typ=None, params=None, fields=None):
+def update_node_by_uid(
+    node_uid: str,
+    pos: Optional[list[int, int]] = None,
+    typ: Optional[str] = None,
+    params: Optional[dict] = None,
+    fields: Optional[list[dict]] = None,
+) -> Response:
     # TODO: if inputs are None, it should not put them in payload
     # TODO: rename params to params_dict as in other functions
 
@@ -424,7 +432,7 @@ def update_node_by_uid(node_uid, pos=None, typ=None, params=None, fields=None):
 
 ####### SPECIAL NODE - ITEM DETAIL FORM NODE BUTTON FUNCTIONS #########
 
-def node_button_click(node_uid, button_name):
+def node_button_click(node_uid: str, button_name: str) -> Response:
     
     payload = {
         "button_name": button_name
@@ -440,29 +448,26 @@ def node_button_click(node_uid, button_name):
     return response
 
 
-# unwraps button function_args into multiple parameters (cant call node_button_click with function_args directly as it is stored in a list, but the function expects 2 parameters)
-def node_button_click_wrapper(args):
+# unwraps button function_args into multiple parameters (cant call node_button_click with
+# function_args directly as it is stored in a list, but the function expects 2 parameters)
+def node_button_click_wrapper(args) -> Response:
     assert len(args) == 2
-    node_button_click(args[0], args[1])
+    response = node_button_click(args[0], args[1])
 
-
-
-
-
-
+    return response
 
 
 ############### Edges #################
 
 
-def get_edges_by_node_uid(node_uid:str):
+def get_edges_by_node_uid(node_uid: str) -> Response:
     url = f'{BASE_API}/nodes/{node_uid}/edges'
     response = http_client.get(url)
     flog.debug(f'GET Edges by Node Uid response: {response.text}')
 
     return response
 
-def get_edge_by_connected_node_uids(from_node_uid:str, to_node_uid:str):
+def get_edge_by_connected_node_uids(from_node_uid: str, to_node_uid: str) -> Response:
     url = f'{BASE_API}/edges/?from_node_uid={from_node_uid}&to_node_uid={to_node_uid}'
     response = http_client.get(url)
     flog.info(f'GET Edge by Connected Node Uids response: {response.text}')
@@ -471,7 +476,7 @@ def get_edge_by_connected_node_uids(from_node_uid:str, to_node_uid:str):
 
     
 
-def delete_edge_by_uid(uid):
+def delete_edge_by_uid(uid: str) -> Response:
     url = f'{BASE_API}/edges/{uid}'
 
     response = http_client.delete(url)
@@ -480,7 +485,7 @@ def delete_edge_by_uid(uid):
     return response
 
 
-def delete_all_edges():
+def delete_all_edges() -> Response:
     pipeline_uid = aet.active_pipeline_uid
     url = f'{BASE_API}/pipelines/{pipeline_uid}/edges'
     response = http_client.delete(url)
@@ -490,7 +495,7 @@ def delete_all_edges():
 ### LAST ACTIVE DF
 
 
-def update_last_active_dataframe_node_uid(last_active_dataframe_node_uid: Optional[str]):
+def update_last_active_dataframe_node_uid(last_active_dataframe_node_uid: Optional[str]) -> Response:
     payload = {
         "project_uid": aet.project_uid,
         "last_active_dataframe_node_uid": last_active_dataframe_node_uid
@@ -506,7 +511,7 @@ def update_last_active_dataframe_node_uid(last_active_dataframe_node_uid: Option
     return response
 
 
-def get_last_active_dataframe_node_uid():
+def get_last_active_dataframe_node_uid() -> Response:
     url = f'{BASE_API}/last_active_dataframe_node_uid?project_uid={aet.project_uid}'
     response = http_client.get(url)
     flog.debug(f'GET Last active DF node_uid response: {response.text}')
@@ -532,7 +537,7 @@ def get_variable(uid: str) -> Optional[dict]:
     return response.json()
 
 
-def get_variable_by_name(variable_name: str):
+def get_variable_by_name(variable_name: str) -> Response:
     pipeline_job_uid = aet.active_pipeline_job_uid
     url = f'{BASE_API}/variables?name={variable_name}&pipeline_job_uid={pipeline_job_uid}'
 
@@ -544,7 +549,7 @@ def get_variable_by_name(variable_name: str):
 
     
 
-def delete_variable_by_uid(variable_uid):
+def delete_variable_by_uid(variable_uid: str) -> Response:
     url = f'{BASE_API}/variables/{variable_uid}'
 
     response = http_client.delete(url)
@@ -554,7 +559,7 @@ def delete_variable_by_uid(variable_uid):
     return response
 
 
-def delete_all_variables():
+def delete_all_variables() -> Response:
     pipeline_uid = aet.active_pipeline_uid
     url = f'{BASE_API}/pipelines/{pipeline_uid}/variables'
     response = http_client.delete(url)
@@ -562,7 +567,7 @@ def delete_all_variables():
     return response
 
 
-def update_variable_by_uid(variable_uid: str, name: str, value: Any, is_result: bool = None, type = None, size: Optional[int] = None):
+def update_variable_by_uid(variable_uid: str, name: str, value: Any, is_result: bool = None, type = None, size: Optional[int] = None) -> Response:
     project_uid = aet.project_uid
     pipeline_uid = aet.active_pipeline_uid
     pipeline_job_uid = aet.active_pipeline_job_uid
@@ -585,25 +590,25 @@ def update_variable_by_uid(variable_uid: str, name: str, value: Any, is_result: 
         payload["is_result"] = is_result
 
     response=http_client.put(f"{BASE_API}/variables/{variable_uid}",json=payload)
-    result=json.loads(response.content.decode('utf-8'))
+
     return(response)
 
 
-def get_job_variables():
+def get_job_variables() -> Response:
     job_uid = aet.active_pipeline_job_uid
     url = f'{BASE_API}/jobs/{job_uid}/variables'
     response = http_client.get(url)
     response.raise_for_status()
     return response
 
-def cancel_pipeline_job():
+def cancel_pipeline_job() -> Response:
     job_uid = aet.active_pipeline_job_uid
     url = f'{BASE_API}/jobs/{job_uid}/cancel'
     response = http_client.post(url)
     response.raise_for_status()
     return response
 
-def cancel_prototype_job(uid: str):
+def cancel_prototype_job(uid: str) -> Response:
     url = f'{BASE_API}/prototype_jobs/{uid}/cancel'
     response = http_client.post(url=url)
     
@@ -618,7 +623,7 @@ def consume_execution_stream(job_uid: str) -> Generator[dict, None, None]:
 ##### INITIAL VARIABLES #####
 
 
-def get_initial_variable_by_name(uid: str):
+def get_initial_variable_by_name(uid: str) -> Response:
     pipeline_uid = aet.active_pipeline_uid
     url = f'{BASE_API}/initial_variables?name={uid}&pipeline_uid={pipeline_uid}'
 
@@ -627,13 +632,13 @@ def get_initial_variable_by_name(uid: str):
     return response
 
 
-def delete_initial_variable_by_uid(uid):
+def delete_initial_variable_by_uid(uid: str) -> Response:
     response = http_client.delete(f'{BASE_API}/initial_variables/{uid}')
     response.raise_for_status()
     return response
 
 
-def delete_all_initial_variables():
+def delete_all_initial_variables() -> Response:
     pipeline_uid = aet.active_pipeline_uid
     response = http_client.delete(f'{BASE_API}/pipelines/{pipeline_uid}/initial_variables')
     response.raise_for_status()
@@ -642,7 +647,7 @@ def delete_all_initial_variables():
 
 def update_initial_variable_by_uid(
     variable_uid: str, name: str, value: Any, is_result: bool, type=None, size: Optional[int] = None
-):
+) -> Response:
     project_uid = aet.project_uid
     pipeline_uid = aet.active_pipeline_uid
     pipeline_job_uid = aet.active_pipeline_job_uid
@@ -663,7 +668,7 @@ def update_initial_variable_by_uid(
 
 ########### Files ###############
 
-def upload_urls_from_file(path:str):
+def upload_urls_from_file(path: str) -> Response:
     file = {'file': open(path, 'rb')}
     response = http_client.post(SERVER+":"+str(PORT)+"/api/v1/upload_urls_from_file", files=file)
     flog.info(f"file upload response: {response.text}")
@@ -685,7 +690,7 @@ def delete_all_files():
 ############## Pipelines ##############
 
 
-def pipeline_refresh_building_blocks(pipeline_uid:str): 
+def pipeline_refresh_building_blocks(pipeline_uid:str) -> Response: 
     url = f'{BASE_API}/pipeline_refresh_building_blocks/{pipeline_uid}'
 
     response = http_client.get(url)
@@ -693,7 +698,7 @@ def pipeline_refresh_building_blocks(pipeline_uid:str):
 
     return response
 
-def pipeline_refresh_running_blocks(pipeline_uid:str): 
+def pipeline_refresh_running_blocks(pipeline_uid:str) -> Response: 
     url = f'{BASE_API}/pipeline_refresh_running_blocks/{pipeline_uid}'
 
     response = http_client.get(url)
@@ -701,7 +706,7 @@ def pipeline_refresh_running_blocks(pipeline_uid:str):
 
     return response
 
-def activate_pipeline(pipeline_uid: str, project_uid: str):
+def activate_pipeline(pipeline_uid: str, project_uid: str) -> Response:
     url = f'{BASE_API}/projects/{project_uid}/pipelines/{pipeline_uid}/activate'
 
     response = http_client.post(url)
@@ -712,12 +717,14 @@ def activate_pipeline(pipeline_uid: str, project_uid: str):
 ############ Popups ###################
 """In this file all functions should have response-like return value"""
 
-def new_popup_wrapper(args_list):
+def new_popup_wrapper(args_list) -> Response:
     assert len(args_list) > 1
-    new_popup(*args_list)
+    response = new_popup(*args_list)
+
+    return response
 
 
-def new_popup(pos, typ, params_dict=None):
+def new_popup(pos: list[int, int], typ: str, params_dict=None) -> Response:
     """
     Generates new Popup via API.
     :param pos: position of new Popup as [x, y]
@@ -752,7 +759,12 @@ def new_popup(pos, typ, params_dict=None):
     return response
 
 
-def update_popup_by_uid(popup_uid, pos=None, typ=None, params_dict=None):
+def update_popup_by_uid(
+    popup_uid: str,
+    pos: Optional[list[int, int]] = None,
+    typ: Optional[str] = None,
+    params_dict: dict = None,
+) -> Response:
     """
     Updates existing Popup via API.
     :param popup_uid: Popup ID
@@ -797,7 +809,7 @@ def update_popup_by_uid(popup_uid, pos=None, typ=None, params_dict=None):
 ############### Scripts ###############
 
 
-def update_last_active_script(script_uid: Optional[str] = None):
+def update_last_active_script(script_uid: Optional[str] = None) -> Response:
     payload = {
         "project_uid": aet.project_uid,
         "uid": script_uid
@@ -812,7 +824,7 @@ def update_last_active_script(script_uid: Optional[str] = None):
     return response
 
 
-def get_last_active_script():
+def get_last_active_script() -> Response:
     url = f'{BASE_API}/last_active_script?project_uid={aet.project_uid}'
 
     response = http_client.get(url)
@@ -822,7 +834,7 @@ def get_last_active_script():
 
 #~#~#~#~#~##~#~#~#~# SCRIPTS END #~#~#~#~#~##~#~#~#~#
 
-def run_pipeline_to_code_conversion():
+def run_pipeline_to_code_conversion() -> Response:
     payload = {
         "pipeline_uid": aet.active_pipeline_uid,
         "project_uid": aet.project_uid
@@ -832,7 +844,7 @@ def run_pipeline_to_code_conversion():
     
     return response
 
-def run_code_to_pipeline_conversion():
+def run_code_to_pipeline_conversion() -> Response:
     payload = {
         "pipeline_uid": aet.active_pipeline_uid,
         "project_uid": aet.project_uid
@@ -842,7 +854,7 @@ def run_code_to_pipeline_conversion():
     
     return response
 
-def run_inspect_node_code(node_uid:str):
+def run_inspect_node_code(node_uid: str) -> Response:
     payload = {
         "uid": node_uid,
         "project_uid": aet.project_uid
@@ -851,7 +863,7 @@ def run_inspect_node_code(node_uid:str):
     response = http_client.post(url=url, json=payload)
     return response
 
-def get_all_databases_by_project_uid():
+def get_all_databases_by_project_uid() -> Response:
     response = http_client.get(SERVER+":"+str(PORT)+"/api/v1/databases")
         
     if response.status_code != 200:
@@ -862,7 +874,7 @@ def get_all_databases_by_project_uid():
     
     return project_databases
 
-def store_df_to_google_sheet(dataset_uid:str, sheet_name:str, email:str):
+def store_df_to_google_sheet(dataset_uid:str, sheet_name:str, email:str) -> Response:
     
     payload = {
         "dataset_uid": dataset_uid,
@@ -881,7 +893,7 @@ def store_df_to_google_sheet(dataset_uid:str, sheet_name:str, email:str):
 
 
 
-def initialize_last_or_new_project_by_email(email):
+def initialize_last_or_new_project_by_email(email: str) -> Response:
     
     payload = {
         "email": email
@@ -895,7 +907,7 @@ def initialize_last_or_new_project_by_email(email):
 
     return response
 
-def initialize_last_or_new_pipeline(project_uid):
+def initialize_last_or_new_pipeline(project_uid: str) -> Response:
     
     payload = {
         "project_uid": project_uid
@@ -909,7 +921,7 @@ def initialize_last_or_new_pipeline(project_uid):
 
     return response
 
-def get_next_node_predictions(initial_node_uid: Optional[str] = None, is_used_for_autopilot: bool = False):
+def get_next_node_predictions(initial_node_uid: Optional[str] = None, is_used_for_autopilot: bool = False) -> Response:
     payload = {
         "node_uid": initial_node_uid,
         "is_used_for_autopilot": is_used_for_autopilot
@@ -924,7 +936,7 @@ def get_next_node_predictions(initial_node_uid: Optional[str] = None, is_used_fo
 
     return response
 
-def confirm_selected_node_prediction(node_uid: str, is_used_for_autopilot: bool = False):
+def confirm_selected_node_prediction(node_uid: str, is_used_for_autopilot: bool = False) -> Response:
     payload = {
         "node_uid": node_uid,
         "is_used_for_autopilot": is_used_for_autopilot
@@ -939,14 +951,14 @@ def confirm_selected_node_prediction(node_uid: str, is_used_for_autopilot: bool 
 
     return response
 
-def get_form_dict_list_templates():
+def get_form_dict_list_templates() -> Response:
     url = f'{BASE_API}/node_defs'
     response = http_client.get(url)
     flog.debug(f'GET form dict list templates: {response.text}')
 
     return response
 
-def get_chatgpt_adjustment(user_input_text, openai_api_key):
+def get_chatgpt_adjustment(user_input_text: str, openai_api_key: str) -> Response:
     payload = {
         "user_input_text": user_input_text,
         "openai_api_key" : openai_api_key
@@ -961,7 +973,7 @@ def get_chatgpt_adjustment(user_input_text, openai_api_key):
 
     return response
 
-def process_api_adjustments(adjustments_dict, project_uid):
+def process_api_adjustments(adjustments_dict: dict, project_uid: str) -> Response:
     payload = {
         "adjustments_dict": adjustments_dict,
         "project_uid": project_uid
@@ -972,24 +984,23 @@ def process_api_adjustments(adjustments_dict, project_uid):
     url = f'{BASE_API}/api_pipeline_adjustments'
 
     response = http_client.post(url, data=json.dumps(payload))
-    # flog.info(f'Chatgpt adjustment: {response.text}')
 
     return response
 
-def get_user_logs():
+def get_user_logs() -> Response:
     url = f'{BASE_API}/user_logs'
     response = http_client.get(url)
     return response
 
 
-def clean_data(data):
+def clean_data(data) -> Response:
     url = f'{BASE_API}/clean_data'
     response = http_client.post(url, data=data)
 
     return response
 
 
-def scan_website_and_take_screenshot_test(email, url):
+def scan_website_and_take_screenshot_test(email: str, url: str) -> Response:
     payload={"email":email,
              "url":url,
               "incl_tables": True,
@@ -1007,7 +1018,7 @@ def scan_website_and_take_screenshot_test(email, url):
 
 
 
-def finalize_pipeline(project_uid):
+def finalize_pipeline(project_uid: str) -> Response:
     payload={"project_uid":project_uid,
            }
     url = f'{BASE_API}/finalize_pipeline'
@@ -1016,7 +1027,7 @@ def finalize_pipeline(project_uid):
     return response
 
 
-def pipeline_direct_execute(pipeline_uid: str, payload: dict):
+def pipeline_direct_execute(pipeline_uid: str, payload: dict) -> Response:
     url = f'{BASE_API}/pipelines/{pipeline_uid}/direct_execute'
     response = http_client.post(url=url, json=payload)
     response.raise_for_status()
@@ -1024,7 +1035,7 @@ def pipeline_direct_execute(pipeline_uid: str, payload: dict):
     return response
 
 
-def filter_webpage_elements_based_on_objective(elements: list[dict], objective: str):
+def filter_webpage_elements_based_on_objective(elements: list[dict], objective: str) -> Response:
     payload = {
         "elements": elements,
         "objective": objective
