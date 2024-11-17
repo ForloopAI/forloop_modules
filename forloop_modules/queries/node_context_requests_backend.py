@@ -84,96 +84,138 @@ def set_stored_project_uid_and_pipeline_uid_to_factory_payload(payload: dict):
     payload['pipeline_uid'] = aet.active_pipeline_uid
 
 
-def get_all_factory(resource_name):
-    resource_url = f'{SERVER}:{str(PORT)}/api/v1/{resource_name}'
-    def get_all():
+def remove_none_values_from_payload(payload: dict) -> dict:
+    payload = {key: value for key, value in payload.items() if value is not None}
+
+    return payload
+
+
+def get_all_factory(resource_name: str):
+    """
+    Factory creating a "GET all <resources>" request function.
+
+    Args:
+        resource_name (str): Name of resources to GET (e.g. nodes, edges, scripts etc.)
+
+    Returns:
+        (() -> Response): "GET all <resources>" request calling function
+    """    
+    resource_url = f"{SERVER}:{str(PORT)}/api/v1/{resource_name}"
+
+    def get_all() -> Response:
         response = http_client.get(resource_url)
-        #flog.info(f'GET all response: {response.text}')
         return response
-    get_all.__name__ = f'get_all_{resource_name}'
+
+    get_all.__name__ = f"get_all_{resource_name}"
     return get_all
 
-def get_factory(resource_name):
-    def get(resource_uid):
-        resource_url = f'{BASE_API}/{resource_name}/{resource_uid}'
+
+def get_factory(resource_name: str):
+    """
+    Factory creating a "GET <resource>" request function.
+
+    Args:
+        resource_name (str): Name of a resource to GET (e.g. node, edge, script etc.)
+
+    Returns:
+        ((resource_uid: str) -> Response): "GET <resource>" request calling function
+    """  
+    def get(resource_uid: str):
+        resource_url = f"{BASE_API}/{resource_name}/{resource_uid}"
         response = http_client.get(resource_url)
-        #flog.info(f'GET response: {response.text}')
         return response
-    get.__name__ = f'get_{resource_name}_by_uid'
+
+    get.__name__ = f"get_{resource_name}_by_uid"
     return get
 
-def delete_factory(resource_name):
-    def delete(resource_uid):
-        resource_url = f'{BASE_API}/{resource_name}/{resource_uid}'
+
+def delete_factory(resource_name: str):
+    """
+    Factory creating a "DELETE <resource>" request function.
+
+    Args:
+        resource_name (str): Name of a resource DELETE (e.g. node, edge, script etc.)
+
+    Returns:
+        ((resource_uid: str) -> Response): "DELETE <resource>" request calling function
+    """  
+    def delete(resource_uid: str):
+        resource_url = f"{BASE_API}/{resource_name}/{resource_uid}"
         response = http_client.delete(resource_url)
-        #flog.info(f'DELETE response: {response.text}')
         return response
-    delete.__name__ = f'delete_{resource_name}_by_uid'
+
+    delete.__name__ = f"delete_{resource_name}_by_uid"
     return delete
 
 
-
-def new_factory(resource_name, model):
-    #list of pydantic attributes
+def new_factory(resource_name: str, model):
+    # list of pydantic attributes
     model_attribute_names = list(vars(model()).keys())
-    #remove the uid attribute – see VariableModel and APIVariable
-    model_attribute_names_without_uid = [v for v in model_attribute_names if v != 'uid']
-    #the new function (eg new_database) will expect same args as what the attributes are (without uid)
-    params = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD) for name in model_attribute_names_without_uid]
-    
-    def new(*args,model_attribute_names_without_uid=model_attribute_names_without_uid, **kwargs):
+    # remove the uid attribute – see VariableModel and APIVariable
+    model_attribute_names_without_uid = [v for v in model_attribute_names if v != "uid"]
+    # the new function (eg new_database) will expect same args as what the attributes are (without uid)
+    params = [
+        Parameter(name, Parameter.POSITIONAL_OR_KEYWORD)
+        for name in model_attribute_names_without_uid
+    ]
+
+    def new(
+        *args,
+        model_attribute_names_without_uid=model_attribute_names_without_uid,
+        **kwargs,
+    ):
         payload = {
-            param: arg
-            for param, arg in zip(model_attribute_names_without_uid, args)
+            param: arg for param, arg in zip(model_attribute_names_without_uid, args)
         }
         payload.update(kwargs)
         set_stored_project_uid_and_pipeline_uid_to_factory_payload(payload)
         if issubclass(model, APIVariable):
             payload["pipeline_job_uid"] = aet.active_pipeline_job_uid
 
-        #flog.info(f'New {resource_name} payload: {payload}')
-        resource_url = f'{BASE_API}/{resource_name}'
-
+        resource_url = f"{BASE_API}/{resource_name}"
         response = http_client.post(resource_url, json=payload)
-        #flog.info(f'New {resource_name} response: {response.text}')
-        if not response.ok:
-            flog.error(response.json())
-            # response.raise_for_status()
+
         return response
 
     new.__signature__ = Signature(params)
-    new.__name__ = f'new_{resource_name}'
+    new.__name__ = f"new_{resource_name}"
 
     return new
 
-def update_factory(resource_name, model):
-    #list of pydantic class attributes
-    model_attribute_names = list(vars(model()).keys())
-    #remove the uid attribute – see VariableModel and APIVariable
-    model_attribute_names_without_uid = [v for v in model_attribute_names if v != 'uid']
-    params = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD) for name in model_attribute_names_without_uid]
 
-    def update(uid, *args, model_attribute_names_without_uid=model_attribute_names_without_uid, **kwargs):
+def update_factory(resource_name: str, model):
+    # list of pydantic class attributes
+    model_attribute_names = list(vars(model()).keys())
+    # remove the uid attribute – see VariableModel and APIVariable
+    model_attribute_names_without_uid = [v for v in model_attribute_names if v != "uid"]
+    params = [
+        Parameter(name, Parameter.POSITIONAL_OR_KEYWORD)
+        for name in model_attribute_names_without_uid
+    ]
+
+    def update(
+        uid,
+        *args,
+        model_attribute_names_without_uid=model_attribute_names_without_uid,
+        **kwargs,
+    ):
         payload = {
-            param: arg
-            for param, arg in zip(model_attribute_names_without_uid, args)
+            param: arg for param, arg in zip(model_attribute_names_without_uid, args)
         }
         payload.update(kwargs)
         set_stored_project_uid_and_pipeline_uid_to_factory_payload(payload)
         if issubclass(model, APIVariable):
             payload["pipeline_job_uid"] = aet.active_pipeline_job_uid
 
-        #flog.info(f'Update {resource_name} payload: {payload}')
-        resource_url = f'{BASE_API}/{resource_name}/{uid}'
-
+        resource_url = f"{BASE_API}/{resource_name}/{uid}"
         response = http_client.put(resource_url, json=payload)
-        #flog.info(f'Update {resource_name} response: {response.text}')
-        if not response.ok:
-            flog.error(response.json())
+
         return response
 
-    update.__signature__ = Signature([Parameter('uid', Parameter.POSITIONAL_OR_KEYWORD)] + params)
-    update.__name__ = f'update_{resource_name}_by_uid'
+    update.__signature__ = Signature(
+        [Parameter("uid", Parameter.POSITIONAL_OR_KEYWORD)] + params
+    )
+    update.__name__ = f"update_{resource_name}_by_uid"
 
     return update
 
@@ -205,25 +247,10 @@ for resource_name, actions in RESOURCES.items():
         globals()[function_name] = fn
 
 
-
-
-# def get_project_key() -> Optional[str]:
-#     project_key = auth.user_email
-#     if project_key is not None:
-#         project_key = project_key.replace("@", "at")
-
-#     return project_key
-
-
 def get_project_uid() -> Optional[str]:
     project_uid = aet.project_uid
-    
-    return project_uid
 
-def remove_none_values_from_payload(payload:dict) -> dict:
-    payload = {key:value for key, value in payload.items() if value is not None}
-    
-    return payload
+    return project_uid
 
 
 ############### Nodes #################
