@@ -19,7 +19,14 @@ class HttpClient(httpx.Client):
         self._sse_parser = SSEParser(httpx_client=self)
         self.sse_stream = self._sse_parser.stream
 
-    def _request(self, url: str, method: str, *, headers: Optional[dict[str, str]] = None, **kwargs):
+    def _request(
+        self,
+        url: str,
+        method: str,
+        *,
+        headers: Optional[dict[str, str]] = None,
+        **kwargs,
+    ) -> httpx.Response:
         headers = headers or {}
         global_headers = {
             # "Authorization": f"Bearer {aet.get_access_token()}",
@@ -27,20 +34,20 @@ class HttpClient(httpx.Client):
         }
         global_headers.update(headers)
         response = super().request(method, url, headers=global_headers, **kwargs)
-        response.ok = response.is_success # Cross compatibility with requests
+        response.ok = response.is_success  # Cross compatibility with requests
         # response.raise_for_status()
         return response
 
-    def get(self, url: str, **kwargs):
+    def get(self, url: str, **kwargs) -> httpx.Response:
         return self._request(url, "GET", **kwargs)
 
-    def post(self, url: str, **kwargs):
+    def post(self, url: str, **kwargs) -> httpx.Response:
         return self._request(url, "POST", **kwargs)
 
-    def put(self, url: str, **kwargs):
+    def put(self, url: str, **kwargs) -> httpx.Response:
         return self._request(url, "PUT", **kwargs)
 
-    def delete(self, url: str, **kwargs):
+    def delete(self, url: str, **kwargs) -> httpx.Response:
         return self._request(url, "DELETE", **kwargs)
 
 
