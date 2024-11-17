@@ -255,6 +255,7 @@ def get_project_uid() -> Optional[str]:
 
 ############### Nodes #################
 
+
 def new_node(pos, typ, params_dict: Optional[dict] = None, fields: Optional[list] = None, visible: Optional[bool] = True):
     project_uid = aet.project_uid
     pipeline_uid = aet.active_pipeline_uid
@@ -334,14 +335,6 @@ def delete_node_by_uid(node_uid):
     flog.info(f'DELETE Node response: {response.text}')
 
     return response
-    
-# def delete_node_by_uid(node_uid):
-#     url = f'{BASE_API}/node/{node_uid}'
-#
-#     response = http_client.delete(url)
-#     flog.info(f'DELETE Node response: {response.text}')
-#
-#     return response
     
 
 def delete_all_nodes():
@@ -459,39 +452,8 @@ def node_button_click_wrapper(args):
 
 
 
-
 ############### Edges #################
-"""In this file all functions should have response-like return value"""
 
-
-#Todo
-# def new_edge(from_node_uid, to_node_uid, visible:bool=True):
-#     project_uid = aet.project_uid
-#
-#     payload = {
-#         "from_node_uid": from_node_uid,
-#         "to_node_uid": to_node_uid,
-#         "project_uid": project_uid,
-#         "visible": visible
-#     }
-#
-#     flog.info(f'New Edge payload: {payload}')
-#
-#     url = f'{BASE_API}/edges'
-#
-#     response = http_client.post(url, json=payload)
-#     flog.info(f'New Edge response: {response.text}')
-#
-#     return response
-
-
-# def get_all_edges():
-#     url = f'{BASE_API}/edges'
-#
-#     response = http_client.get(url)
-#     flog.info(f'GET all Edges response: {response.text}')
-#
-#     return response
 
 def get_edges_by_node_uid(node_uid:str):
     url = f'{BASE_API}/nodes/{node_uid}/edges'
@@ -556,30 +518,6 @@ def get_last_active_dataframe_node_uid():
 
 
 ########### Variables ###############
-"""In this file all functions should have response-like return value"""
-
-
-# def new_variable(name, value, type=None, size=None):
-#     # TODO: solve DFs, dicts, lists, objects etc
-#
-#     project_uid = get_project_uid()
-#
-#     payload = {
-#         "name": name,
-#         "value": value,
-#         "type": type,
-#         "size": size,
-#         "project_uid": project_uid
-#     }
-#
-#     flog.info(f'New Variable payload: {payload}')
-#
-#     url = f'{BASE_API}/variables'
-#
-#     response = http_client.post(url, json=payload)
-#     flog.info(f'New Variable response: {response.text}')
-#
-#     return response
 
 
 def get_variable(uid: str) -> Optional[dict]:
@@ -603,16 +541,6 @@ def get_variable_by_name(variable_name: str):
     flog.info(f'GET Variable by name response: {response.text}')
 
     return response
-
-
-# def get_all_variables():
-#     url = f'{BASE_API}/variables'
-#
-#     response = http_client.get(url)
-#     flog.info(f'GET all Variables response: {response.text}')
-#
-#     return response
-
 
     
 
@@ -659,25 +587,6 @@ def update_variable_by_uid(variable_uid: str, name: str, value: Any, is_result: 
     response=http_client.put(f"{BASE_API}/variables/{variable_uid}",json=payload)
     result=json.loads(response.content.decode('utf-8'))
     return(response)
-
-  
-# def update_variable_by_uid(variable_uid,name,value,type=None,size=None):
-#     # TODO: don't we miss project_uid here?
-    
-#     payload = {
-#         "name": name,
-#         "value": value,
-#         "type": type,
-#         "size": size
-#     }
-
-#     flog.info(f'Updated Variable payload: {payload}')
-#     url = f'{BASE_API}/variable/{variable_uid}'
-    
-#     response = http_client.put(url, json=payload)
-#     flog.info(f'Updated Variable response: {response.text}')
-
-#     return response
 
 
 def get_job_variables():
@@ -752,72 +661,7 @@ def update_initial_variable_by_uid(
     return response
 
 
-############# Dbtables ###############
-#
-# def new_dbtable(name, pos, columns, is_rolled, database_uid, project_uid):
-#     # payload = '{"name":"' + str(name) + '","pos":'+ json.dumps(pos) + ',"columns":' + json.dumps(columns) + ',"is_rolled":' + json.dumps(
-#     #     is_rolled) + ',"database_uid":"' + database_uid + '","project_uid":"' + project_uid + '"}'  # TODO: solve DFs, dicts, lists, objects etc.
-#     # #
-#     #
-#     payload = {
-#         "name": str(name),
-#         "pos": pos,
-#         "columns": columns,
-#         "is_rolled": is_rolled,
-#         "database_uid": database_uid,
-#         "project_uid": project_uid
-#     }
-#     flog.info(payload)
-#     response = http_client.post(SERVER + ":" + str(PORT) + "/api/v1/dbtables", json=payload)
-#     return (response)
-
-
-# def get_all_dbtables():
-#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/dbtables")
-#     return(response)
-
-# def get_dbtable_by_uid(dbtable_uid):
-#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/dbtable/"+str(dbtable_uid))
-#     return(response)
-#
-# def update_dbtable_by_uid(dbtable_uid, name, pos, columns, is_rolled, database_uid, project_uid):
-#     # payload = '{"name":"' + str(name) + '","pos":' + json.dumps(pos) + ',"columns":' + json.dumps(
-#     #     columns) + ',"is_rolled":' + json.dumps(
-#     #     is_rolled) + ',"database_uid":"' + database_uid + '","project_uid":"' + project_uid + '"}'  # TODO: solve DFs, dicts, lists, objects etc.
-#     payload = {
-#         "name": str(name),
-#         "pos": pos,
-#         "columns": columns,
-#         "is_rolled": is_rolled,
-#         "database_uid": database_uid,
-#         "project_uid": project_uid
-#     }
-#     flog.info(payload)
-#     response = http_client.put(SERVER + ":" + str(PORT) + "/api/v1/dbtable/"+str(dbtable_uid), json=payload)
-#     return (response)
-
-##### files #####
-
-
-########### files ###############
-"""In this file all functions should have response-like return value"""
-
-
-# def new_file(file_name: str, data=None):
-#     project_uid = "0"
-#
-#     # TODO: not tested with data
-#     payload={
-#         "file_name": file_name,
-#         "data": json.dumps(data),
-#         "project_uid": project_uid
-#     }
-#     flog.info(f'New File payload: {payload}')
-#     print("REQUEST", SERVER, PORT, payload)
-#     response=http_client.post(SERVER+":"+str(PORT)+"/api/v1/files",json=payload)
-#     flog.info(f'New File response: {response.text}')
-#
-#     return(response)
+########### Files ###############
 
 def upload_urls_from_file(path:str):
     file = {'file': open(path, 'rb')}
@@ -825,21 +669,6 @@ def upload_urls_from_file(path:str):
     flog.info(f"file upload response: {response.text}")
 
     return response
-
-
-# def get_file_by_name(file_name):
-#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/get_file_by_name/"+str(file_name))
-#     return(response)
-
-
-# def get_all_files():
-#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/files")
-#     return(response)
-
-    
-# def delete_file_by_uid(file_uid):
-#     response=http_client.delete(SERVER+":"+str(PORT)+"/api/v1/file/"+str(file_uid))
-#     return(response)
     
 
 def delete_all_files():
@@ -850,69 +679,11 @@ def delete_all_files():
     payload='{"project_uid":"'+project_uid+'"}'
     flog.info(payload)
     response=http_client.delete(SERVER+":"+str(PORT)+"/api/v1/files",data=payload)
-    return(response)
-    
-
-
-
-
-# def update_file_by_uid(file_uid,name,value,type=None,size=None):
-#     payload='{"name":'+json.dumps(name)+',"value":'+json.dumps(value)+',"type":'+json.dumps(type)+',"size":'+json.dumps(size)+'}' #
-#     flog.info(payload)
-#     response=http_client.put(SERVER+":"+str(PORT)+"/api/v1/file/"+str(file_uid),data=payload)
-#     result=json.loads(response.content.decode('utf-8'))
-#     return(response)
-
-
-
-
-# def delete_dbtable_by_uid(dbtable_uid):
-#     response = http_client.delete(SERVER + ":" + str(PORT) + "/api/v1/dbtable/" + str(dbtable_uid))
-#     return (response)
-
-
-    
+    return(response)    
 
 
 ############## Pipelines ##############
-"""In this file all functions should have response-like return value"""
 
-# def get_all_pipelines():
-#     url = f'{BASE_API}/pipelines'
-#
-#     response = http_client.get(url)
-#     flog.info(f'GET all Pipelines response: {response.text}')
-#
-#     return response
-
-
-# def delete_pipeline_by_uid(pipeline_uid):
-#     url = f'{BASE_API}/pipeline/{pipeline_uid}'
-#
-#     response = http_client.delete(url)
-#     flog.info(f'DELETE Pipeline response: {response.text}')
-#
-#     return response
-#
-#
-# def new_pipeline(pos, typ, params_dict):
-#     project_uid = get_project_uid()
-#
-#     payload = {
-#         "pos": pos,
-#         "typ": typ,
-#         "params": params_dict,
-#         "project_uid": project_uid
-#     }
-#
-#     flog.info(f'New Pipeline payload: {payload}')
-#
-#     url = f'{BASE_API}/pipelines'
-#
-#     response = http_client.post(url, json=payload)
-#     flog.info(f'New Pipeline response: {response.text}')
-#
-#     return response
 
 def pipeline_refresh_building_blocks(pipeline_uid:str): 
     url = f'{BASE_API}/pipeline_refresh_building_blocks/{pipeline_uid}'
@@ -1023,78 +794,8 @@ def update_popup_by_uid(popup_uid, pos=None, typ=None, params_dict=None):
     return response
 
 
-# def get_all_popups():
-#     url = f'{BASE_API}/popups'
-#
-#     response = http_client.get(url)
-#     flog.info(f'GET all Popups response: {response.text}')
-#
-#     return response
-
-
-# def get_popup_by_uid(popup_uid):
-#     url = f'{BASE_API}/popup/{popup_uid}'
-#
-#     response = http_client.get(url)
-#     flog.info(f'GET Popup response: {response.text}')
-#
-#     return response
-
-
-# def delete_popup_by_uid(popup_uid):
-#     url = f'{BASE_API}/popup/{str(popup_uid)}'
-#     response = http_client.delete(url)
-#     flog.info(f'DELETE Popup response: {response.text}')
-#
-#     return response
-
-
 ############### Scripts ###############
 
-# def new_script(script_name, text="", project_uid="0"):
-#
-#     payload = f'{{"script_name":"{script_name}", "text":{json.dumps(text)}, "project_uid":{project_uid}}}'
-#
-#     flog.info(f'New Script payload: {payload}')
-#
-#     url = f'{SERVER}:{PORT}/api/v1/scripts'
-#
-#     response = http_client.post(url, data=payload)
-#     flog.info(f'New Script response: {response.text}')
-#
-#     return response
-#
-#
-# def update_script_by_uid(script_uid, script_name, text, project_uid="0"):
-#
-#     payload = f'{{"script_name":"{script_name}", "text":{json.dumps(text)}, "project_uid":{project_uid}}}'
-#
-#     flog.info(f'Update Script by Uid Payload: {payload}')
-#
-#     response = http_client.put(SERVER + ":" + str(PORT) + "/api/v1/script/" + str(script_uid), data=payload)
-#     result = json.loads(response.content.decode('utf-8'))
-#
-#     flog.info(f'Update Script by Uid Result: {result}')
-#
-#     return (response)
-
-
-
-# def get_all_scripts():
-#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/scripts")
-#     print("Get all scripts response: ", response)
-#     return(response)
-
-
-
-# def get_script_by_uid(script_uid):
-#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/script/"+str(script_uid))
-#     return(response)
-#
-#
-# def delete_script_by_uid(script_uid):
-#     response=http_client.delete(SERVER+":"+str(PORT)+"/api/v1/script/"+str(script_uid))
-#     return(response)
 
 def update_last_active_script(script_uid: Optional[str] = None):
     payload = {
@@ -1161,66 +862,6 @@ def get_all_databases_by_project_uid():
     
     return project_databases
 
-# def get_all_databases():
-#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/databases")
-#     return(response)
-
-# def delete_database_by_uid(database_uid):
-#     response=http_client.delete(SERVER+":"+str(PORT)+"/api/v1/databases/"+str(database_uid))
-#     flog.info(f'DELETE Database response: {response.text}')
-#     return(response)
-
-# def new_database(database_name, server, port, database, username, password, dialect, project_uid="0"):
-#     payload = {
-#         "database_name": database_name,
-#         "server": server,
-#         "port": port,
-#         "database": database,
-#         "username": username,
-#         "password": password,
-#         "dialect": dialect,
-#         }
-#     flog.info(f'New Dataset payload: {payload}')
-#
-#     url = f'{SERVER}:{PORT}/api/v1/databases'
-#
-#     response = http_client.post(url, json=payload)
-#     flog.info(f'New Database response: {response.text}')
-#
-#     return response
-
-# def update_database_by_uid(database_uid, database_name, server, port, database, username, password, dialect, project_uid="0"):
-#     payload = {
-#         "database_name": database_name,
-#         "server": server,
-#         "port": port,
-#         "database": database,
-#         "username": username,
-#         "password": password,
-#         "dialect": dialect,
-#         }
-#     flog.info(f'New Dataset payload: {payload}')
-#
-#     url = f'{SERVER}:{PORT}/api/v1/databases/{database_uid}'
-#
-#     response = http_client.put(url, json=payload)
-#     flog.info(f'New Database response: {response.text}')
-#
-#     return response
-
-
-# def delete_script_by_uid(script_uid):
-#     response=http_client.delete(SERVER+":"+str(PORT)+"/api/v1/script/"+str(script_uid))
-#     return response
-
-# def get_all_datasets():
-#     response=http_client.get(SERVER+":"+str(PORT)+"/api/v1/datasets")
-#     return(response)
-
-# def delete_dataset_by_uid(dataset_uid):
-#     response=http_client.delete(SERVER+":"+str(PORT)+"/api/v1/dataset/"+str(dataset_uid))
-#     return(response)
-
 def store_df_to_google_sheet(dataset_uid:str, sheet_name:str, email:str):
     
     payload = {
@@ -1267,21 +908,6 @@ def initialize_last_or_new_pipeline(project_uid):
     flog.info(f'Response: {response.text}')
 
     return response
-
-# def new_dataset(dataset_name, data="", project_uid="0"):
-#     payload = {
-#         "dataset_name": dataset_name,
-#         "data": data,
-#         "project_uid": project_uid
-#         }
-#     flog.info(f'New Dataset payload: {payload}')
-#
-#     url = f'{SERVER}:{PORT}/api/v1/datasets'
-#
-#     response = http_client.post(url, json=payload)
-#     flog.info(f'New Script response: {response.text}')
-#
-#     return response
 
 def get_next_node_predictions(initial_node_uid: Optional[str] = None, is_used_for_autopilot: bool = False):
     payload = {
