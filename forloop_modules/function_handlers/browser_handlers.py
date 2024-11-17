@@ -373,7 +373,7 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         # start_time = time.perf_counter()
         # a_time = time.perf_counter() - start_time
 
-        output_folder = Path.cwd() / 'tmp' / 'screenshots'
+        #output_folder = Path.cwd() / 'tmp' / 'screenshots'
 
         # random_number = 50000000 + random.randint(1, 10000000)  # initialization
 
@@ -431,7 +431,7 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
         # e_time = time.perf_counter() - start_time #12.5s
         if url:
             suh.webscraping_client.load_website(url, timeout=120)
-        elements, screenshot_base64 = suh.scan_web_page_API(output_folder, scraping_options)  #9 seconds
+        elements, screenshot_base64 = suh.scan_web_page_API(scraping_options)  #9 seconds
 
         # # Convert PNG file to WEBP
         # img = Image.open(output_folder / "website.png")

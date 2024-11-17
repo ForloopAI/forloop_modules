@@ -611,20 +611,20 @@ class ScrapingUtilitiesHandler:
     
         return generalised_xpaths, optimal_xpath_index
 
-    def scan_web_page_API(self, output_folder, scraping_options: dict):
+    def scan_web_page_API(self, scraping_options: dict):
         """
         Function only to use in "Getting Started" tutorial on web app !!!
         Combines ScanWebPage (all elements) with Cookies Detection
         """
-        def generate_folder_structure(folder_name):
-            try:
-                os.mkdir(folder_name)
-            except:
-                print("skipping - "+folder_name+" folder exists already")
-        
-        generate_folder_structure("tmp")
-        generate_folder_structure("tmp/screenshots")
-        generate_folder_structure("tmp/scraped_data")
+        # def generate_folder_structure(folder_name):
+        #     try:
+        #         os.mkdir(folder_name)
+        #     except:
+        #         print("skipping - "+folder_name+" folder exists already")
+        #
+        # generate_folder_structure("tmp")
+        # generate_folder_structure("tmp/screenshots")
+        # generate_folder_structure("tmp/scraped_data")
 
         xpath = self.detect_cookies_xpath_preparation()
     
