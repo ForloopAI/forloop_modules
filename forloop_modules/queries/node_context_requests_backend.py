@@ -40,7 +40,7 @@ PORT = rows[1].split("=")[1].strip()
 BASE_API = f'{SERVER}:{PORT}/api/v1'
 http_client = HttpClient()
 
-resources = {
+RESOURCES = {
     "databases": ["get_all", "get", "new", "delete", "update"],
     "dbtables": ["get_all", "get", "new", "delete", "update"],
     "files": ["get_all", "get", "new", "delete", "update"],
@@ -49,9 +49,9 @@ resources = {
     "edges": ["get_all", "get", "new", "delete", "update"],
     "variables": ["get_all", "get", "new", "delete"],
     "popups": ["get_all", "get", "delete"],
-    "nodes": ["get_all", "get", "delete"],# "get", "new", "delete", "update"],
+    "nodes": ["get_all", "get", "delete"],
     "pipelines": ["get_all", "get", "new", "delete", "update"],
-    "initial_variables": ["get_all", "get", "new", "delete"]
+    "initial_variables": ["get_all", "get", "new", "delete"],
 }
 
 
@@ -177,7 +177,7 @@ def update_factory(resource_name, model):
     return update
 
 
-for resource_name, actions in resources.items():
+for resource_name, actions in RESOURCES.items():
     resource_name_singular = resource_name[:-1]
     for action in actions:
         function_name = None
