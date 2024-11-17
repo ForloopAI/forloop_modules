@@ -69,14 +69,16 @@ DB_API_BODY_TEMPLATE = {
     "initial_variables": APIInitialVariable,
 }
 
-#! Auxiliary function - sets project_uid and pipeline_uid into factory functions' payloads
+
 def set_stored_project_uid_and_pipeline_uid_to_factory_payload(payload: dict):
-    """Sets project_uid and pipeline_uid values in payload from those stored in auth handler.
+    """
+    Sets project_uid and pipeline_uid values in payload from those stored in auth handler.
 
     Args:
         payload (dict): API request payload.
     """
-    #! This approach might not be safe if API validation becomes strict (not all calls take both project_uid and pipeline_uid as parameters)
+    # This approach might not be safe if API validation becomes strict (not all calls take both
+    # project_uid and pipeline_uid as parameters)
     # TODO: Think about a better implementation (due to the point above)
     payload['project_uid'] = aet.project_uid
     payload['pipeline_uid'] = aet.active_pipeline_uid
