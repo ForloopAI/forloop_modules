@@ -2,18 +2,30 @@
 """In this file all functions should have response-like return value"""
 
 import json
-from inspect import Parameter, Signature
-from pydantic import BaseModel
-from typing import Optional, Any, Generator
 import sys
+from inspect import Parameter, Signature
 from pathlib import Path
+from typing import Any, Generator, Optional
+
+from httpx import Response
+
 import forloop_modules.flog as flog
-import json
-
-from forloop_modules.utils.http_client import HttpClient
 from forloop_modules.globals.active_entity_tracker import aet
-
-from forloop_modules.queries.db_model_templates import APIProject, APITrigger, APIDataset, APIDbTable, APIScript, APIFile, APIDatabase, APIPipeline, APIEdge, APIVariable, APIPopup, APIInitialVariable
+from forloop_modules.queries.db_model_templates import (
+    APIDatabase,
+    APIDataset,
+    APIDbTable,
+    APIEdge,
+    APIFile,
+    APIInitialVariable,
+    APIPipeline,
+    APIPopup,
+    APIProject,
+    APIScript,
+    APITrigger,
+    APIVariable,
+)
+from forloop_modules.utils.http_client import HttpClient
 
 if sys.platform == "darwin":  # MAC OS
     config_path = 'config/server_config_remote.ini'
