@@ -1,12 +1,10 @@
 import base64
 from io import BytesIO
-from pathlib import Path
-from typing import Union, Optional
+from typing import Union
 
 from PIL import Image
 
 import forloop_modules.queries.node_context_requests_backend as ncrb
-from docrawl.errors import SpiderFunctionError
 from forloop_modules.errors.errors import CriticalPipelineError
 from forloop_modules.flog import flog
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import (
