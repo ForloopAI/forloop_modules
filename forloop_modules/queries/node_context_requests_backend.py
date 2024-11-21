@@ -549,9 +549,6 @@ def get_last_active_dataframe_node_uid() -> Response:
     return response
 
 
-##### VARIABLES #####
-
-
 ########### Variables ###############
 
 
@@ -778,7 +775,6 @@ def activate_pipeline(pipeline_uid: str, project_uid: str) -> Response:
 
 
 ############ Popups ###################
-"""In this file all functions should have response-like return value"""
 
 
 def new_popup_wrapper(args_list) -> Response:
