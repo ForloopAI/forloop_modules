@@ -5,7 +5,7 @@ import json
 import sys
 from inspect import Parameter, Signature
 from pathlib import Path
-from typing import Any, Generator, Optional
+from typing import Any, Generator, Optional, Union
 
 from httpx import Response
 
@@ -68,6 +68,8 @@ DB_API_BODY_TEMPLATE = {
     "popups": APIPopup,
     "initial_variables": APIInitialVariable,
 }
+
+Model = Union[tuple(DB_API_BODY_TEMPLATE.values())]
 
 
 def set_stored_project_uid_and_pipeline_uid_to_factory_payload(payload: dict):
@@ -134,7 +136,7 @@ def delete_factory(resource_name: str):
     Factory creating a "DELETE <resource>" request function.
 
     Args:
-        resource_name (str): Name of a resource DELETE (e.g. node, edge, script etc.)
+        resource_name (str): Name of a resource to DELETE (e.g. node, edge, script etc.)
 
     Returns:
         ((resource_uid: str) -> Response): "DELETE <resource>" request calling function
@@ -148,7 +150,18 @@ def delete_factory(resource_name: str):
     return delete
 
 
-def new_factory(resource_name: str, model):
+def new_factory(resource_name: str, model: Model):
+    """
+    Factory creating a "POST <resource>" request function.
+
+    Args:
+        resource_name (str): Name of a resource to POST (e.g. node, edge, script etc.)
+        model (Model): API model of the resource (e.g. "node -> APINode", "edge -> APIEdge" etc.)
+
+    Returns:
+        ((..., model_attr_names_wo_uid: Any = model_attr_names_wo_uid) -> Response): "POST
+            <resource>" request calling function
+    """
     # list of pydantic attributes
     model_attribute_names = list(vars(model()).keys())
     # remove the uid attribute – see VariableModel and APIVariable
@@ -183,7 +196,18 @@ def new_factory(resource_name: str, model):
     return new
 
 
-def update_factory(resource_name: str, model):
+def update_factory(resource_name: str, model: Model):
+    """
+    Factory creating a "PUT <resource>" request function.
+
+    Args:
+        resource_name (str): Name of a resource to PUT (e.g. node, edge, script etc.)
+        model (Model): API model of the resource (e.g. "node -> APINode", "edge -> APIEdge" etc.)
+
+    Returns:
+        ((..., model_attr_names_wo_uid: Any = model_attr_names_wo_uid) -> Response): "PUT
+            <resource>" request calling function
+    """
     # list of pydantic class attributes
     model_attribute_names = list(vars(model()).keys())
     # remove the uid attribute – see VariableModel and APIVariable
