@@ -30,7 +30,7 @@ def get_all_databases_in_project():
     response = ncrb.get_all_databases()
         
     if response.status_code != 200:
-        raise Exception(f'Error {response.status_code}: {response.reason}.')
+        raise Exception(f'Error {response.status_code}: {response.reason_phrase}.')
     
     databases = response.json().get("result", {}).get("databases")
     project_databases = [database for database in databases if database["project_uid"] == aet.project_uid]

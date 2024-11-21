@@ -554,7 +554,7 @@ class FilterWebpageElementsWithAIHandler(AbstractFunctionHandler):
             redis_action_key = redis_config.SCRAPING_ACTION_KEY_TEMPLATE.format(pipeline_uid=aet.active_pipeline_uid)
             kv_redis.set(redis_action_key, result)
         else:
-            raise CriticalPipelineError(response.reason)
+            raise CriticalPipelineError(response.reason_phrase)
 
 
 browser_handlers_dict = {
