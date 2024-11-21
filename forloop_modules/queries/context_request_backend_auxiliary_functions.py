@@ -56,7 +56,7 @@ def get_and_subset_requested_objects(ncrb_function, func_args:Optional[list]=Non
             result = filter_items_by_project_uid(result)
         return result
     else:
-        flog.warning(f'Status code {response.status_code}: {response.reason}')
+        flog.warning(f'Status code {response.status_code}: {response.reason_phrase}')
     
 def filter_items_by_project_uid(items:list):
     user_items = items
