@@ -867,7 +867,7 @@ def get_all_databases_by_project_uid() -> Response:
     response = http_client.get(SERVER+":"+str(PORT)+"/api/v1/databases")
         
     if response.status_code != 200:
-        raise Exception(f'Error {response.status_code}: {response.reason}.')
+        raise Exception(f'Error {response.status_code}: {response.reason_phrase}.')
     
     databases = response.json()['databases']
     project_databases = [database for database in databases if database["project_uid"] == aet.project_uid]
