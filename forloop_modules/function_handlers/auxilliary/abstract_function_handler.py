@@ -2,12 +2,12 @@ import abc
 import inspect
 import ast
 import re
-from typing import Union
+from typing import Union, Any
 
 import forloop_modules.globals.variable_handler as vh # DISABLED IN FORLOOP MODULES
 import forloop_modules.queries.node_context_requests_backend as ncrb # DISABLED IN FORLOOP MODULES
 
-
+from forloop_modules.errors.errors import CriticalPipelineError
 from forloop_modules.function_handlers.auxilliary.node_type_categories_manager import ntcm
 from forloop_modules.globals.variable_handler import defined_functions_dict # DISABLED IN FORLOOP MODULES
 from forloop_modules.node_detail_form import NodeField, NodeParams
@@ -32,6 +32,7 @@ class AbstractFunctionHandler(abc.ABC):
     type_category=ntcm.categories.unknown
 
     def __init__(self):
+        self.icon_type = None
         self.is_cloud_compatible: bool = True
         self.is_disabled: bool = False
         self.code_import_patterns = []
@@ -140,7 +141,54 @@ class AbstractFunctionHandler(abc.ABC):
             text = re.sub(pattern, replacement, text)
         
         return text
-    
+
+    def _evaluate_argument(self, arg: Any, pass_syntax_err: bool = False) -> Union[Any, None]:
+        """
+        Safely evaluates the provided argument and returns the appropriate value.
+
+        Attempts to evaluate the argument using `ast.literal_eval`. If successful,
+        returns the evaluated value. If a `ValueError` or `TypeError` occurs,
+        returns the argument unchanged. Raises `CriticalPipelineError` for
+        `SyntaxError`, `MemoryError`, or `RecursionError`.
+
+        If `arg` is an empty string, i.e. `arg == ""` it is evaluated as None.
+
+        If `pass_syntax_err` == True, `CriticalPipelineError` is NOT raised in case of `SyntaxError`.
+
+        Args:
+            arg (Any): The input to evaluate.
+            pass_syntax_err (bool, optional): Flag determining `SyntaxError` behaviour. If True, arg
+                is returned as is in case of a `SyntaxError` (useful for arguments containg queries,
+                code snippets etc.), else a `CriticalPipelineError` gets raised. Defaults to False.
+
+        Returns:
+            Any: Evaluated value or the original argument.
+
+        Raises:
+            CriticalPipelineError: For critical errors during evaluation.
+        """
+
+        # Return None for empty strings
+        is_arg_non_empty_str = arg and isinstance(arg, str)
+        if not is_arg_non_empty_str:
+            return None
+
+        try:
+            return ast.literal_eval(arg)
+        except (ValueError, TypeError):
+            return arg
+        except SyntaxError as e:
+            if pass_syntax_err:
+                return arg
+            else:
+                raise CriticalPipelineError(
+                    f"{self.icon_type}: invalid parameter value passed as input: '{arg}'."
+                ) from e
+        except (MemoryError, RecursionError) as e:
+            raise CriticalPipelineError(
+                f"{self.icon_type}: invalid parameter value passed as input: '{arg}'."
+            ) from e
+
     def _replace_key_with_variable_name_in_code(self, code: str, key: str, variable_name: str):
         code = code.replace(key, variable_name)
         # code = self.replace_strings(code, {key: variable_name})
