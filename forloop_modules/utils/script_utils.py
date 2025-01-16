@@ -32,7 +32,7 @@ def create_new_script(script_name: str = "untitled", text: str = ""):
         aet.active_script_uid = new_script_uid
         flog.info(f'New script created, uid "{new_script_uid}" stored.')
     else:
-        flog.error(f'Error {response.status_code}: {response.reason}.')
+        flog.error(f'Error {response.status_code}: {response.reason_phrase}.')
         
 def update_active_script(code: str, script_name: Optional[str] = "untitled"):
     """
@@ -50,7 +50,7 @@ def update_active_script(code: str, script_name: Optional[str] = "untitled"):
         )
         
         if not response.ok:
-            flog.error(f'Error {response.status_code}: {response.reason}.')
+            flog.error(f'Error {response.status_code}: {response.reason_phrase}.')
     else:
         create_new_script(text=code)
         
@@ -58,7 +58,7 @@ def get_script_by_name(script_name: str):
     response = ncrb.get_all_scripts()
         
     if not response.ok:
-        raise Exception(f'Error {response.status_code} - {response.reason}.')
+        raise Exception(f'Error {response.status_code} - {response.reason_phrase}.')
     
     scripts = response.json()["result"]["scripts"]
     scripts_matching_name = [
