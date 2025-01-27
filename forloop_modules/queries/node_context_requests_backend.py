@@ -644,6 +644,12 @@ def consume_execution_stream(job_uid: str) -> Generator[dict, None, None]:
     yield from http_client.sse_stream("GET", url, as_dict=True)
 
 
+
+def get_jobs():
+    url = f'{BASE_API}/jobs?page=1&size=100&sort_by=created_at&asc=false&project_uid=1&pipeline_uid='
+    response = http_client.get(url)
+    return response
+
 ##### INITIAL VARIABLES #####
 
 
