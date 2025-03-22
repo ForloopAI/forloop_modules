@@ -14,6 +14,7 @@ from email.message import EmailMessage
 from pyairtable import Table
 from tkinter.filedialog import askopenfile
 from fastapi import HTTPException
+import sys
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -1990,11 +1991,11 @@ class AirtableReadTableHandler(AbstractFunctionHandler):
 
 
 
-class E2BDesktopHandler(AbstractFunctionHandler):
+class E2BDesktopClickHandler(AbstractFunctionHandler):
     def __init__(self):
         self.is_cloud_compatible = True
-        self.icon_type = "E2BDesktop"
-        self.fn_name = "E2BDesktop"
+        self.icon_type = "E2BDesktopClick"
+        self.fn_name = "E2BDesktopClick"
         self.type_category = ntcm.categories.rpa
 
         super().__init__()
@@ -2067,8 +2068,82 @@ class E2BDesktopHandler(AbstractFunctionHandler):
         
         # Open a URL in the default browser
         webbrowser.open(url)
+        desktop.wait(10000)
                 
-        desktop.left_click(x=inp("x"), y=inp("y"))
+        if int(inp("clicks"))==2:
+            desktop.double_click(x=int(inp("x")), y=int(inp("y")))
+       
+        else:
+            desktop.left_click(x=int(inp("x")), y=int(inp("y")))
+       
+
+    def export_imports(self, *args):
+        imports = ["import e2b"]
+        return (imports)
+
+
+
+class E2BDesktopPromptHandler(AbstractFunctionHandler):
+    def __init__(self):
+        self.is_cloud_compatible = True
+        self.icon_type = "E2BDesktopPrompt"
+        self.fn_name = "E2BDesktopPrompt"
+        self.type_category = ntcm.categories.rpa
+
+        super().__init__()
+
+
+    def make_form_dict_list(self, *args, node_detail_form=None):
+
+        fdl = FormDictList()
+        fdl.label(self.fn_name)
+        fdl.entry(name="prompt", text="0", row=1, input_types=["str"], show_info=True, required=True)
+        
+        return fdl
+
+    def execute(self, node_detail_form):
+        x = node_detail_form.get_chosen_value_by_name("x", variable_handler)
+        y = node_detail_form.get_chosen_value_by_name("y", variable_handler)
+        double_click = node_detail_form.get_chosen_value_by_name("double_click", variable_handler)
+
+        self.direct_execute(x, y, double_click)
+
+    def direct_execute(self, prompt):
+      
+
+        inp=Input()
+        inp.assign("prompt",prompt)
+        
+        if sys.platform!="linux" and sys.platform!="linux2": #pyautogui not supported on linux
+            self.input_execute(inp)
+        else:
+            flog.info("Clicking with Forloop is disabled on linux OS")
+
+    def input_execute(self, inp):
+        
+                
+        # With custom configuration
+        desktop = Sandbox(api_key = sf.E2B_API_KEY,
+            display=":0",  # Custom display (defaults to :0)
+            resolution=(1920, 1080),  # Custom resolution
+            dpi=96,  # Custom DPI
+        )
+        
+        
+        # Start the stream
+        desktop.stream.start()
+        
+        # Get stream URL
+        url = desktop.stream.get_url()
+        print(url)
+        
+        
+        # Open a URL in the default browser
+        webbrowser.open(url)
+        
+        desktop.wait(10000)
+        print(inp("x"),inp("y"))
+        desktop.left_click(x=int(inp("x")), y=int(inp("y")))
        
 
     def export_imports(self, *args):
@@ -2103,5 +2178,6 @@ integration_handlers_dict = {
     'EmailNotification': EmailNotificationHandler(),
 
     'CreateEmailBody': CreateEmailBodyHandler(),
-    'E2BDesktop': E2BDesktopHandler(),
+    'E2BDesktopClick': E2BDesktopClickHandler(),
+    'E2BDesktopPrompt': E2BDesktopPromptHandler(),
 }
