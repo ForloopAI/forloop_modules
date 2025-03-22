@@ -6,7 +6,7 @@ import subprocess
 import sys
 from typing import Literal
 
-from e2b_code_interpreter import CodeInterpreter
+#from e2b_code_interpreter import CodeInterpreter #TODO - fix
 
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
