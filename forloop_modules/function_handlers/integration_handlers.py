@@ -37,6 +37,11 @@ from forloop_modules.integrations.slack_integration import SlackApiError, get_ch
 from forloop_modules.function_handlers.auxilliary.auxiliary_functions import parse_comboentry_input, parse_google_sheet_id_from_url
 from config.config import other_config #TODO Dominik: Circular dependency to forloop_platform repository # not ideal #Maybe solve with os.environ?
 
+import webbrowser
+from e2b_desktop import Sandbox
+from forloop_modules.utils import synchronization_flags as sf
+
+
 
 def connect_to_google_service(service_name: str):
     
@@ -1983,6 +1988,95 @@ class AirtableReadTableHandler(AbstractFunctionHandler):
         return (imports)
 
 
+
+
+class E2BDesktopHandler(AbstractFunctionHandler):
+    def __init__(self):
+        self.is_cloud_compatible = True
+        self.icon_type = "E2BDesktop"
+        self.fn_name = "E2BDesktop"
+        self.type_category = ntcm.categories.rpa
+
+        super().__init__()
+
+
+    def make_form_dict_list(self, *args, node_detail_form=None):
+
+        fdl = FormDictList()
+        fdl.label(self.fn_name)
+        fdl.label("X:")
+        fdl.entry(name="x", text="0", row=1, input_types=["int", "float"], show_info=True, required=True)
+        fdl.label("Y:")
+        fdl.entry(name="y", text="0", row=2, input_types=["int", "float"], show_info=True, required=True)
+        fdl.label("Pipette current position (Press Enter Key)")
+        fdl.label("(X,Y) = (0,0)")
+        fdl.label("Double click")
+        fdl.checkbox(name="double_click", bool_value=False, row=5)
+        
+
+        return fdl
+
+    def execute(self, node_detail_form):
+        x = node_detail_form.get_chosen_value_by_name("x", variable_handler)
+        y = node_detail_form.get_chosen_value_by_name("y", variable_handler)
+        double_click = node_detail_form.get_chosen_value_by_name("double_click", variable_handler)
+
+        self.direct_execute(x, y, double_click)
+
+    def direct_execute(self, x, y, double_click):
+        if x == "":
+            x = 0
+        if y == "":
+            y = 0
+        
+        x = int(x)
+        y = int(y)
+        
+        clicks=1
+        if double_click:
+            clicks=2
+
+        inp=Input()
+        inp.assign("x",x)
+        inp.assign("y",y)
+        inp.assign("clicks",clicks)
+        
+        if sys.platform!="linux" and sys.platform!="linux2": #pyautogui not supported on linux
+            self.input_execute(inp)
+        else:
+            flog.info("Clicking with Forloop is disabled on linux OS")
+
+    def input_execute(self, inp):
+        
+                
+        # With custom configuration
+        desktop = Sandbox(api_key = sf.E2B_API_KEY,
+            display=":0",  # Custom display (defaults to :0)
+            resolution=(1920, 1080),  # Custom resolution
+            dpi=96,  # Custom DPI
+        )
+        
+        
+        # Start the stream
+        desktop.stream.start()
+        
+        # Get stream URL
+        url = desktop.stream.get_url()
+        print(url)
+        
+        
+        # Open a URL in the default browser
+        webbrowser.open(url)
+                
+        desktop.left_click(x=inp("x"), y=inp("y"))
+       
+
+    def export_imports(self, *args):
+        imports = ["import e2b"]
+        return (imports)
+
+
+
 integration_handlers_dict = {
     'PipedriveConnect': PipedriveConnectHandler(),
     'PipedriveGetStages': PipedriveGetStagesHandler(),
@@ -2009,4 +2103,5 @@ integration_handlers_dict = {
     'EmailNotification': EmailNotificationHandler(),
 
     'CreateEmailBody': CreateEmailBodyHandler(),
+    'E2BDesktop': E2BDesktopHandler(),
 }
