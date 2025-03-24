@@ -39,7 +39,11 @@ from forloop_modules.function_handlers.auxilliary.auxiliary_functions import par
 from config.config import other_config #TODO Dominik: Circular dependency to forloop_platform repository # not ideal #Maybe solve with os.environ?
 
 import webbrowser
-from e2b_desktop import Sandbox
+try:
+    from e2b_desktop import Sandbox
+except Exception as e:
+    print("E2B_desktop package import failed, Python version too old",e)
+
 from forloop_modules.utils import synchronization_flags as sf
 
 
