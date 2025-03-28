@@ -571,7 +571,9 @@ class ScrapingUtilitiesHandler:
         flog.warning('\n'.join(generalised_xpaths))
     
         results = []
-        expected_optimal = np.log(20)
+
+        # Most probable numbers of similar items (e.g. real estate listings, blog posts, table rows, ...) on a page
+        possible_optimums = [20, 50, 100]
 
         webpage_elements_history = []
     
@@ -588,14 +590,16 @@ class ScrapingUtilitiesHandler:
             flog.warning(f'Using XPath: {generalised_xpath}')
             flog.warning(f'Num of elements found: {num_of_elements}')
     
-            # How far is point from expected optimal
-            distance_from_optimal = abs(expected_optimal - np.log(num_of_elements))
-            flog.warning(f'Distance from optimal: {distance_from_optimal}')
-            results.append(distance_from_optimal)
+            # How far is point from expected optimum
+            distances_from_optimums = [abs(np.log(x) - np.log(num_of_elements)) for x in possible_optimums]
+            best_distance = min(distances_from_optimums)
+            flog.warning(f'Best distance: {best_distance} from optimums: {list(zip(possible_optimums, distances_from_optimums))}')
+
+            results.append(best_distance)
             webpage_elements_history.append(webpage_elements)
 
-            # If it's already the best possible XPath (number of elements is 20) or very close to optimum -> break
-            if distance_from_optimal <= 0.3:
+            # If it's already the best possible XPath (number of elements is very close to one of 20/50/100) -> break
+            if best_distance <= 0.3:
                 flog.warning('Found most probable optimum, exiting cycle')
                 break
 
@@ -611,25 +615,25 @@ class ScrapingUtilitiesHandler:
     
         return generalised_xpaths, optimal_xpath_index
 
-    def scan_web_page_API(self, output_folder, scraping_options: dict):
+    def scan_web_page_API(self, scraping_options: dict):
         """
         Function only to use in "Getting Started" tutorial on web app !!!
         Combines ScanWebPage (all elements) with Cookies Detection
         """
-        def generate_folder_structure(folder_name):
-            try:
-                os.mkdir(folder_name)
-            except:
-                print("skipping - "+folder_name+" folder exists already")
-        
-        generate_folder_structure("tmp")
-        generate_folder_structure("tmp/screenshots")
-        generate_folder_structure("tmp/scraped_data")
+        # def generate_folder_structure(folder_name):
+        #     try:
+        #         os.mkdir(folder_name)
+        #     except:
+        #         print("skipping - "+folder_name+" folder exists already")
+        #
+        # generate_folder_structure("tmp")
+        # generate_folder_structure("tmp/screenshots")
+        # generate_folder_structure("tmp/scraped_data")
 
         xpath = self.detect_cookies_xpath_preparation()
     
         # self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png'))) #needs to run before the scanner so there is enough time for the parallel thread
-        self.webscraping_client.take_screenshot()
+        #self.webscraping_client.take_screenshot()
         self.webscraping_client.scan_web_page(**scraping_options, timeout = 60) #Duration: ~3s
         
     
@@ -651,7 +655,7 @@ class ScrapingUtilitiesHandler:
             # Close cookies popup
             self.webscraping_client.click_xpath(button_xpath)
             # self.webscraping_client.take_png_screenshot(str(Path(output_folder, 'website.png'))) #TODO: The scanning finishes before the screenshot thread - need to either 1) refresh screenshot multiple times in FE (optimal), or 2) run this not in thread when cookies detected
-            self.webscraping_client.take_screenshot()
+        self.webscraping_client.take_screenshot()
 
 
         # [::-1] needed to ensure that FE rectangles are not overlapped (bigger elements do not cover smaller)
