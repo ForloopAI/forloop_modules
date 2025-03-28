@@ -593,10 +593,7 @@ class APIPipeline(BaseModel):
     remaining_nodes_uids: list[int] = [] # TODO: to be deprecated after introducing ExecCore for local execution
     # triggering_pipeline_uid: Optional[str] = None
     project_uid: str = "0"
-
-class APIExecutePipelineSchema(BaseModel):
-    name: str
-    user_email: str
+    endpoint_body_model: dict[str, Any] = {}
 
 class APIPopup(BaseModel):
     pos: list[int] = [0, 0]
