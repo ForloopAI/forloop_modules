@@ -1,8 +1,25 @@
-import pandas as pd
+from collections.abc import Hashable
+from typing import Any
+
 import numpy as np
+import pandas as pd
+
 import forloop_modules.flog as flog
+from forloop_modules.errors.errors import CriticalPipelineError
 
 
+def validate_hashable_dict_key(key: Any):
+    """
+    Ensures the provided key is hashable. Raises a CriticalPipelineError if the key is unhashable.
+
+    Args:
+        key (Any): The key to check.
+
+    Raises:
+        CriticalPipelineError: If the key is not hashable.
+    """
+    if not isinstance(key, Hashable):
+        raise CriticalPipelineError(f"provided dictionary key is unhashable: {key}")
 
 def validate_input_data_types(df):
     """
