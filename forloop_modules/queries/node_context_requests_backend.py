@@ -26,7 +26,7 @@ from forloop_modules.queries.db_model_templates import (
     APIVariable,
 )
 from forloop_modules.utils.http_client import HttpClient
-
+import httpx
 if sys.platform == "darwin":  # MAC OS
     config_path = 'config/server_config_remote.ini'
 else:
@@ -38,7 +38,10 @@ with Path(config_path).open(mode='r') as f:
 SERVER = rows[0].split("=")[1].strip()
 PORT = rows[1].split("=")[1].strip()
 BASE_API = f'{SERVER}:{PORT}/api/v1'
-http_client = HttpClient()
+
+timeout = httpx.Timeout(connect=10.0, read=30.0, write=10.0, pool=5.0)
+http_client = HttpClient(timeout=timeout)
+#http_client = HttpClient()
 
 RESOURCES = {
     "databases": ["get_all", "get", "new", "delete", "update"],
