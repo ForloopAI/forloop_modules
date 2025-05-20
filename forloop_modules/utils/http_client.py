@@ -1,7 +1,7 @@
 import json
 from collections.abc import Generator
 from typing import Literal, Optional
-
+import forloop_modules.flog as flog
 import httpx
 
 from forloop_modules.globals.active_entity_tracker import aet
@@ -33,6 +33,7 @@ class HttpClient(httpx.Client):
             "User-Email": aet.user_email or "",
         }
         global_headers.update(headers)
+        flog.info(method+" request: "+url,self)
         response = super().request(method, url, headers=global_headers, **kwargs)
         response.ok = response.is_success  # Cross compatibility with requests
         # response.raise_for_status()
