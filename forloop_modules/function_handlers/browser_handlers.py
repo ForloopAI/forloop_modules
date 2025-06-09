@@ -31,7 +31,7 @@ class FindSimilarItemsHandler(AbstractFunctionHandler):
         self.docs_category = DocsCategories.webscraping_and_rpa
         super().__init__()
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
         fdl.entry(name="elements", text="Elements", input_types=["list"], row=1)
 
@@ -253,7 +253,7 @@ class ConvertToScrapingNodesHandler(AbstractFunctionHandler):
         self.type_category = ntcm.categories.webscraping
         super().__init__()
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
         fdl.entry(name="xpaths", text="", input_types=["str", "list"], row=1)
 
@@ -290,7 +290,7 @@ class RefreshBrowserViewHandler(AbstractFunctionHandler):
 
         super().__init__()
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
         return fdl
 
@@ -315,7 +315,7 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
 
         super().__init__()
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
         fdl.entry(name="url", text="", input_types=["str"], row=1)
         fdl.entry(
@@ -533,7 +533,7 @@ class FilterWebpageElementsWithAIHandler(AbstractFunctionHandler):
         self.type_category = ntcm.categories.webscraping
         super().__init__()
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
         fdl.entry(name="elements", text="Elements", input_types=["list"], row=1)
         fdl.entry(name="objective", text="Objective", input_types=["str"], row=2)

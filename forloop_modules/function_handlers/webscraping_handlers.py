@@ -71,7 +71,7 @@ class OpenBrowserHandler(AbstractFunctionHandler):
             description="Browser to use: Firefox (Geckodriver), Chrome"
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
@@ -242,7 +242,7 @@ class LoadWebsiteHandler(AbstractFunctionHandler):
             description="Whether to take screenshot of loaded page (will be displayed in BrowserView)"
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
@@ -371,7 +371,7 @@ class DismissCookiesHandler(AbstractFunctionHandler):
         parameters_description = "DismissCookies Node takes no parameters"
         self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
@@ -449,7 +449,7 @@ class NextPageHandler(AbstractFunctionHandler):
             typ="string"
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
@@ -539,7 +539,7 @@ class ClickXPathHandler(AbstractFunctionHandler):
             example=['/html/body/header/div[3]/div[1]/div[2]/section/nav/a', '//button[@class="page-link"]']
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label("Click XPath element")
@@ -614,7 +614,7 @@ class ClickNameHandler(AbstractFunctionHandler):
             example=['Show details', 'Open article']
         )
     
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label("Click on element with given text")
@@ -692,7 +692,7 @@ class ClickIdHandler(AbstractFunctionHandler):
             example=['listing-details', 'pagination-elem']
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label("Click element by ID")
@@ -763,7 +763,7 @@ class CloseBrowserHandler(AbstractFunctionHandler):
         parameters_description = "CloseBrowser Node takes no parameters"
         self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label("Close browser after scraping")
@@ -820,7 +820,7 @@ class GetCurrentURLHandler(AbstractFunctionHandler):
             example=['current_url', 'scraped_page']
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
@@ -906,7 +906,7 @@ class WaitUntilElementIsLocatedHandler(AbstractFunctionHandler):
             example=['//button[@class="load-more"]', '//*[@id="map-search-results"]/div[1]/div/div[25]/div[2]/a']
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
@@ -1006,7 +1006,7 @@ class ScrollWebPageHandler(AbstractFunctionHandler):
             typ="boolean"
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["Up", "Down"]
 
         fdl = FormDictList(docs=self.docs)
@@ -1141,7 +1141,7 @@ class ScanWebPageHandler(AbstractFunctionHandler):
             example=['//div[@class="regular-price"]/text()', '//span[contains(text(), "Location")]']
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
@@ -1354,7 +1354,7 @@ class ExtractXPathHandler(AbstractFunctionHandler):
             description="Whether to store list of elements as string. E.g ['2-bedrooms', '1 bathroom', '3rd floor'] will be transformed into '2-bedrooms, 1 bathroom, 3rd floor'",
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         options = ["w+", "a+"]
         options_2 = ['GridView']
 
@@ -1543,7 +1543,7 @@ class ExtractMultipleXPathHandler(AbstractFunctionHandler):
             example=['listing_details', 'product_info']
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label("Extract multiple HTML elements by XPath")
@@ -1661,7 +1661,7 @@ class ExtractTableXPathHandler(AbstractFunctionHandler):
             description="Whether first row should be used as header",
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label("Extract HTML table element by XPath")
@@ -1760,7 +1760,7 @@ class ExtractPageSourceHandler(AbstractFunctionHandler):
             example=['current_page_html']
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
@@ -1833,7 +1833,7 @@ class RefreshPageSourceHandler(AbstractFunctionHandler):
         parameters_description = "RefreshPageSource Node takes no parameters"
         self.docs = Docs(description=self.__doc__, parameters_description=parameters_description)
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
@@ -1905,7 +1905,7 @@ class DownloadImageHandler(AbstractFunctionHandler):
             example=['logo.png', 'product_main_photo.jpg']
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
@@ -2019,7 +2019,7 @@ class DownloadImagesXPathHandler(AbstractFunctionHandler):
             example=['logo.png', 'product_main_photo.jpg']
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
@@ -2127,7 +2127,7 @@ class SetProxyHandler(AbstractFunctionHandler):
             example=['mypassword123']
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList(docs=self.docs)
 
         fdl.label(self.fn_name)
@@ -2251,7 +2251,7 @@ class ScrapeSendKeysHandler(AbstractFunctionHandler):
 
         super().__init__()
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
 
         fdl.label("Send Keys During Scraping (blocking)")
@@ -2299,7 +2299,7 @@ class ClickHTMLTagHandler(AbstractFunctionHandler):
 
         super().__init__()
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
 
         fdl.label(self.fn_name)
@@ -2649,7 +2649,7 @@ class ExtractXPathsToDfHandler(AbstractFunctionHandler):
             typ="String", example="'new_df'"
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         options = ("Write", "Append")
 
         fdl = FormDictList()
@@ -2782,7 +2782,7 @@ class SendTextHandler(AbstractFunctionHandler):
             example=['username123', 'password123']
         )
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         fdl = FormDictList()
 
         fdl.label("Element XPath")

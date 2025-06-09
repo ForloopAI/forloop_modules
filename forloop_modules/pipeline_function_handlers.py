@@ -125,7 +125,7 @@ class CustomIconHandler(AbstractFunctionHandler):
 
         self.type_category = ntcm.categories.unknown
 
-    def make_form_dict_list(self, node_detail_form=None):
+    def make_form_dict_list(self, *args, node_detail_form=None):
         form_dict_list = [
             {"Label": "Custom Icon"},
             {"Label": "", "Entry": {"name": "code_label", "text": "", "category": "arguments"}},
