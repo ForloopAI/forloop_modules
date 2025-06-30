@@ -17,6 +17,8 @@ from forloop_modules.globals.docs_categories import DocsCategories
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
 from forloop_modules.errors.errors import CriticalPipelineError
 
+from forloop_modules.function_handlers.interactive_handlers import ConsoleEntryHandler #Console input
+
 
 ####### PROBLEMATIC IMPORTS TODO: REFACTOR #######
 #from src.gui.gui_layout_context import glc
@@ -1137,7 +1139,7 @@ class PrintVariableHandler(AbstractFunctionHandler):
     """
 
     def __init__(self):
-        self.is_disabled = True # FIXME: No FE prepared for the user --> for the user it seems broken
+        self.is_disabled = False
         self.icon_type = "PrintVariable"
         self.fn_name = "Print Variable"
 
@@ -1175,7 +1177,23 @@ class PrintVariableHandler(AbstractFunctionHandler):
         """
     
     def input_execute(self, inp):
-        print(f'Variable value form PrintVariable icon: {inp("variable_name")}')
+        var_name = inp("variable_name")
+        var_obj = variable_handler.variables.get(var_name)
+
+        if var_obj is not None:
+            #message = f'PrintVariable: {var_name} = {var_obj.value}' ##Optional Variable printing format
+            message = f'{var_obj.value}'
+        else:
+            # fallback to printing the string itself
+            # message = f'PrintVariable: {var_name}' ##Optional Variable printing format
+            message = f'{var_name}'
+
+
+        # Send to FastAPI backend
+        try:
+            ncrb.post_console_print_log(message=message, type="print")
+        except Exception as e:
+            flog.warning(f"Failed to post console print log: {e}")
 
     def execute_with_params(self, params, item_detail_form):
         variable_value = item_detail_form.get_chosen_value_by_name("variable_name", variable_handler)
@@ -1208,5 +1226,6 @@ variable_handlers_dict = {
     "StringModifyVariable": StringModifyVariableHandler(),
     "ListModifyVariable": ListModifyVariableHandler(),
     "DictionaryModifyVariable": DictionaryModifyVariableHandler(),
-    "PrintVariable": PrintVariableHandler()
+    "PrintVariable": PrintVariableHandler(),
+    "ConsoleEntry": ConsoleEntryHandler()
 }
