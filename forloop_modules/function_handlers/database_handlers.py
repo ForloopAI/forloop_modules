@@ -26,16 +26,18 @@ from forloop_modules.utils.encryption import decrypt_text, convert_base64_privat
 from forloop_modules.redis.redis_connection import kv_redis, create_redis_key_for_project_db_private_key
 from forloop_modules.errors.errors import CriticalPipelineError
 
-def get_all_databases_in_project():
-    response = ncrb.get_all_databases()
+
+#VVVVCAN BE REMOVED... NOT USED ANYMORE ANYWHEREVVVV
+# def get_all_databases_in_project():
+#     response = ncrb.get_all_databases()
         
-    if response.status_code != 200:
-        raise Exception(f'Error {response.status_code}: {response.reason_phrase}.')
+#     if response.status_code != 200:
+#         raise Exception(f'Error {response.status_code}: {response.reason_phrase}.')
     
-    databases = response.json().get("result", {}).get("databases")
-    project_databases = [database for database in databases if database["project_uid"] == aet.project_uid]
+#     databases = response.json().get("result", {}).get("databases")
+#     project_databases = [database for database in databases if database["project_uid"] == aet.project_uid]
     
-    return project_databases
+#     return project_databases
 
 def filter_database_by_name_from_all_project_databases(project_databases: list[dict], db_name: str):
     selected_databases = [project_db for project_db in project_databases if project_db["database_name"] == db_name]
@@ -443,8 +445,14 @@ class DBSelectHandler(AbstractFunctionHandler):
         database_names = [database["database_name"] for database in databases]
 
         operators = ["=", "<", ">", ">=", "<=", "<>", " IN "]
-        db_tables = []
+        
+        # Get db_tables from options if available, otherwise initialize as empty list
+        db_tables_dicts = options.get("db_tables", []) if options is not None else []
+        db_tables = [table.get("table_name", "") for table in db_tables_dicts]
 
+
+        table_columns_dicts = options.get("table_columns", []) if options is not None else []
+        table_columns = [col.get("column_name", "") for col in table_columns_dicts]
 
         # TODO: Add Distinct checkbox
         fdl = FormDictList(docs=self.docs)
@@ -457,7 +465,7 @@ class DBSelectHandler(AbstractFunctionHandler):
         fdl.comboentry(name="select", text="*", options=["*"], is_advanced=True, row=3)
         fdl.label("Where")
         fdl.label("Column")
-        fdl.combobox(name="where_column_name", options=[], is_advanced=True, row=5)
+        fdl.combobox(name="where_column_name", options=table_columns, is_advanced=True, row=5)
         fdl.label("Operator")
         fdl.combobox(name="where_operator", options=operators, default=operators[0], is_advanced=True, row=6)
         fdl.label("Value")
@@ -505,9 +513,26 @@ class DBSelectHandler(AbstractFunctionHandler):
         #     raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
         
     def direct_execute(self, db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name):  
+        # Parse all combo-entry inputs to handle values from pipeline runs
+        db_name = parse_comboentry_input(db_name)
+        db_table_name = parse_comboentry_input(db_table_name)
+        select = parse_comboentry_input(select)
+        where_column_name = parse_comboentry_input(where_column_name)
+        where_operator = parse_comboentry_input(where_operator)
+
+        # Defensively strip whitespace/invisible characters from all string parameters
+        if isinstance(where_column_name, str): where_column_name = where_column_name.strip()
+        if isinstance(where_operator, str): where_operator = where_operator.strip()
+        if isinstance(where_value, str): where_value = where_value.strip()
+        if isinstance(limit, str): limit = limit.strip()
+        if isinstance(new_var_name, str): new_var_name = new_var_name.strip()
+
         project_databases = ncrb.get_all_databases_by_project_uid()
         db_dict = filter_database_by_name_from_all_project_databases(project_databases=project_databases, db_name=db_name)
         
+        if not new_var_name:
+            new_var_name = f"{db_table_name}_data"
+
         if db_dict is None:
             # User selects from stored DBs so this shouldn't happen. If this is raised, these is an issue in code probably.
             raise Exception(f'{self.icon_type}: No DB named {db_name} found in project DBs.')
@@ -532,7 +557,6 @@ class DBSelectHandler(AbstractFunctionHandler):
                 if db_table is None:
                     return
                 
-                df_new = pd.DataFrame()
                 df_new = self._get_df(select, db_table_name, db_connection.db_instance, db_table, where_column_name, where_operator,
                                         where_value, limit)
                 df_new = validate_input_data_types(df_new)
@@ -567,17 +591,20 @@ class DBSelectHandler(AbstractFunctionHandler):
 
         return query
 
-    def _get_df(self, cols_to_be_selected, dbtable_name, db_instance, dbtable, column_name, operator, value, limit):
-        query = self._get_query(db_instance, dbtable_name, cols_to_be_selected, column_name, value, operator, limit)
+    def _get_df(self, select, from_table, db, db_table, where_column_name, where_operator, where_value, limit):
+        query = f"SELECT {select} FROM {from_table}"
 
-        with db_instance.connect_to_db():
-            try:
-                df = self.select(db_instance, dbtable, query, cols_to_be_selected)
-            except Exception as e:
-                flog.error("DBTABLE SELECT ERROR")
-                df = pd.DataFrame()
+        if where_column_name and where_operator and where_value:
+            query += f" WHERE {where_column_name} {where_operator} '{where_value}'"
+        
+        if limit:
+            query += f" LIMIT {limit}"
+            
+        with db.connect_to_db():
+            rows = db_table.select(query)
+            df_new = pd.DataFrame(rows, columns=db_table.columns)
 
-        return df
+        return df_new
 
     # def _get_mongo_df(self, db_instance, dbtable, column_name, operator, value, limit):
     #
@@ -646,7 +673,7 @@ class DBInsertHandler(AbstractFunctionHandler):
         )
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
-        db_tables = []
+        db_tables = get_connected_db_table_names()
         if options is not None:
             databases = options["databases"]
         else:
