@@ -19,7 +19,12 @@ def parse_comboentry_input(input_value):
             flog.warning(f"Could not parse comboentry input string '{input_value}'. Error: {e}")
             pass
     
-        return input_value
+    # If the input_value is already a plain string (e.g. selected from a
+    # regular Combobox) or any other type that does not need conversion,
+    # just return it unchanged.  The previous implementation returned
+    # `None` in this branch which caused legitimate     values such as
+    # "test_db" to get lost and bubble up as `None` inside handlers.
+    return input_value
 
 def parse_google_sheet_id_from_url(sheet_url: str):
     """

@@ -95,7 +95,9 @@ def get_connected_db_tables(db_name: str = None):
 
     valid_tables = {}
     for db in connected_dbs:
-        valid_tables.update(db.table_dict)
+        # Safeguard against uninitialized or failed connections
+        if db.table_dict is not None:
+            valid_tables.update(db.table_dict)
 
     return valid_tables
 
@@ -370,7 +372,16 @@ class MySQLQueryHandler(AbstractFunctionHandler):
             
             db_details = dbc.create_db_details_from_database_dict(db_dict=db_dict)
             db_connection = dbc.DbConnection(db_details=db_details)
-            is_connected = db_connection.test_database_connection()
+            # Safeguard against uninitialized or failed connections
+            try:
+                is_connected = db_connection.test_database_connection()
+            except Exception as e:
+                flog.error(f"{self.icon_type}: DB connection failed – {e.__class__.__name__}: {e}")
+                ncrb.new_popup([500, 400], "RaiseNotConnectedPopup")
+                return
+            if not is_connected:
+                ncrb.new_popup([500, 400], "RaiseNotConnectedPopup")
+                return
         
             if is_connected:
                 with db_connection.db_instance.connect_to_db():
@@ -550,7 +561,16 @@ class DBSelectHandler(AbstractFunctionHandler):
             
             db_details = dbc.create_db_details_from_database_dict(db_dict=db_dict)
             db_connection = dbc.DbConnection(db_details=db_details)
-            is_connected = db_connection.test_database_connection()
+            # Safeguard against uninitialized or failed connections
+            try:
+                is_connected = db_connection.test_database_connection()
+            except Exception as e:
+                flog.error(f"{self.icon_type}: DB connection failed – {e.__class__.__name__}: {e}")
+                ncrb.new_popup([500, 400], "RaiseNotConnectedPopup")
+                return
+            if not is_connected:
+                ncrb.new_popup([500, 400], "RaiseNotConnectedPopup")
+                return
         
             if is_connected:
                 db_table = db_connection.get_db_table(db_table_name)
@@ -602,7 +622,9 @@ class DBSelectHandler(AbstractFunctionHandler):
             
         with db.connect_to_db():
             rows = db_table.select(query)
-            df_new = pd.DataFrame(rows, columns=db_table.columns)
+            ## Prevents reordering of columns in the dataframe viewer in the gui
+            columns = [desc[0] for desc in db_table.db1.cursor.description]
+            df_new = pd.DataFrame(rows, columns=columns)
 
         return df_new
 
@@ -725,7 +747,16 @@ class DBInsertHandler(AbstractFunctionHandler):
             
             db_details = dbc.create_db_details_from_database_dict(db_dict=db_dict)
             db_connection = dbc.DbConnection(db_details=db_details)
-            is_connected = db_connection.test_database_connection()
+            # Safeguard against uninitialized or failed connections
+            try:
+                is_connected = db_connection.test_database_connection()
+            except Exception as e:
+                flog.error(f"{self.icon_type}: DB connection failed – {e.__class__.__name__}: {e}")
+                ncrb.new_popup([500, 400], "RaiseNotConnectedPopup")
+                return
+            if not is_connected:
+                ncrb.new_popup([500, 400], "RaiseNotConnectedPopup")
+                return
         
             if is_connected:
                 db_instance = db_connection.db_instance
@@ -758,17 +789,43 @@ class DBInsertHandler(AbstractFunctionHandler):
         #     variable_handler.last_active_dataframe_node_uid = node_detail_form.node_uid
 
     def _convert_data_variable_to_df(self, inserted_data, columns):
-        converted_inserted_dataframe = inserted_data
+        """Convert different user inputs to a pandas DataFrame ready for insert.
+
+        Accepted input shapes:
+        • pandas.DataFrame – returned unchanged
+        • list (single row) –> one-row DF
+        • list of lists       –> multi-row DF
+        • dict of column→list –> DF via `from_dict`
+        • *string* containing a literal representation of any of the above – the
+          string is first `ast.literal_eval`-ed and then processed recursively.
+        """
+
+        # 1) Already a DataFrame → nothing to do
+        if isinstance(inserted_data, pd.DataFrame):
+            return inserted_data
+
+        # 2) If user pasted a string literal (common when typing into the Entry)
+        if isinstance(inserted_data, str):
+            try:
+                parsed_value = ast.literal_eval(inserted_data)
+                return self._convert_data_variable_to_df(parsed_value, columns)
+            except (ValueError, SyntaxError):
+                # Not a valid Python literal, fall through and raise later
+                pass
+
+        # 3) List / list-of-lists
         if isinstance(inserted_data, list):
-            if all(isinstance(el, list) for el in inserted_data): #list of lists
-                converted_inserted_dataframe = pd.DataFrame(inserted_data, columns=columns[1:])
+            if all(isinstance(el, list) for el in inserted_data):
+                return pd.DataFrame(inserted_data, columns=columns[1:])
             else:
-                converted_inserted_dataframe = pd.DataFrame([inserted_data], columns=columns[1:])
+                return pd.DataFrame([inserted_data], columns=columns[1:])
 
-        elif isinstance(inserted_data, dict):
-            converted_inserted_dataframe = pd.DataFrame.from_dict(converted_inserted_dataframe)
+        # 4) Dict mapping column→values
+        if isinstance(inserted_data, dict):
+            return pd.DataFrame.from_dict(inserted_data)
 
-        return converted_inserted_dataframe
+        # Anything else is unsupported
+        raise ValueError("Inserted data must be a DataFrame, list, list of lists, or dict literal")
 
 class DBDeleteHandler(AbstractFunctionHandler):
     """
@@ -819,11 +876,19 @@ class DBDeleteHandler(AbstractFunctionHandler):
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         operators = ["=", "<", ">", ">=", "<=", "<>", " IN "]
 
+        # Extract dynamic options (same mechanism as DBSelect)
         if options is not None:
-            databases = options["databases"]
+            databases = options.get("databases", [])
         else:
             databases = []
-        db_tables = []
+
+        # List of tables for the selected database(s)
+        db_tables_dicts = options.get("db_tables", []) if options is not None else []
+        db_tables = [tbl.get("table_name", "") for tbl in db_tables_dicts]
+
+        # List of columns for the currently selected table
+        table_columns_dicts = options.get("table_columns", []) if options is not None else []
+        table_columns = [col.get("column_name", "") for col in table_columns_dicts]
 
         fdl = FormDictList(docs=self.docs)
         fdl.label("DB Delete")
@@ -834,7 +899,7 @@ class DBDeleteHandler(AbstractFunctionHandler):
         fdl.combobox(name="db_table_name", options=db_tables, row=2)
         fdl.label("Where")
         fdl.label("Column")
-        fdl.combobox(name="column_name", options=[], row=4)
+        fdl.combobox(name="column_name", options=table_columns, row=4)
         fdl.label("Operator")
         fdl.combobox(name="operator", options=operators, default=operators[0], row=5)
         fdl.label("Value")
@@ -881,7 +946,16 @@ class DBDeleteHandler(AbstractFunctionHandler):
             
             db_details = dbc.create_db_details_from_database_dict(db_dict=db_dict)
             db_connection = dbc.DbConnection(db_details=db_details)
-            is_connected = db_connection.test_database_connection()
+            # Safeguard against uninitialized or failed connections
+            try:
+                is_connected = db_connection.test_database_connection()
+            except Exception as e:
+                flog.error(f"{self.icon_type}: DB connection failed – {e.__class__.__name__}: {e}")
+                ncrb.new_popup([500, 400], "RaiseNotConnectedPopup")
+                return
+            if not is_connected:
+                ncrb.new_popup([500, 400], "RaiseNotConnectedPopup")
+                return
         
             if is_connected:
                 db_instance = db_connection.db_instance
@@ -959,12 +1033,17 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
         operators = ["=", "<", ">", ">=", "<=", "<>", " IN "]
+        # Dynamic options
         if options is not None:
-            databases = options["databases"]
+            databases = options.get("databases", [])
         else:
             databases = []
 
-        db_tables = []
+        db_tables_dicts = options.get("db_tables", []) if options is not None else []
+        db_tables = [tbl.get("table_name", "") for tbl in db_tables_dicts]
+
+        table_columns_dicts = options.get("table_columns", []) if options is not None else []
+        table_columns = [col.get("column_name", "") for col in table_columns_dicts]
 
         fdl = FormDictList(docs=self.docs)
         fdl.label("DB Update")
@@ -975,12 +1054,12 @@ class DBUpdateHandler(AbstractFunctionHandler):
         fdl.combobox(name="db_table_name", options=db_tables, row=2)
         fdl.label("Set")
         fdl.label("Column")
-        fdl.combobox(name="set_column_name", options=[], row=4)
+        fdl.combobox(name="set_column_name", options=table_columns, row=4)
         fdl.label("Value")
         fdl.entry(name="set_value", text="", input_types=["str"], row=5)
         fdl.label("Where")
         fdl.label("Column")
-        fdl.combobox(name="where_column_name", options=[], row=7)
+        fdl.combobox(name="where_column_name", options=table_columns, row=6)
         fdl.label("Operator")
         fdl.combobox(name="where_operator", options=operators, default=operators[0], row=8)
         fdl.label("Value")
@@ -1031,6 +1110,16 @@ class DBUpdateHandler(AbstractFunctionHandler):
             db_details = dbc.create_db_details_from_database_dict(db_dict=db_dict)
             db_connection = dbc.DbConnection(db_details=db_details)
             is_connected = db_connection.test_database_connection()
+            # Safeguard against uninitialized or failed connections
+            try:
+                is_connected = db_connection.test_database_connection()
+            except Exception as e:
+                flog.error(f"{self.icon_type}: DB connection failed – {e.__class__.__name__}: {e}")
+                ncrb.new_popup([500, 400], "RaiseNotConnectedPopup")
+                return
+            if not is_connected:
+                ncrb.new_popup([500, 400], "RaiseNotConnectedPopup")
+                return
         
             if is_connected:
                 db_instance = db_connection.db_instance
@@ -1061,13 +1150,22 @@ class DBUpdateHandler(AbstractFunctionHandler):
 
         return set_statement, where_statement
 
-    def _get_sql_update_statements(self, db_instance, dbtable, set_value, set_column_name, where_value, 
-                                   where_column_name, where_operator):
-        set_value = _parse_float_sql(set_value)
-        set_statement = f"{set_column_name}={set_value}"
+    def _get_sql_update_statements(self, db_instance, dbtable, set_value, 
+                               set_column_name, where_value, where_column_name, 
+                               where_operator):
+    
+        quote = db_instance.identifier_quote  # Gets the correct quote (` or ")
 
-        where_value = _parse_float_sql(where_value)
-        where_statement = f"{where_column_name}{where_operator}{where_value}"
+        # This function correctly adds single quotes for strings but not numbers.
+        set_value_sql = _parse_float_sql(set_value)
+        where_value_sql = _parse_float_sql(where_value)
+
+        # Correctly build the SET statement, quoting ONLY the column name.
+        set_statement = f"{quote}{set_column_name}{quote} = {set_value_sql}"
+
+        # Correctly build the WHERE statement, quoting ONLY the column name.
+        # DEPENDENCY in dbhydra update
+        where_statement = f"{quote}{where_column_name}{quote} {where_operator} {where_value_sql}"
 
         return set_statement, where_statement
     
@@ -1138,7 +1236,16 @@ class CreateDbTableHandler(AbstractFunctionHandler):
                 raise CriticalPipelineError("New table creation allowed only for MySQL or PostgreSQL.")
             
             db_connection = dbc.DbConnection(db_details=db_details)
-            is_connected = db_connection.test_database_connection()
+            # Safeguard against uninitialized or failed connections
+            try:
+                is_connected = db_connection.test_database_connection()
+            except Exception as e:
+                flog.error(f"{self.icon_type}: DB connection failed – {e.__class__.__name__}: {e}")
+                ncrb.new_popup([500, 400], "RaiseNotConnectedPopup")
+                return
+            if not is_connected:
+                ncrb.new_popup([500, 400], "RaiseNotConnectedPopup")
+                return
         
             if is_connected:
                 if db_details.DIALECT == "MySQL":
@@ -1159,10 +1266,12 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
         self.type_category = ntcm.categories.database
 
     def make_form_dict_list(self, *args, options=None, node_detail_form=None):
-        db_tables = []
+        # Get db_tables from options if available, otherwise initialize as empty list
+        db_tables_dicts = options.get("db_tables", []) if options is not None else []
+        db_tables = [table.get("table_name", "") for table in db_tables_dicts]
 
         if options is not None:
-            databases = options["databases"]
+            databases = options.get("databases", [])
         else:
             databases = []
 
