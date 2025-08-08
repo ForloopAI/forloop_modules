@@ -1299,6 +1299,10 @@ class AnalyzeDbTableHandler(AbstractFunctionHandler):
         self.direct_execute(db_name, table_name, new_var_name)
 
     def direct_execute(self,db_name, db_table_name, new_var_name):
+        # Normalize inputs for pipeline execution where comboentry values may arrive as lists
+        db_name = parse_comboentry_input(db_name)
+        db_table_name = parse_comboentry_input(db_table_name)
+
         db_table = get_db_table_from_db(table_name=db_table_name, db_name=db_name)
         column_type_dict = db_table.column_type_dict
         variable_handler.new_variable(new_var_name, column_type_dict)
