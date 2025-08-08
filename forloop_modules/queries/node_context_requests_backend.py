@@ -1022,20 +1022,24 @@ def get_user_logs() -> Response:
     response = http_client.get(url)
     return response
 
-############### In app Console Prints ###############
 
-def post_console_print_log(message: str, type: str = "print"):
+############### In app Console logs ###############
+
+def post_console_log(message: str, type: str = "print"):
+
     payload = {
         "message": message,
         "project_uid": aet.project_uid,
         "type": type
     }
-    url = f"{BASE_API}/console_prints"
+
+    url = f"{BASE_API}/console_logs"
     return http_client.post(url, json=payload)
 
-def get_console_print_logs():
-    url = f"{BASE_API}/console_prints"
-    return http_client.get(url)
+def get_console_logs() -> Response:
+    url = f"{BASE_API}/console_logs"
+    response = http_client.get(url)
+    return response
 
 def clean_data(data) -> Response:
     url = f'{BASE_API}/clean_data'

@@ -1191,7 +1191,7 @@ class PrintVariableHandler(AbstractFunctionHandler):
 
         # Send to FastAPI backend
         try:
-            ncrb.post_console_print_log(message=message, type="print")
+            ncrb.post_console_log(message=message, type="print")
         except Exception as e:
             flog.warning(f"Failed to post console print log: {e}")
 
