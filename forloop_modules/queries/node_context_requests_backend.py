@@ -57,21 +57,6 @@ RESOURCES = {
     "initial_variables": ["get_all", "get", "new", "delete"],
 }
 
-# Single source of truth for resource paths in URLs (plural)
-RESOURCE_PATH_MAP = {
-    "databases": "databases",
-    "dbtables": "dbtables",
-    "files": "files",
-    "scripts": "scripts",
-    "datasets": "datasets",
-    "edges": "edges",
-    "variables": "variables",
-    "popups": "popups",
-    "nodes": "nodes",
-    "pipelines": "pipelines",
-    "initial_variables": "initial_variables",
-}
-
 DB_API_BODY_TEMPLATE = {
     "projects": APIProject,
     "triggers": APITrigger,
@@ -205,6 +190,7 @@ def new_factory(resource_name: str, model: Model):
 
         resource_url = f"{BASE_API}/{resource_name}"
         response = http_client.post(resource_url, json=payload)
+
         return response
 
     new.__signature__ = Signature(params)
@@ -250,6 +236,7 @@ def update_factory(resource_name: str, model: Model):
 
         resource_url = f"{BASE_API}/{resource_name}/{uid}"
         response = http_client.put(resource_url, json=payload)
+
         return response
 
     update.__signature__ = Signature(
@@ -262,25 +249,24 @@ def update_factory(resource_name: str, model: Model):
 
 for resource_name, actions in RESOURCES.items():
     resource_name_singular = resource_name[:-1]
-    resource_path = RESOURCE_PATH_MAP.get(resource_name, resource_name)
     for action in actions:
         function_name = None
         if action == 'get_all':
-            fn = get_all_factory(resource_path)
+            fn = get_all_factory(resource_name)
             function_name = f'{action}_{resource_name}'
         elif action == 'get':
-            fn = get_factory(resource_path)
+            fn = get_factory(resource_name_singular)
             function_name = f'{action}_{resource_name_singular}_by_uid'
         elif action == 'new':
             model = DB_API_BODY_TEMPLATE[resource_name]
-            fn = new_factory(resource_path, model)
+            fn = new_factory(resource_name, model)
             function_name = f'{action}_{resource_name_singular}'
         elif action == 'delete':
-            fn = delete_factory(resource_path)
+            fn = delete_factory(resource_name_singular)
             function_name = f'{action}_{resource_name_singular}_by_uid'
         elif action == 'update':
             model = DB_API_BODY_TEMPLATE[resource_name]
-            fn = update_factory(resource_path, model)
+            fn = update_factory(resource_name_singular, model)
             function_name = f'{action}_{resource_name_singular}_by_uid'
         else:
             raise Exception('Unknown action')
