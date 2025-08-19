@@ -1,6 +1,6 @@
 # input_waiter.py
 from forloop_modules.globals.variable_handler import LocalVariable, variable_handler
-from forloop_modules.queries.node_context_requests_backend import post_console_print_log
+from forloop_modules.queries.node_context_requests_backend import post_console_log
 
 _pending: dict[str, str] = {}
 _prompts: dict[str, str] = {} 
@@ -24,6 +24,6 @@ def resolve_input(node_uid: str, value: str):
 
     try:
         msg = f"{prompt_text} = {value}" if prompt_text else f"{var_name} = {value}"
-        post_console_print_log(message=msg, type="input")
+        post_console_log(message=msg, type="input")
     except Exception:
         pass
