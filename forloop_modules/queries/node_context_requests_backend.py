@@ -1023,12 +1023,35 @@ def get_user_logs() -> Response:
     return response
 
 
+############### In app Console logs ###############
+
+def post_console_log(message: str, type: str = "print"):
+
+    payload = {
+        "message": message,
+        "project_uid": aet.project_uid,
+        "type": type
+    }
+
+    url = f"{BASE_API}/console_logs"
+    return http_client.post(url, json=payload)
+
+def get_console_logs() -> Response:
+    url = f"{BASE_API}/console_logs"
+    response = http_client.get(url)
+    return response
+
 def clean_data(data) -> Response:
     url = f'{BASE_API}/clean_data'
     response = http_client.post(url, data=data)
 
     return response
 
+############### In app Console Input ###############
+
+def post_console_input(node_uid: str, value: str):
+    url = f"{BASE_API}/console_input"
+    return http_client.post(url, json={"node_uid": node_uid, "value": value})
 
 def scan_website_and_take_screenshot_test(email: str, url: str) -> Response:
     payload={"email":email,
