@@ -29,6 +29,7 @@ from forloop_modules.function_handlers.model_handlers import model_handlers_dict
 from forloop_modules.function_handlers.orchestration_handlers import orchestration_handlers_dict ##### BACKEND ONLY - TO BE IMPLEMENTED #####
 from forloop_modules.function_handlers.mapping_handlers import mapping_handlers_dict, find_imports_in_custom_code, find_variables_used_in_custom_code # FRONTEND DEPENDENCY
 from forloop_modules.function_handlers.browser_handlers import browser_handlers_dict
+from forloop_modules.function_handlers.dash_handlers import dash_handlers_dict
 
 
 #from src.custom_handler_template import create_new_custom_handler_class, get_instance_var_import_code
@@ -244,6 +245,7 @@ pipeline_function_handler_dict = {
     **integration_handlers_dict,
     **model_handlers_dict,
     **orchestration_handlers_dict,
+    **dash_handlers_dict,
     #**plot_handlers_dict,
     **rpa_handlers_dict,
     **webscraping_handlers_dict,

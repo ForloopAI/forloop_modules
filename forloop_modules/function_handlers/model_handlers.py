@@ -182,13 +182,15 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
         variable_handler.new_variable("script_stdout", "", is_result=True)
         variable_handler.new_variable("script_stderr", "", is_result=True)
+        variable_handler.new_variable("script_input_prompt", "", is_result=True)
+        variable_handler.new_variable("script_waiting_for_input", "0", is_result=True)
 
         if sf.E2B_API_KEY:
             ### Experimental E2B solution:
             self._execute_python_script_with_e2b(script_text=script_text)
         else:
-            ### Local execution with stdout/stderr streaming -- good for testing instead of E2B
-            self._execute_python_script_with_streaming(script_text=script_text)
+            ### Local execution with input handling and stdout/stderr streaming
+            self._execute_python_script_with_input_handling(script_text=script_text)
 
             ## Local execution without stdout/stderr streaming -- stdout/stderr saved after
             ## pipeline is finished
@@ -214,15 +216,46 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
         import_pattern = re.compile(r"^\s*(?:import|from)\s+([a-zA-Z_][\w]*)", re.MULTILINE)
 
         for match in import_pattern.finditer(script_text):
-            imports.add(match.group(1))
+            module_name = match.group(1)
+            # Filter out built-in modules and special modules that shouldn't be installed
+            if module_name not in ['__main__', 'builtins'] and not self._is_builtin_module(module_name):
+                imports.add(module_name)
 
         return imports
+
+    def _is_builtin_module(self, module_name: str):
+        """
+        Check if a module is a built-in module that shouldn't be installed via pip.
+        """
+        try:
+            import sys
+            return module_name in sys.builtin_module_names
+        except:
+            # Fallback to a basic list if sys.builtin_module_names is not available
+            builtin_modules = {
+                'sys', 'os', 'json', 'time', 'datetime', 'math', 'random', 're', 'collections',
+                'itertools', 'functools', 'operator', 'string', 'io', 'pathlib', 'urllib',
+                'http', 'socket', 'threading', 'multiprocessing', 'subprocess', 'logging',
+                'warnings', 'traceback', 'types', 'inspect', 'importlib', 'pkgutil',
+                'ast', 'codecs', 'encodings', 'locale', 'gettext', 'argparse', 'configparser',
+                'csv', 'sqlite3', 'hashlib', 'hmac', 'secrets', 'uuid', 'base64', 'binascii',
+                'struct', 'array', 'copy', 'pickle', 'shelve', 'dbm', 'zlib', 'gzip', 'bz2',
+                'lzma', 'tarfile', 'zipfile', 'shutil', 'glob', 'fnmatch', 'linecache',
+                'fileinput', 'tempfile', 'mmap', 'ctypes', 'weakref', 'gc', 'atexit',
+                'signal', 'errno', 'stat', 'grp', 'pwd', 'termios', 'tty', 'pty', 'fcntl',
+                'resource', 'sysconfig', 'platform', 'site', 'distutils', 'ensurepip'
+            }
+            return module_name in builtin_modules
 
     def _is_module_installed(self, module_name: str):
         """
         Check if a module is installed by attempting to find its spec.
         """
-        return importlib.util.find_spec(module_name) is not None
+        try:
+            return importlib.util.find_spec(module_name) is not None
+        except (ValueError, AttributeError):
+            # Handle special cases like __main__ where __spec__ might be None
+            return False
 
     def _save_output_line_to_result(self, output_mode: Literal["stdout", "stderr"], line: str):
         """
@@ -232,6 +265,35 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             output_mode (Literal["stdout", "stderr"]): Specifies the type of output to save.
             line (str): A single line of stdout/stderr output obtained from script execution stream.
         """
+        # Check for input prompt markers
+        if output_mode == "stdout" and line.startswith("FORLOOP_INPUT_PROMPT:"):
+            # Extract the prompt and save it as a special variable
+            prompt = line[21:]  # Remove "FORLOOP_INPUT_PROMPT:" prefix
+            variable_handler.new_variable("script_input_prompt", prompt, is_result=True)
+            return  # Don't save this marker line to stdout
+            
+        if output_mode == "stdout" and line.startswith("FORLOOP_WAITING_FOR_INPUT:"):
+            # Signal that the job is waiting for input
+            variable_handler.new_variable("script_waiting_for_input", "1", is_result=True)
+            
+            # Update job status to WAITING_FOR_INPUT
+            try:
+                from src.execution_core.execution_core_context_manager import update_pipeline_job
+                from forloop_common_structures.core.job import JobStatusEnum
+                
+                # Get current job UID from active entity tracker
+                from forloop_modules.globals.active_entity_tracker import aet
+                if hasattr(aet, 'pipeline_job_uid') and aet.pipeline_job_uid:
+                    update_pipeline_job(aet.pipeline_job_uid, status=JobStatusEnum.WAITING_FOR_INPUT)
+                    flog.info(f"Job {aet.pipeline_job_uid} changed to WAITING_FOR_INPUT status - waiting for user input")
+                else:
+                    flog.warning("No pipeline_job_uid found in active entity tracker")
+            except Exception as e:
+                # If we can't update the job status, log it but don't fail
+                flog.warning(f"Could not update job status to WAITING_FOR_INPUT: {e}")
+            
+            return  # Don't save this marker line to stdout
+        
         line = line.replace("'", '"')
         var_name = f"script_{output_mode}"
         curr_var = variable_handler.get_variable_by_name(var_name).get("value", "")
@@ -319,6 +381,7 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
                     self._save_output_line_to_result(output_mode="stderr", line=stderr_line)
         
         missing_libs = []
+        process = None
 
         try:
             # Get list of imports from the script
@@ -346,9 +409,10 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
             raise SoftPipelineError(f"Error while executing the script: {e}")
 
         finally:
-            process.stdout.close()
-            process.stderr.close()
-            process.wait()
+            if process is not None:
+                process.stdout.close()
+                process.stderr.close()
+                process.wait()
 
             # Uninstall the installed packages after use
             for lib in missing_libs:
@@ -401,6 +465,74 @@ class RunPythonScriptHandler(AbstractFunctionHandler):
 
         except Exception as e:
             raise SoftPipelineError(f"Error while executing the script via E2B: {e}")
+
+    def _execute_python_script_with_input_handling(self, script_text: str, job_uid: str = None):
+        """
+        Executes Python script with input() function handling.
+        Uses a custom input wrapper that communicates with the job system.
+        
+        Args:
+            script_text (str): Contents of .py script to be executed.
+            job_uid (str): UID of the current job for status updates.
+            
+        Raises:
+            SoftPipelineError: Raised in case of an Exception during script execution.
+        """
+        try:
+            # Create a wrapper script that handles input() calls
+            input_wrapper_script = f"""
+import sys
+import builtins
+import json
+import os
+import time
+
+# Store original input function
+_original_input = builtins.input
+
+def _forloop_input(prompt=""):
+    \"\"\"
+    Custom input function that pauses job when called.
+    \"\"\"
+    # Print a special marker that the frontend can detect
+    print("FORLOOP_INPUT_PROMPT:" + str(prompt))
+    print("FORLOOP_WAITING_FOR_INPUT:1")
+    
+    # For now, we'll use a simple approach: read from a predefined input
+    # In a real implementation, this would be replaced with proper input handling
+    try:
+        # Try to read from a file that contains the user input
+        input_file = "/tmp/forloop_user_input.txt"
+        max_wait_time = 300  # 5 minutes max wait
+        wait_time = 0
+        
+        while wait_time < max_wait_time:
+            if os.path.exists(input_file):
+                with open(input_file, 'r') as f:
+                    user_input = f.read().strip()
+                os.remove(input_file)  # Clean up
+                return user_input
+            time.sleep(0.5)
+            wait_time += 0.5
+        
+        # If no input provided within timeout, return empty string
+        return ""
+    except Exception as e:
+        print(f"Error reading input: {{e}}")
+        return ""
+
+# Replace built-in input with our custom one
+builtins.input = _forloop_input
+
+# Execute the original script
+{script_text}
+"""
+            
+            # Execute the wrapped script
+            self._execute_python_script_with_streaming(input_wrapper_script)
+            
+        except Exception as e:
+            raise SoftPipelineError(f"Error while executing script with input handling: {e}")
 
 
 class RunJupyterScriptHandler(AbstractFunctionHandler):
