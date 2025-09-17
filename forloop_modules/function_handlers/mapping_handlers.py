@@ -83,8 +83,14 @@ def define_function_variable(code, function_name, imports=[]):
         func = d[function_name]
         defined_functions_dict[function_name] = {"function": func, "imports": imports, "code": code}
 
-        address = hex(id(func))
-        variable_handler.new_variable(f"{function_name}_address", address)
+        address = hex(id(func))        
+        # Try to create variable in variable explorer, but don't fail if server is not available
+        try:
+            variable_handler.new_variable(f"{function_name}_address", address)
+        except Exception as e:
+            # If server is not available, just log a warning and continue
+            flog.warning(f'Could not create variable in variable explorer: {e}')
+            flog.warning(f'Function "{function_name}" defined in memory only.')
 
         #variable_handler.update_data_in_variable_explorer(glc)
         flog.warning(f'New function defined: "{function_name}"')
@@ -327,12 +333,15 @@ class ApplyMappingHandler(AbstractFunctionHandler):
 class DefineFunctionHandler(AbstractFunctionHandler):
 
     def __init__(self):
-        self.is_disabled = True # FIXME: Needs refactor - better UX, check functionality, solve how to store functions
+        self.is_disabled = False  # Enable for pipeline mode support
         self.icon_type = 'DefineFunction'
         self.fn_name = 'Define Function'
 
         self.type_category = ntcm.categories.mapping
         self.docs_category = DocsCategories.control
+        
+        # Pipeline mode support
+        self._pipeline_env: _ExecEnvManager | None = None
 
     def make_form_dict_list(self, *args, node_detail_form=None):
         # TODO: show name, args, arg types if any, return
@@ -379,6 +388,30 @@ class DefineFunctionHandler(AbstractFunctionHandler):
 
         self.direct_execute(code_label)
 
+    def make_flpl_node_dict(self, line_dict: dict) -> dict:
+        """
+        Creates a DefineFunction node dict from parsed code line_dict.
+        
+        For function definition like 'def square(x): return x * x', line_dict contains:
+        - arguments: ["def square(x):\n    return x * x\n"]
+        - function: None
+        - new_var: None
+        """
+        node = {"type": self.icon_type, "params": {}}
+        
+        # Extract function code from arguments
+        args = line_dict.get("arguments") or []
+        code_label = args[0] if len(args) > 0 else ""
+        
+        # Set the node parameters in the expected format
+        node["params"]["code_label"] = {"variable": None, "value": code_label}
+        
+        return node
+
+    def use_pipeline_env(self, env: _ExecEnvManager):
+        """Set the pipeline environment for function definition."""
+        self._pipeline_env = env
+
     def direct_execute(self, code_label):
 
         func_name = get_function_name_from_code(code_label)
@@ -396,7 +429,14 @@ class DefineFunctionHandler(AbstractFunctionHandler):
         indented_imports = "\n".join("    " + line for line in imports)
         code = f"{init_line}\n{indented_imports}\n\n{code}"
 
+        # Always define function in global scope for variable explorer
         define_function_variable(code, func_name, imports)
+        
+        # If pipeline environment is available, also define function there
+        if self._pipeline_env:
+            # Define function in pipeline environment
+            self._pipeline_env.define_or_reuse(func_name, code)
+            flog.info(f"[DefineFunction] Function '{func_name}' defined in pipeline environment.")
 
     def export_code(self, node_detail_form):
 
@@ -506,6 +546,30 @@ class RunFunctionHandler(AbstractFunctionHandler):
 
         return fdl
 
+    def make_flpl_node_dict(self, line_dict: dict) -> dict:
+        """
+        Creates a RunFunction node dict from parsed code line_dict.
+        
+        For assignment like 'square_res = square(5)', line_dict contains:
+        - new_var: "square_res" 
+        - function: "square(5)" (reconstructed call string)
+        - arguments: ["5"]
+        - instance_var: None
+        """
+        node = {"type": self.icon_type, "params": {}}
+        
+        # Extract function call string from function field
+        function_call = line_dict.get("function") or ""
+        
+        # Extract new variable name from new_var field
+        new_var_name = line_dict.get("new_var") or ""
+        
+        # Set the node parameters in the expected format
+        node["params"]["selected_function"] = {"variable": None, "value": function_call}
+        node["params"]["new_var_name"] = {"variable": None, "value": new_var_name}
+        
+        return node
+
     # Switch to fresh-per-call behaviour (click-run)
     def use_fresh_env(self):
         self._env_mode = "fresh"
@@ -574,11 +638,23 @@ class RunFunctionHandler(AbstractFunctionHandler):
                     flog.info("[RunFunction] Resolved callable from defined_functions_dict.")
                     return fn, inline_pos, inline_kwargs
 
+            # Try pipeline environment (in pipeline mode)
+            if self._env_mode == "pipeline" and self._pipeline_env:
+                fn = self._pipeline_env.env.get(name)
+                if callable(fn):
+                    flog.info("[RunFunction] Resolved callable from pipeline environment.")
+                    return fn, inline_pos, inline_kwargs
+
             # Not found
             avail = sorted(
                 list(defined_functions_dict.keys()) +
                 [k for k, v in getattr(variable_handler, "variables", {}).items() if callable(getattr(v, "value", None))]
             )
+            if self._env_mode == "pipeline" and self._pipeline_env:
+                pipeline_functions = [k for k, v in self._pipeline_env.env.items() if callable(v)]
+                avail.extend(pipeline_functions)
+                avail = sorted(set(avail))
+            
             msg = (f'Selected function "{selected_function_raw}" not found as a callable.\n'
                 f'Available functions: {avail}')
             flog.error(msg)
@@ -609,6 +685,7 @@ class RunFunctionHandler(AbstractFunctionHandler):
             args_list = inline_pos[:]      # strings
             kwargs_dict = inline_kwargs.copy()
         else:
+            # Get arguments from form (manual input mode)
             args_list = []
             for arg in func_args:
                 val = node_detail_form.get_chosen_value_by_name(arg, variable_handler)
@@ -617,7 +694,9 @@ class RunFunctionHandler(AbstractFunctionHandler):
             kwargs_dict = {}
             for k in kwonly:
                 val = node_detail_form.get_chosen_value_by_name(k, variable_handler)
-                kwargs_dict[k] = val
+                # Only add to kwargs_dict if the value is not None/empty
+                if val is not None and val != "":
+                    kwargs_dict[k] = val
 
 
         self.direct_execute(selected_function, new_var_name, args_list=args_list, kwargs_dict=kwargs_dict)
@@ -638,26 +717,35 @@ class RunFunctionHandler(AbstractFunctionHandler):
                 kwargs_dict = inline_kwargs or {}
 
         func_name = selected_function.__name__
-        imports, code = _get_meta_for_function(func_name)
-
+        
         if self._env_mode == "fresh":
-            # CLICK-RUN: re-run from scratch each time (inject referenced globals)
-            variables_code = self.find_variables_used_in_function(
-                code,
-                list(args_list) + list(kwargs_dict.values()),
-                func_name=func_name,
-            )
-            total_code = (("\n".join(imports) + "\n") if imports else "") + variables_code + code
-            env = {"__builtins__": __builtins__, "__name__": "__main__", "__package__": None}
-            fce.exec_code(total_code, env, env)
-            func = env.get(func_name)
+            # Check if we have a direct function object or need to resolve from stored code
+            try:
+                # Try to get stored code for the function
+                imports, code = _get_meta_for_function(func_name)
+                variables_code = self.find_variables_used_in_function(
+                    code,
+                    list(args_list) + list(kwargs_dict.values()),
+                    func_name=func_name,
+                )
+                total_code = (("\n".join(imports) + "\n") if imports else "") + variables_code + code
+                env = {"__builtins__": __builtins__, "__name__": "__main__", "__package__": None}
+                
+                # Include global variables in the execution environment
+                env.update(globals())
+                
+                fce.exec_code(total_code, env, env)
+                func = env.get(func_name)
+            except SoftPipelineError:
+                # No stored code found, use the function object directly
+                func = selected_function
 
         elif self._env_mode == "pipeline":
-            # RUNJOB: single shared module env across nodes (NO per-node injection)
+            # RUNJOB: single shared module env across nodes (function already defined)
             if not self._pipeline_env:
                 raise SoftPipelineError("Pipeline env not initialized. Call use_pipeline_env() before RunJob.")
-            total_code = (("\n".join(imports) + "\n") if imports else "") + code
-            func = self._pipeline_env.define_or_reuse(func_name, total_code)
+            # Function is already defined in the pipeline environment, just get it
+            func = self._pipeline_env.env.get(func_name)
 
         else:
             raise SoftPipelineError(f"Unknown env mode: {self._env_mode}")
@@ -665,8 +753,50 @@ class RunFunctionHandler(AbstractFunctionHandler):
         if func is None:
             raise SoftPipelineError("Function not found after exec. Check stored code/imports.")
 
-        coerced_pos = [_coerce_literal(a) for a in args_list]
-        coerced_kwargs = {k: _coerce_literal(v) for k, v in kwargs_dict.items()}
+        # Evaluate arguments based on environment mode
+        if self._env_mode == "pipeline":
+            # Evaluate arguments in the pipeline environment
+            coerced_pos = []
+            for a in args_list:
+                try:
+                    # Try to evaluate the argument in the pipeline environment
+                    evaluated_arg = eval(a, self._pipeline_env.env, self._pipeline_env.env)
+                    coerced_pos.append(evaluated_arg)
+                except Exception:
+                    # Fall back to literal coercion if evaluation fails
+                    coerced_pos.append(_coerce_literal(a))
+            
+            coerced_kwargs = {}
+            for k, v in kwargs_dict.items():
+                try:
+                    # Try to evaluate the argument in the pipeline environment
+                    evaluated_arg = eval(v, self._pipeline_env.env, self._pipeline_env.env)
+                    coerced_kwargs[k] = evaluated_arg
+                except Exception:
+                    # Fall back to literal coercion if evaluation fails
+                    coerced_kwargs[k] = _coerce_literal(v)
+        else:
+            # Fresh mode: evaluate arguments in the fresh environment context
+            coerced_pos = []
+            for a in args_list:
+                try:
+                    # Try to evaluate the argument in the fresh environment
+                    evaluated_arg = eval(a, env, env)
+                    coerced_pos.append(evaluated_arg)
+                except Exception:
+                    # Fall back to literal coercion if evaluation fails
+                    coerced_pos.append(_coerce_literal(a))
+            
+            coerced_kwargs = {}
+            for k, v in kwargs_dict.items():
+                try:
+                    # Try to evaluate the argument in the fresh environment
+                    evaluated_arg = eval(v, env, env)
+                    coerced_kwargs[k] = evaluated_arg
+                except Exception:
+                    # Fall back to literal coercion if evaluation fails
+                    coerced_kwargs[k] = _coerce_literal(v)
+        
         return_value = func(*coerced_pos, **coerced_kwargs)
 
         if return_value is not None:
