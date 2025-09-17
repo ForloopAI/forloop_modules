@@ -1,5 +1,10 @@
 import inspect
 import ast
+import re
+import types
+import threading
+import sys
+import hashlib
 
 import forloop_modules.flog as flog
 import forloop_modules.queries.node_context_requests_backend as ncrb
@@ -77,14 +82,121 @@ def define_function_variable(code, function_name, imports=[]):
         fce.exec_code(code, globals(), d)
         func = d[function_name]
         defined_functions_dict[function_name] = {"function": func, "imports": imports, "code": code}
-            
-        variable_handler.new_variable(function_name, func, additional_params={"code": code})
+
+        address = hex(id(func))
+        variable_handler.new_variable(f"{function_name}_address", address)
+
         #variable_handler.update_data_in_variable_explorer(glc)
         flog.warning(f'New function defined: "{function_name}"')
     else:
         flog.error("Function name can't be of type None.")
 
+
+def _coerce_literal(v):
+    """Coerce a string to a Python literal when safe; otherwise return as-is."""
+    if isinstance(v, str):
+        try:
+            return ast.literal_eval(v)
+        except Exception:
+            return v
+    return v
+
+def _get_meta_for_function(func_name: str):
+    """
+    Return the stored meta for func_name. If not in defined_functions_dict,
+    try to get code from variable_handler additional_params. Return (imports, code).
+    """
+    meta = defined_functions_dict.get(func_name)
+    if meta and "code" in meta:
+        imports = list(set(meta.get("imports", [])))
+        code = meta["code"]
+        return imports, code
+
+    # Fallback: look in variable_handler additional_params (DefineFunctionHandler stores 'code')
+    var = getattr(variable_handler, "variables", {}).get(func_name)
+    if var and isinstance(getattr(var, "additional_params", None), dict):
+        code = var.additional_params.get("code")
+        if code:
+            return [], code
+
+    raise SoftPipelineError(
+        f"No stored code found for function '{func_name}'. "
+        "Make sure it was created via DefineFunctionHandler so its code is available."
+    )
+
+def push_pipeline_global(name, value):
+    """Mirror a variable update into the pipeline exec env when in pipeline mode."""
+    try:
+        rf = mapping_handlers_dict['RunFunction']
+        if getattr(rf, "_env_mode", None) == "pipeline" and rf._pipeline_env:
+            rf._pipeline_env.env[name] = value
+    except Exception as e:
+        flog.warning(f"push_pipeline_global failed for {name}: {e}")
+
 ###
+
+class _ExecEnvManager:
+    """
+    Shared module-like environment for exec() so functions see globals via LEGB.
+    - Persists across calls (like a real module).
+    - Thread-safe exec.
+    - Lets you sync in globals from variable_handler and/or any dict (e.g., globals()).
+    - Caches code by hash to avoid redefining when source didn't change.
+    """
+    def __init__(self, name: str = "_forloop_runtime"):
+        self._lock = threading.RLock()
+        self._module = types.ModuleType(name)
+        self.env = self._module.__dict__
+
+        # make it module-like
+        self.env["__builtins__"] = __builtins__
+        self.env["__name__"] = name
+        self.env["__package__"] = None
+        sys.modules[name] = self._module
+
+        # func_name -> sha256(total_code)
+        self._code_hash: dict[str, str] = {}
+
+    def _should_copy(self, name: str, val) -> bool:
+        if not name or name.startswith("_"):
+            return False
+        if inspect.isfunction(val) or inspect.ismethod(val):
+            return False
+        if isinstance(val, types.ModuleType):
+            return False
+        if isinstance(val, type):
+            return False
+        return True
+
+    def sync_from_variable_handler(self, overwrite: bool = False):
+        try:
+            for v in variable_handler.variables.values():
+                name, val = v.name, v.value
+                if val is None:
+                    continue
+                if not self._should_copy(name, val):
+                    continue
+                if overwrite or name not in self.env:
+                    self.env[name] = val
+        except Exception as e:
+            flog.warning(f"[ExecEnv] variable_handler sync failed: {e}")
+
+    def sync_from_dict(self, d: dict, overwrite: bool = False):
+        for name, val in d.items():
+            if not self._should_copy(name, val):
+                continue
+            if overwrite or name not in self.env:
+                self.env[name] = val
+
+    def define_or_reuse(self, func_name: str, total_code: str):
+        """Exec total_code if it's new/changed; otherwise reuse existing def."""
+        h = hashlib.sha256(total_code.encode("utf-8")).hexdigest()
+        with self._lock:
+            if self._code_hash.get(func_name) != h or func_name not in self.env:
+                exec(total_code, self.env, self.env)
+                self._code_hash[func_name] = h
+        return self.env.get(func_name)
+
 
 
 class ApplyMappingHandler(AbstractFunctionHandler):
@@ -281,7 +393,8 @@ class DefineFunctionHandler(AbstractFunctionHandler):
 
         imports = find_imports_in_custom_code(code)
 
-        code = init_line + "\n" + 4 * " " + "\n    ".join(imports) + "\n\n" + code
+        indented_imports = "\n".join("    " + line for line in imports)
+        code = f"{init_line}\n{indented_imports}\n\n{code}"
 
         define_function_variable(code, func_name, imports)
 
@@ -369,12 +482,17 @@ class DefineLambdaFunctionHandler(AbstractFunctionHandler):
 class RunFunctionHandler(AbstractFunctionHandler):
 
     def __init__(self):
-        self.is_disabled = True
+        self.is_disabled = False
         self.icon_type = 'RunFunction'
         self.fn_name = 'Run Function'
 
         self.type_category = ntcm.categories.mapping
         self.docs_category = DocsCategories.control
+
+        # env management
+        self._exec_env = _ExecEnvManager()
+        self._env_mode = "fresh"             # "fresh" (click-run) | "pipeline" (RunJob)
+        self._pipeline_env: _ExecEnvManager | None = None
 
     def make_form_dict_list(self, *args, node_detail_form=None):
 
@@ -388,124 +506,271 @@ class RunFunctionHandler(AbstractFunctionHandler):
 
         return fdl
 
+    # Switch to fresh-per-call behaviour (click-run)
+    def use_fresh_env(self):
+        self._env_mode = "fresh"
+        self._pipeline_env = None
+
+    # Switch to persistent env for the whole job (RunJob)
+    def use_pipeline_env(self, env: _ExecEnvManager):
+        self._env_mode = "pipeline"
+        self._pipeline_env = env
+
+    def _parse_function_call_string(self, s):
+        """
+        Accepts: "square(5)", "square(5, y=10)", "square", "  square (  x )  "
+        Returns: (name, pos_args_as_strings, kwargs_as_strings_dict), or (None, None, None) on failure.
+        """
+        s = s.strip()
+        try:
+            node = ast.parse(s, mode='eval').body
+        except Exception as e:
+            flog.error(f"[RunFunction] _parse_function_call_string parse error for {s!r}: {e}")
+            return None, None, None
+
+        # example: square(5, y=10)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            name = node.func.id
+            pos = [ast.unparse(a) for a in node.args]
+            kwargs = {kw.arg: ast.unparse(kw.value) for kw in node.keywords if kw.arg}
+            return name, pos, kwargs
+
+        # plain name: square
+        if isinstance(node, ast.Name):
+            return node.id, [], {}
+
+        flog.warning(f"[RunFunction] _parse_function_call_string unsupported AST: {ast.dump(node)}")
+        return None, None, None
+
+    def _resolve_selected_function(self, selected_function_raw):
+        # Log selection type at info level without dumping full content
+
+        if callable(selected_function_raw):
+            return selected_function_raw, [], {}
+
+        if isinstance(selected_function_raw, str):
+            name, inline_pos, inline_kwargs = self._parse_function_call_string(selected_function_raw)
+            if not name:
+                msg = f'Could not parse function selector: {selected_function_raw!r}'
+                flog.error(msg)
+                raise SoftPipelineError(msg)
+
+            # Try variable_handler
+            try:
+                var_obj = getattr(variable_handler, "variables", {}).get(name)
+            except Exception:
+                var_obj = None
+
+            if var_obj is not None:
+                fn = getattr(var_obj, "value", None)
+                if callable(fn):
+                    return fn, inline_pos, inline_kwargs
+
+            # Try registry
+            meta = defined_functions_dict.get(name)
+            if meta:
+                fn = meta.get("function")
+                if callable(fn):
+                    flog.info("[RunFunction] Resolved callable from defined_functions_dict.")
+                    return fn, inline_pos, inline_kwargs
+
+            # Not found
+            avail = sorted(
+                list(defined_functions_dict.keys()) +
+                [k for k, v in getattr(variable_handler, "variables", {}).items() if callable(getattr(v, "value", None))]
+            )
+            msg = (f'Selected function "{selected_function_raw}" not found as a callable.\n'
+                f'Available functions: {avail}')
+            flog.error(msg)
+            raise SoftPipelineError(msg)
+
+        msg = f"Unsupported function selector type: {type(selected_function_raw).__name__}"
+        flog.error(msg)
+        raise SoftPipelineError(msg)
+
     def execute(self, node_detail_form):
-        selected_function = node_detail_form.get_chosen_value_by_name("selected_function", variable_handler)
+
+
+        selected_function_raw = node_detail_form.get_chosen_value_by_name("selected_function", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
 
-        func_args = inspect.getfullargspec(selected_function).args
+        selected_function, inline_pos, inline_kwargs = self._resolve_selected_function(selected_function_raw)
 
-        args_list = []
-        for arg in func_args:
-            arg_value = node_detail_form.get_chosen_value_by_name(arg, variable_handler)
-            args_list.append(arg_value)
-
-        self.direct_execute(selected_function, new_var_name, args_list)
-
-    def execute_with_params(self, params, node_detail_form=None):
-
-        selected_function = params["selected_function"]
-        new_var_name = params["new_var_name"]
-
-        func_args = inspect.getfullargspec(selected_function).args
-
-        args_list = []
-        for arg in func_args:
-            arg_value = node_detail_form.get_chosen_value_by_name(arg, variable_handler)
-            args_list.append(arg_value)
-
-        self.direct_execute(selected_function, new_var_name, args_list)
-
-    def direct_execute(self, selected_function, new_var_name):
-        
-        # HACK: Disable the execution of the node with some feedback for a user until we implement security checks
-        raise SoftPipelineError("Execution of this node is temporarily disabled.")
-
-        args = []
-        
-        imports = defined_functions_dict[selected_function.__name__]["imports"]
-        imports = list(set(imports))
-
-        code = defined_functions_dict[selected_function.__name__]["code"]
-
-        variables_code = self.find_variables_used_in_function(code, args)
-        
-        total_code = "\n".join(imports) + "\n" + variables_code + code
-        fce.exec_code(total_code, globals(), locals())
-
-        return_value = None
-
-        for i, arg in enumerate(args):      
-            try:
-                args[i] = ast.literal_eval(arg)
-            except Exception as e:
-                flog.warning(e)
-                pass
-
-        if args:
-            return_value = selected_function(*args)
+        # Inspect signature
+        try:
+            full = inspect.getfullargspec(selected_function)
+            func_args = full.args
+            kwonly = full.kwonlyargs or []
+        except Exception as e:
+            flog.error(f"[RunFunction] getfullargspec failed: {e}")
+            raise
+        # If user typed inline args (e.g., "square(5)") – use those.
+        if inline_pos or inline_kwargs:
+            args_list = inline_pos[:]      # strings
+            kwargs_dict = inline_kwargs.copy()
         else:
-            return_value = selected_function()
+            args_list = []
+            for arg in func_args:
+                val = node_detail_form.get_chosen_value_by_name(arg, variable_handler)
+                args_list.append(val)
+
+            kwargs_dict = {}
+            for k in kwonly:
+                val = node_detail_form.get_chosen_value_by_name(k, variable_handler)
+                kwargs_dict[k] = val
+
+
+        self.direct_execute(selected_function, new_var_name, args_list=args_list, kwargs_dict=kwargs_dict)
+
+    def direct_execute(self, selected_function, new_var_name, args_list=None, kwargs_dict=None):
+        if args_list is None:
+            args_list = []
+        if kwargs_dict is None:
+            kwargs_dict = {}
+
+        # Allow string selector too
+        if not callable(selected_function):
+            resolved_fn, inline_pos, inline_kwargs = self._resolve_selected_function(selected_function)
+            selected_function = resolved_fn
+            if not args_list:
+                args_list = inline_pos or []
+            if not kwargs_dict:
+                kwargs_dict = inline_kwargs or {}
+
+        func_name = selected_function.__name__
+        imports, code = _get_meta_for_function(func_name)
+
+        if self._env_mode == "fresh":
+            # CLICK-RUN: re-run from scratch each time (inject referenced globals)
+            variables_code = self.find_variables_used_in_function(
+                code,
+                list(args_list) + list(kwargs_dict.values()),
+                func_name=func_name,
+            )
+            total_code = (("\n".join(imports) + "\n") if imports else "") + variables_code + code
+            env = {"__builtins__": __builtins__, "__name__": "__main__", "__package__": None}
+            fce.exec_code(total_code, env, env)
+            func = env.get(func_name)
+
+        elif self._env_mode == "pipeline":
+            # RUNJOB: single shared module env across nodes (NO per-node injection)
+            if not self._pipeline_env:
+                raise SoftPipelineError("Pipeline env not initialized. Call use_pipeline_env() before RunJob.")
+            total_code = (("\n".join(imports) + "\n") if imports else "") + code
+            func = self._pipeline_env.define_or_reuse(func_name, total_code)
+
+        else:
+            raise SoftPipelineError(f"Unknown env mode: {self._env_mode}")
+
+        if func is None:
+            raise SoftPipelineError("Function not found after exec. Check stored code/imports.")
+
+        coerced_pos = [_coerce_literal(a) for a in args_list]
+        coerced_kwargs = {k: _coerce_literal(v) for k, v in kwargs_dict.items()}
+        return_value = func(*coerced_pos, **coerced_kwargs)
 
         if return_value is not None:
             if "," in new_var_name:
-                variables = new_var_name.split(",")
-                for i, variable in enumerate(variables):
-                    variable = variable.strip()
-                    variable_handler.new_variable(variable, return_value[i])
+                names = [n.strip() for n in new_var_name.split(",")]
+                for i, n in enumerate(names):
+                    variable_handler.new_variable(n, return_value[i])
             else:
                 variable_handler.new_variable(new_var_name, return_value)
 
-            #variable_handler.update_data_in_variable_explorer(glc)
 
-    def find_variables_used_in_function(self, function_code: str, args_list: list) -> str:
 
-        variables_code = ""
 
-        for variable in variable_handler.variables.values():
-            if not inspect.isfunction(variable.value):
-                if variable.name in args_list or variable.name in function_code:
-                    print(
-                        f"VAR NAME = {variable.name}, VAR VALUE = {variable.value}, VAR TYPE = {type(variable.value)}")
-                    if type(variable.value) == str:
-                        variables_code += f'{variable.name} = "{variable.value}"\n'
-                    else:
-                        variables_code += f'{variable.name} = {variable.value}\n'
 
-        return variables_code
+    def find_variables_used_in_function(self, function_code: str, args_list: list, func_name: str | None = None) -> str:
+        """
+        Emit Python assignments for variables that the function body actually references,
+        while avoiding shadowing the function name and ensuring strings are safely repr()'d.
+        """
+        lines = []
+
+        for v in variable_handler.variables.values():
+            name = v.name
+            val = v.value
+
+            # 1) Never shadow the function we are (re)defining
+            if func_name and name == func_name:
+                continue
+
+            # 2) Skip functions (we don't inline callables)
+            if inspect.isfunction(val):
+                continue
+
+            # 3) If value looks like raw source code of a function, skip (defense)
+            if isinstance(val, str) and val.lstrip().startswith(("def ", "lambda ")):
+                continue
+
+            # 4) Only inject when the identifier actually appears in the function code
+            if not re.search(rf"\b{re.escape(name)}\b", function_code):
+                continue
+
+            # 5) Serialize safely
+            try:
+                if isinstance(val, str):
+                    lines.append(f"{name} = {val!r}")   # repr -> escapes newlines
+                else:
+                    lines.append(f"{name} = {repr(val)}")
+            except Exception as e:
+                flog.warning(f"Skipping var {name}: not serializable ({e})")
+                continue
+
+        return ("\n".join(lines) + ("\n" if lines else ""))
+
+
 
     def export_code(self, node_detail_form):
-
-        selected_function = node_detail_form.get_chosen_value_by_name("selected_function", variable_handler)
+        raw = node_detail_form.get_chosen_value_by_name("selected_function", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
-        function_code = defined_functions_dict[selected_function.__name__]["code"]
-        func_args = inspect.getfullargspec(selected_function).args
 
-        arg_values = {}
-        for arg in func_args:
-            arg_values[arg] = node_detail_form.get_chosen_value_by_name(arg, variable_handler)
-
-        args_code = ""
-        for arg_name, arg_value in arg_values.items():
-            args_code += f'{arg_name} = {arg_value},'
-
-        args_code = args_code[:-1]  # removing the last ','
-
-        args_list = list(arg_values.values())
-        variables_code = self.find_variables_used_in_function(function_code, args_list)
-
-        if new_var_name and not new_var_name.isspace():
-            code = variables_code + "\n" + f"{new_var_name} = {selected_function.__name__}({args_code})"
+        if callable(raw):
+            fn = raw
+            func_name = raw.__name__
         else:
-            code = variables_code + "\n" + f"{selected_function.__name__}({args_code})"
+            name, _pos, _kwargs = self._parse_function_call_string(raw)
+            if not name:
+                raise SoftPipelineError("Could not parse function selector for export.")
+            func_name = name
+            # Try to resolve callable for arg introspection; optional for export
+            var_obj = getattr(variable_handler, "variables", {}).get(name)
+            if var_obj and callable(getattr(var_obj, "value", None)):
+                fn = var_obj.value
+            else:
+                meta = defined_functions_dict.get(name)
+                fn = meta.get("function") if meta else None
 
-        return code
+        imports, function_code = _get_meta_for_function(func_name)
+
+        func_args = inspect.getfullargspec(fn).args if callable(fn) else []
+        arg_values = {arg: node_detail_form.get_chosen_value_by_name(arg, variable_handler) for arg in func_args}
+
+        args_code = ",".join(f"{k} = {v}" for k, v in arg_values.items())
+        variables_code = self.find_variables_used_in_function(function_code, list(arg_values.values()), func_name=func_name)
+
+        call_code = f"{func_name}({args_code})"
+        if new_var_name and not new_var_name.isspace():
+            return variables_code + "\n" + f"{new_var_name} = {call_code}"
+        else:
+            return variables_code + "\n" + call_code
 
     def export_imports(self, node_detail_form):
+        raw = node_detail_form.get_chosen_value_by_name("selected_function", variable_handler)
+        if callable(raw):
+            name = raw.__name__
+        else:
+            name, _pos, _kwargs = self._parse_function_call_string(raw)
+            if not name:
+                return []
 
-        selected_function = node_detail_form.get_chosen_value_by_name("selected_function", variable_handler)
-        code = defined_functions_dict[selected_function.__name__]["code"]
+        try:
+            _imports, code = _get_meta_for_function(name)
+        except SoftPipelineError:
+            return []
+
         imports = find_imports_in_custom_code(code)
-
         return imports
 
     def rebuild_icon_item_detail_form(self, image, last_loaded_function):
