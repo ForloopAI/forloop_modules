@@ -1161,16 +1161,17 @@ class PrintVariableHandler(AbstractFunctionHandler):
     """
 
     def __init__(self):
-        self.is_disabled = True # FIXME: No FE prepared for the user --> for the user it seems broken
+        super().__init__()
+        self.is_disabled = False # FIXME: No FE prepared for the user --> for the user it seems broken
         self.icon_type = "PrintVariable"
         self.fn_name = "Print Variable"
-
+        self.code_import_patterns = ["print"]  # Enable recognition from Python code
+   
         self.type_category = ntcm.categories.variable
         self.docs_category = DocsCategories.control
         self._init_docs()
 
-        super().__init__()
-        
+
     def _init_docs(self):
         self.docs = Docs(description=self.__doc__)
         self.docs.add_parameter_table_row(title="Variable name", name="variable_name",
