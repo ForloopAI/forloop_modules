@@ -257,24 +257,25 @@ class IfConditionHandler(AbstractFunctionHandler):
         fdl.label("Value 2")
         fdl.entry(name="value_q",text="",row=3)
         
-        fdl.label("Toggle channel")
-        fdl.button(function=self.toggle_channel, function_args=args, text="Toggle",row=4, focused=True)
+        fdl.label("Active channel")
+        fdl.checkbox(name="active_channel", bool_value=True, row=4)
         
-        fdl.label("Active channel: True")
+        #fdl.label(f"Current channel: ", row=5)
         
         return fdl
 
-    def toggle_channel(self, args): #Refactor to backend
-        image = args[0]
-        elements = image.item_detail_form.elements
-        channel_str = elements[-1].text.split("Active channel: ")[1]
-        channel = ast.literal_eval(channel_str)
-        channel = not channel  # toggle
-        elements[-1].text = "Active channel: " + str(channel)
 
-        print(args)
+    # def toggle_channel(self, args): #Refactor to backend
+    #     image = args[0]
+    #     elements = image.item_detail_form.elements
+    #     channel_str = elements[-1].text.split("Active channel: ")[1]
+    #     channel = ast.literal_eval(channel_str)
+    #     channel = not channel  # toggle
+    #     elements[-1].text = "Active channel: " + str(channel)
 
-    def direct_execute(self, value_p, operator, value_q):
+    #     print(args)
+
+    def direct_execute(self, value_p, operator, value_q, **kwargs):
         # def __new__(cls, value_p, operator, value_q, *args, **kwargs):
         try:
             if isinstance(value_p, list) and operator == 'isempty':
