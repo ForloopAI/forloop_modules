@@ -103,14 +103,21 @@ class NodeDetailForm:
     def get_form_dict_list_from_typ(self,typ):
         """TODO!"""
         return []
-    
-    # TODO: is it really necessary to have the if statement?
+        # TODO: is it really necessary to have the if statement?
     def define_form_dict_list(self,form_dict_list_options:dict={}, pipeline_function_handler_dict={}, image_component=None): #image_component to be deprecated when no pfh handler uses it -> replace by node_uid
         handler = pipeline_function_handler_dict.get(self.typ)
-        
         if handler is not None:
-            self.form_dict_list = handler.make_form_dict_list(None, node_detail_form = self)
+            # Flatten the options structure for backward/forward compatibility
+            raw_opts = form_dict_list_options or {}
+            opts = raw_opts.get("options", raw_opts)
             
+            try:
+                # Attempt to call with the 'options' keyword for newer, dynamic handlers
+                self.form_dict_list = handler.make_form_dict_list(options=opts, node_detail_form=self)
+            except TypeError:
+                # Fallback for legacy handlers that don't accept the 'options' keyword which was introduced in DBHandler repair I.
+                self.form_dict_list = handler.make_form_dict_list(node_detail_form=self)
+
             ##### 16.10.2024 - Replaced by new form_dict_list mechanisms #####
             #try: #Try Except clause because some handlers might not have node_detail_form as argument of make_form_dict_list yet
             #    if len(form_dict_list_options)==0:
@@ -124,14 +131,11 @@ class NodeDetailForm:
             #    self.form_dict_list = handler.make_form_dict_list(image_component,**form_dict_list_options)  #!!!!
             ##### 16.10.2024 - Replaced by new form_dict_list mechanisms #####
 
-
         else:
             self.form_dict_list=[]
         #else:
         #    form_dict_list = [{'Label': 'Not implemented correctly yet!'}]
-
         return self.form_dict_list
-
         
     # Deprecated with merge conflict
     # def get_chosen_value_by_name(self,name,variable_handler=None, return_value=False): #maybe deprecate variable handler when all handlers refactored
