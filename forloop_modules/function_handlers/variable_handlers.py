@@ -16,6 +16,7 @@ from forloop_modules.globals.docs_categories import DocsCategories
 
 from forloop_modules.function_handlers.auxilliary.abstract_function_handler import AbstractFunctionHandler, Input
 from forloop_modules.errors.errors import CriticalPipelineError
+from forloop_modules.function_handlers.input_waiter import register_pending_input
 
 
 ####### PROBLEMATIC IMPORTS TODO: REFACTOR #######
@@ -1161,8 +1162,7 @@ class PrintVariableHandler(AbstractFunctionHandler):
     """
 
     def __init__(self):
-        super().__init__()
-        self.is_disabled = False # FIXME: No FE prepared for the user --> for the user it seems broken
+        self.is_disabled = False
         self.icon_type = "PrintVariable"
         self.fn_name = "Print Variable"
         self.code_import_patterns = ["print"]  # Enable recognition from Python code
@@ -1200,7 +1200,23 @@ class PrintVariableHandler(AbstractFunctionHandler):
         """
     
     def input_execute(self, inp):
-        print(f'Variable value form PrintVariable icon: {inp("variable_name")}')
+        var_name = inp("variable_name")
+        var_obj = variable_handler.variables.get(var_name)
+
+        if var_obj is not None:
+            #message = f'PrintVariable: {var_name} = {var_obj.value}' ##Optional Variable printing format
+            message = f'{var_obj.value}'
+        else:
+            # fallback to printing the string itself
+            # message = f'PrintVariable: {var_name}' ##Optional Variable printing format
+            message = f'{var_name}'
+
+
+        # Send to FastAPI backend
+        try:
+            ncrb.post_console_log(message=message, type="print")
+        except Exception as e:
+            flog.warning(f"Failed to post console print log: {e}")
 
     def execute_with_params(self, params, item_detail_form):
         variable_value = item_detail_form.get_chosen_value_by_name("variable_name", variable_handler)
@@ -1225,6 +1241,97 @@ class PrintVariableHandler(AbstractFunctionHandler):
         return imports
 
 
+class ConsoleEntryHandler(AbstractFunctionHandler):
+    def __init__(self):
+        self.is_disabled = False
+        self.icon_type = "ConsoleEntry" 
+        self.fn_name = "Console Entry"
+        self.type_category = ntcm.categories.variable  
+        self.docs_category = DocsCategories.control    
+        self._init_docs()
+        super().__init__()
+
+    def _init_docs(self):
+        self.docs = Docs(description="Prompt user via popup and wait for their input.")
+        self.docs.add_parameter_table_row(
+            title="Prompt",
+            name="prompt",
+            description="Text shown in console & popup",
+            typ="string",
+            example="Enter your name:"
+        )
+        self.docs.add_parameter_table_row(
+            title="Output Var",
+            name="output_variable",
+            description="Variable name to store the response",
+            typ="string",
+            example="user_input"
+        )
+
+    def make_form_dict_list(self, *args, node_detail_form=None):
+        fdl = FormDictList(docs=self.docs)
+        fdl.label(self.fn_name)
+        fdl.entry(
+            name="prompt",
+            text="Enter your name:",
+            input_types=["str"],
+            required=True,
+            row=1
+        )
+        fdl.entry(
+            name="output_variable",
+            text="user_input",
+            input_types=["str"],
+            required=True,
+            row=2
+        )
+        fdl.button(
+            function=self.execute,
+            function_args=node_detail_form,
+            text="Execute",
+            focused=True
+        )
+        return fdl
+
+    def execute(self, node_detail_form):
+        prompt = node_detail_form.get_chosen_value_by_name("prompt")
+        output_var = node_detail_form.get_chosen_value_by_name("output_variable")
+        node_uid = node_detail_form.node_uid
+
+        register_pending_input(node_uid, output_var, prompt_text=prompt)
+
+        ncrb.post_console_print_log(message=f">>> {prompt}", type="input_request")
+
+        ncrb.new_popup(
+            pos=[400, 300],
+            typ="ConsoleTextInput",
+            params_dict={
+                "prompt": {"value": prompt},
+                "output_variable": {"value": output_var},
+                "parent_node_uid": {"value": node_uid},
+            }
+        )
+
+    def direct_execute(
+        self,
+        prompt: str,
+        output_variable: str,
+        node_uid: str    
+    ):
+        register_pending_input(node_uid, output_variable, prompt_text=prompt)
+
+        ncrb.post_console_print_log(message=f">>> {prompt}", type="input_request")
+
+        ncrb.new_popup(
+            pos=[400, 300],
+            typ="ConsoleTextInput",
+            params_dict={
+                "prompt": {"value": prompt},
+                "output_variable": {"value": output_variable},
+                "node_uid": {"value": node_uid},
+            }
+        )
+
 
 variable_handlers_dict = {
     "NewVariable": NewVariableHandler(),
@@ -1233,5 +1340,6 @@ variable_handlers_dict = {
     "StringModifyVariable": StringModifyVariableHandler(),
     "ListModifyVariable": ListModifyVariableHandler(),
     "DictionaryModifyVariable": DictionaryModifyVariableHandler(),
-    "PrintVariable": PrintVariableHandler()
+    "PrintVariable": PrintVariableHandler(),
+    "ConsoleEntry": ConsoleEntryHandler()
 }

@@ -493,9 +493,97 @@ class PutRequestHandler(AbstractFunctionHandler):
         return (imports)
 
 
+class APIEndpointHandler(AbstractFunctionHandler):
+    def __init__(self):
+        self.icon_type = "APIEndpoint"
+        self.fn_name = "API Endpoint"
+        self.type_category = ntcm.categories.api
+        self.docs_category = DocsCategories.data_sources
+
+    def make_form_dict_list(self, *args, node_detail_form=None):
+        fdl = FormDictList()
+        fdl.label("API Endpoint Request")
+        fdl.label("Method")
+        fdl.entry(name="method", text="GET", input_types=["str"], required=True, row=1)
+        fdl.label("URL")
+        fdl.entry(name="url", text="", input_types=["str"], required=True, row=2)
+        fdl.label("Headers")
+        fdl.entry(name="headers", text="", input_types=["dict"], row=3)
+        fdl.label("Parameters")
+        fdl.entry(name="parameters", text="", input_types=["dict"], row=4)
+        fdl.label("Cookies")
+        fdl.entry(name="cookies", text="", input_types=["dict"], row=5)
+        fdl.label("Body (for POST/PUT)")
+        fdl.entry(name="body", text="", input_types=["str", "dict"], row=6)
+        fdl.label("Save as")
+        fdl.entry(name="new_var_name", text="", category="new_var", input_types=["str"], row=7)
+        fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
+        return fdl
+
+    def direct_execute(self, method, url, headers, parameters, cookies, body, new_var_name):
+        import requests
+        method = method.upper()
+        headers = parse_api_additional_params(headers)
+        parameters = parse_api_additional_params(parameters)
+        cookies = parse_api_additional_params(cookies)
+        data = body
+        if method == "GET":
+            response = requests.get(url, params=parameters, headers=headers, cookies=cookies)
+        elif method == "POST":
+            response = requests.post(url, params=parameters, headers=headers, cookies=cookies, data=data)
+        elif method == "PUT":
+            response = requests.put(url, params=parameters, headers=headers, cookies=cookies, data=data)
+        elif method == "DELETE":
+            response = requests.delete(url, params=parameters, headers=headers, cookies=cookies)
+        else:
+            raise ValueError(f"Unsupported HTTP method: {method}")
+        try:
+            result = response.json()
+        except Exception:
+            result = response.text
+        variable_handler.new_variable(new_var_name, result)
+
+    def execute_with_params(self, params):
+        self.direct_execute(
+            params.get("method", "GET"),
+            params.get("url", ""),
+            params.get("headers", {}),
+            params.get("parameters", {}),
+            params.get("cookies", {}),
+            params.get("body", None),
+            params.get("new_var_name", "api_result")
+        )
+
+    def execute(self, node_detail_form):
+        method = node_detail_form.get_chosen_value_by_name("method", variable_handler)
+        url = node_detail_form.get_chosen_value_by_name("url", variable_handler)
+        headers = node_detail_form.get_chosen_value_by_name("headers", variable_handler)
+        parameters = node_detail_form.get_chosen_value_by_name("parameters", variable_handler)
+        cookies = node_detail_form.get_chosen_value_by_name("cookies", variable_handler)
+        body = node_detail_form.get_chosen_value_by_name("body", variable_handler)
+        new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
+        self.direct_execute(method, url, headers, parameters, cookies, body, new_var_name)
+
+    def export_code(self, node_detail_form):
+        method = node_detail_form.get_variable_name_or_input_value_by_element_name("method")
+        url = node_detail_form.get_variable_name_or_input_value_by_element_name("url")
+        headers = node_detail_form.get_variable_name_or_input_value_by_element_name("headers")
+        parameters = node_detail_form.get_variable_name_or_input_value_by_element_name("parameters")
+        cookies = node_detail_form.get_variable_name_or_input_value_by_element_name("cookies")
+        body = node_detail_form.get_variable_name_or_input_value_by_element_name("body")
+        new_var_name = node_detail_form.get_variable_name_or_input_value_by_element_name("new_var_name", is_input_variable_name=True)
+        code = f"response = requests.{method.lower()}(url={url}, params={parameters}, headers={headers}, cookies={cookies}, data={body})\n"
+        code += f"{new_var_name} = response.json() if response.headers.get('Content-Type', '').startswith('application/json') else response.text"
+        return code
+
+    def export_imports(self, *args):
+        return ["import requests"]
+
+
 api_handlers_dict = {
     "GetRequest": GetRequestHandler(),
     "PostRequest": PostRequestHandler(),
     "DeleteRequest": DeleteRequestHandler(),
-    "PutRequest": PutRequestHandler()
+    "PutRequest": PutRequestHandler(),
+    "APIEndpoint": APIEndpointHandler()
 }

@@ -157,6 +157,7 @@ class JobStatusEnum(str, Enum):
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
     PAUSED = "PAUSED"
+    WAITING_FOR_INPUT = "WAITING_FOR_INPUT"  # Job is running but waiting for user input
     CANCELLING = "CANCELLING"  # Job in the process of being canceled, but not yet canceled
     CANCELED = "CANCELED"
 
@@ -164,6 +165,11 @@ class JobStatusEnum(str, Enum):
     def is_finished(cls, status: 'JobStatusEnum'):
         """Check if the job status is in a 'finished' subset."""
         return status in [cls.COMPLETED, cls.FAILED, cls.CANCELED]
+    
+    @classmethod
+    def is_running(cls, status: 'JobStatusEnum'):
+        """Check if the job status is in a 'running' subset (including waiting for input)."""
+        return status in [cls.IN_PROGRESS, cls.WAITING_FOR_INPUT]
 
 class PipelineJobStats(BaseModel):
     webpage_count: int
