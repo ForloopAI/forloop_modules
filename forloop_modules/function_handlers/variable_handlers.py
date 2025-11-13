@@ -62,6 +62,30 @@ class NewVariableHandler(AbstractFunctionHandler):
 
         return fdl
 
+    def make_flpl_node_dict(self, line_dict: dict) -> dict:
+        """
+        Creates a NewVariable node dict from parsed code line_dict.
+        
+        For assignment like 'a = 1', line_dict contains:
+        - new_var: "a" 
+        - arguments: ["1"]
+        - function: None
+        """
+        node = {"type": self.icon_type, "params": {}}
+        
+        # Extract variable name from new_var
+        var_name = line_dict.get("new_var") or ""
+        
+        # Extract value from arguments (first argument is the assigned value)
+        args = line_dict.get("arguments") or []
+        var_value = args[0] if len(args) > 0 else ""
+        
+        # Set the node parameters in the expected format
+        node["params"]["variable_name"] = {"variable": None, "value": var_name}
+        node["params"]["variable_value"] = {"variable": None, "value": var_value}
+        
+        return node
+
     def execute(self, node_detail_form):
         variable_name = node_detail_form.get_chosen_value_by_name("variable_name", variable_handler)
         variable_value = node_detail_form.get_chosen_value_by_name("variable_value", variable_handler)
@@ -1141,13 +1165,13 @@ class PrintVariableHandler(AbstractFunctionHandler):
         self.is_disabled = False
         self.icon_type = "PrintVariable"
         self.fn_name = "Print Variable"
-
+        self.code_import_patterns = ["print"]  # Enable recognition from Python code
+   
         self.type_category = ntcm.categories.variable
         self.docs_category = DocsCategories.control
         self._init_docs()
 
-        super().__init__()
-        
+
     def _init_docs(self):
         self.docs = Docs(description=self.__doc__)
         self.docs.add_parameter_table_row(title="Variable name", name="variable_name",
