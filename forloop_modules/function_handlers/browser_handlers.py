@@ -513,6 +513,11 @@ class ScanBrowserWebpageHandler(AbstractFunctionHandler):
             # 'total_pages': "???",
         }
 
+        #INSAR: fetch Docrawl requests and include them to data
+        requests_key=f'{suh.webscraping_client.redis_key_prefix}:requests'
+        requests = kv_redis.get(requests_key)
+        data['requests'] = requests
+
         # node_context_manager.stored_xpaths = [x["xpath"] for x in elements]
         suh.stored_xpaths = [x["xpath"] for x in elements]
 
