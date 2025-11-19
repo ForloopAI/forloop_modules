@@ -156,13 +156,24 @@ class NodeDetailForm:
         if name in self.node_params:
             if variable_handler is not None:
                 # Try to load value from variable explorer
-                try:
-                    # TODO: refactor to use get_variable_by_name() from local_variable_handler
-                    result = variable_handler.variables[self.node_params[name]["variable"]].value
-                    if isinstance(result, File):
-                        result = result.file_name + "." + result.suffix
-                # Load from node params
-                except KeyError:
+                variable_name = self.node_params[name]["variable"]
+                if variable_name:
+                    try:
+                        # Use get_local_variable_by_name to properly handle Redis-stored variables (e.g., DataFrames)
+                        local_variable = variable_handler.get_local_variable_by_name(variable_name)
+                        if local_variable is not None:
+                            result = local_variable.value
+                            if isinstance(result, File):
+                                result = result.file_name + "." + result.suffix
+                        else:
+                            # Variable not found, fall back to node params value
+                            result = self.node_params[name]["value"]
+                    except Exception as e:
+                        flog.warning(f"Error retrieving variable '{variable_name}': {e}")
+                        # Load from node params on error
+                        result = self.node_params[name]["value"]
+                else:
+                    # No variable name, use direct value
                     result = self.node_params[name]["value"]
             else:
                 result = self.node_params[name]["value"]
