@@ -346,6 +346,12 @@ class APIScript(BaseModel):
     text: str = ""
     project_uid: str = "0"
 
+class APILLMScriptGeneration(BaseModel):
+    prompt: str = ""
+    script_name: str = ""
+    project_uid: str = "0"
+    project_context: Optional[str] = None
+
 # class APIUser(BaseModel):
 #     email: str = ""  # auth0 response - email
 #     auth0_subject_id: str = ""  # auth0 response - auth_method_id
