@@ -1025,6 +1025,22 @@ def get_user_logs() -> Response:
     response = http_client.get(url)
     return response
 
+############### In app Console logs ############### 
+def post_console_log(message: str, type: str = "print"):
+
+    payload = {
+        "message": message,
+        "project_uid": aet.project_uid,
+        "type": type
+    }
+
+    url = f"{BASE_API}/console_logs"
+    return http_client.post(url, json=payload)
+
+def get_console_logs() -> Response:
+    url = f"{BASE_API}/console_logs"
+    response = http_client.get(url)
+    return response
 
 ############### In app Console logs ###############
 
