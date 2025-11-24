@@ -50,9 +50,16 @@ def serialize_dataframe_to_api(variable_value_df: pd.DataFrame) -> dict:
     :return: Variable's value serialized as a dict
     :rtype: dict
     """
+
     df = variable_value_df.copy()
     df = df.replace(np.nan, None)
-    return {"columns": list(df.columns), "values": df.values.tolist()}
+
+    result = {
+        "columns": list(df.columns), 
+        "values": df.values.tolist(),
+        "attrs": df.attrs
+    }
+    return result
 
 
 def parse_if_dataframe_from_db(variable_series: pd.Series) -> Any:

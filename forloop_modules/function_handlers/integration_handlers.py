@@ -1016,26 +1016,11 @@ class LoadGoogleSheetHandler(AbstractFunctionHandler):
         sheet_name = node_detail_form.get_chosen_value_by_name("sheet_name", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
         
-        new_var_name = variable_handler._set_up_unique_varname(new_var_name)
-        fields = self.generate_shown_dataframe_option_field(new_var_name)
+        new_var_name = self.update_node_fields_with_shown_dataframe(node_detail_form, new_var_name)
 
         self.direct_execute(sheet_url, sheet_name, new_var_name)
-
-        # Deprecated as DataFrame node is being deprecated, TODO: delete the DF node is definitely removed
-        # response = ncrb.new_node(pos=[500, 300], typ="DataFrame", fields=fields)
-        # if response.status_code in (200, 201):
-        #     result=json.loads(response.content.decode('utf-8'))
-        #     node_uid = result["uid"]
-
-
-        #     ncrb.update_last_active_dataframe_node_uid(node_uid)
-
-        #     global loaded_filename
-        #     loaded_filename = new_var_name
-
-        #     return new_var_name
-        # else:
-        #     raise HTTPException(status_code=response.status_code, detail="Error requesting new node from api")
+        
+        ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     def direct_execute(self, sheet_url, sheet_name, new_var_name):
         try:
