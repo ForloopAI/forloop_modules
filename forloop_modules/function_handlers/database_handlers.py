@@ -506,8 +506,30 @@ class DBSelectHandler(AbstractFunctionHandler):
         where_value = node_detail_form.get_chosen_value_by_name("where_value", variable_handler)
         limit = node_detail_form.get_chosen_value_by_name("limit", variable_handler)
         new_var_name = node_detail_form.get_chosen_value_by_name("new_var_name", variable_handler)
-        
-        self.direct_execute(db_name, db_table_name, select, where_column_name, where_operator, where_value, limit, new_var_name)
+
+        # Mirror LoadExcelHandler pattern:
+        # 1) ensure we have a unique dataframe var name and attach a `shown_dataframe` field
+        new_var_name = self.update_node_fields_with_shown_dataframe(
+            node_detail_form,
+            new_var_name,
+        )
+
+        # 2) execute the DB select and store the dataframe into that variable
+        self.direct_execute(
+            db_name,
+            db_table_name,
+            select,
+            where_column_name,
+            where_operator,
+            where_value,
+            limit,
+            new_var_name,
+        )
+
+        # 3) mark this DBSelect node as the last active dataframe node
+        # so `/last_active_dataframe_node_uid` and `/get_last_active_df`
+        # can find and display its dataframe.
+        ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
         # FIXME: Deprecated - causes issues on cloud (API crash)
         # fields = self.generate_shown_dataframe_option_field(new_var_name)
