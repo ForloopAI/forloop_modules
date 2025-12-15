@@ -1231,9 +1231,55 @@ class CreateDbTableHandler(AbstractFunctionHandler):
         columns = node_detail_form.get_chosen_value_by_name("columns", variable_handler)
         types = node_detail_form.get_chosen_value_by_name("types", variable_handler)
 
+        # Parse string representations of lists into actual lists
+        columns = self._parse_list_input(columns, "columns")
+        types = self._parse_list_input(types, "types")
+        
+        # Validate that columns and types have matching lengths
+        if len(columns) != len(types):
+            raise ValueError(
+                f"Columns and types lists must have the same length. "
+                f"Got {len(columns)} columns but {len(types)} types. "
+                f"Columns: {columns}, Types: {types}"
+            )
+
         self.direct_execute(db_name, new_table_name, columns, types)
+    
+    def _parse_list_input(self, value, field_name):
+        """Parse list input that may come as a string representation or actual list."""
+        if isinstance(value, list):
+            return value
+        
+        if isinstance(value, str):
+            try:
+                parsed = ast.literal_eval(value)
+                if isinstance(parsed, list):
+                    return parsed
+                else:
+                    raise ValueError(f"{field_name} must be a list, got {type(parsed).__name__}")
+            except (ValueError, SyntaxError) as e:
+                raise ValueError(
+                    f"Could not parse {field_name} as a list. "
+                    f"Expected format: ['item1', 'item2', ...]. "
+                    f"Got: {value}. Error: {e}"
+                )
+        
+        raise ValueError(f"{field_name} must be a list or string representation of a list, got {type(value).__name__}")
         
     def direct_execute(self, db_name, new_table_name, columns, types):
+        # Validate inputs
+        if not isinstance(columns, list) or len(columns) == 0:
+            raise ValueError(f"Columns must be a non-empty list, got {type(columns).__name__}")
+        
+        if not isinstance(types, list) or len(types) == 0:
+            raise ValueError(f"Types must be a non-empty list, got {type(types).__name__}")
+        
+        if len(columns) != len(types):
+            raise ValueError(
+                f"Columns and types lists must have the same length. "
+                f"Got {len(columns)} columns but {len(types)} types."
+            )
+        
         project_databases = ncrb.get_all_databases_by_project_uid()
         db_dict = filter_database_by_name_from_all_project_databases(project_databases=project_databases, db_name=db_name)
         
