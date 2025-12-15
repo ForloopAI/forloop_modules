@@ -1218,9 +1218,9 @@ class CreateDbTableHandler(AbstractFunctionHandler):
         fdl.label("Table name")
         fdl.entry(name="new_table_name", text="", input_types=["str"], required=True, row=2)
         fdl.label("Columns")
-        fdl.entry(name="columns", text="", input_types=["list"], required=True, row=3)
+        fdl.entry(name="columns", text="", input_types=["list; Example: [\"id\", \"name\"]"], required=True, row=3)
         fdl.label("Types")
-        fdl.entry(name="types", text="", input_types=["list"], required=True, row=4)
+        fdl.entry(name="types", text="", input_types=["list; Example: [\"int\", \"varchar(255)\"]"], required=True, row=4)
         fdl.button(function=self.execute, function_args=node_detail_form, text="Execute", focused=True)
 
         return fdl
