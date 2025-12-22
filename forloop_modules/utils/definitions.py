@@ -17,7 +17,7 @@ PIPELINE_CLEANING_ICONS = [
 ]
 
 DB_ICONS = [
-    "DBSelect", "DBInsert", "DBDelete", "DBUpdate", "AnalyzeDbTable", "MySQLQuery", "CreateDbTable"
+    "DBSelect", "DBInsert", "DBDelete", "DBUpdate", "AnalyzeDbTable", "MySQLQuery", "CreateDbTable", "DBQuery",
 ]
 
 SCRIPT_ICONS = ["RunPythonScript", "RunJupyterScript"]
