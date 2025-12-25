@@ -52,7 +52,26 @@ def serialize_dataframe_to_api(variable_value_df: pd.DataFrame) -> dict:
     """
     df = variable_value_df.copy()
     df = df.replace(np.nan, None)
-    return {"columns": list(df.columns), "values": df.values.tolist()}
+
+    # Extract logical_types from attrs if available
+    logical_types = getattr(df, "attrs", {}).get("logical_types", {})
+    
+    # Create column_metadata array with separate name and dtype
+    column_metadata = [
+        {
+            "name": col,
+            "dtype": logical_types.get(col, str(dtype))
+        }
+        for col, dtype in zip(df.columns, df.dtypes)
+    ]
+
+    result = {
+        "columns": list(df.columns), 
+        "values": df.values.tolist(),
+        "attrs": df.attrs,
+        "column_metadata": column_metadata
+    }
+    return result
 
 
 def parse_if_dataframe_from_db(variable_series: pd.Series) -> Any:
