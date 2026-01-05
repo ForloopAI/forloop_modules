@@ -29,8 +29,14 @@ def validate_input_data_types(df):
 
         # may be redundant with the next rows
         columns_containing_date = df.columns[df.columns.str.contains("date")]
-        df[columns_containing_date] = df[columns_containing_date].apply(lambda x: pd.to_datetime(x, errors='ignore',
-                                                                                                 infer_datetime_format=True))
+        ## VVVV Messed up date format in dataframe explorer on desktop app VVVV
+        df[columns_containing_date] = df[columns_containing_date].apply(lambda x: pd.to_datetime(x, errors='ignore', infer_datetime_format=True))
+
+        # After conversion attempt, format each date column individually to ISO string
+        for col in columns_containing_date:
+            if pd.api.types.is_datetime64_any_dtype(df[col]):
+                df[col] = df[col].dt.strftime('%Y-%m-%d')
+        ## ^^^^ Messed up date format in dataframe explorer on desktop app ^^^^
 
         # cast empty columns to object
         empty_columns = df.columns[df.isna().mean() == 1.]

@@ -534,6 +534,14 @@ class LocalVariable:
     def __repr__(self):
         return f'{self.value}'
 
+    def __getitem__(self, key):
+        if key == "name":
+            return self.name
+        elif key == "pipeline_uid":
+            return aet.active_pipeline_uid
+        else:
+            raise KeyError(f"Invalid key for LocalVariable: {key}")
+
     @property
     def typ(self):
         return type(self.value).__name__
