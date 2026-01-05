@@ -16,7 +16,7 @@ def eval_expression(expression:str, globals_dict, locals_dict):
         globals_dict: dict ... globals_dict parameter updated by values from evaluation
         locals_dict: dict ... locals_dict parameter updated by values from evaluation
     """
-    
+    obj = None
     try:
         obj = eval(expression, globals_dict, locals_dict)
     except Exception as e:
