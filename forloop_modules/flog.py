@@ -283,7 +283,7 @@ def flog(message: str, class_name: str, color: LogColor = LogColor.COLOROFF, mes
     """
 
     if DEVELOPER_MODE:
-        header = f"{datetime.now().strftime('%H:%M:%S')} "
+        header = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - "
         if class_name:
             header += f"{class_name}: "
             
