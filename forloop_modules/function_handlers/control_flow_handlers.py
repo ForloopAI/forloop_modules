@@ -218,8 +218,8 @@ class IfConditionHandler(AbstractFunctionHandler):
             '<=': operator.le,
             '>': operator.gt,
             '<': operator.lt,
-            'and': operator.and_,
-            'or': operator.or_,
+            'and': lambda a, b: bool(a and b),
+            'or': lambda a, b: bool(a or b),
             'contains': operator.contains,
             'isempty': None,
         }
@@ -234,13 +234,15 @@ class IfConditionHandler(AbstractFunctionHandler):
         """
         self.docs = Docs(description=self.__doc__, parameters_description=parameter_description)
         self.docs.add_parameter_table_row(title="Value 1", name="value_p",
-                                          description="The first value used in the condition."
-                                          , example="100 | True")
+                                          description="The first value used in the condition. Use '$' for variable name. Example: $var1",
+                                          example="100 | True",
+                                          )
         self.docs.add_parameter_table_row(title="Operator", name="operator",
                                           description="The operator used used in the condition."
                                           )
         self.docs.add_parameter_table_row(title="Value 2", name="value_q",
-                                          description="The second value used in the condition.", example="27 | ['a', 'b', 'c'] | {'name':'Sarah'}"
+                                          description="The second value used in the condition. Use '$' for variable name. Example: $var2", 
+                                          example="27 | ['a', 'b', 'c'] | {'name':'Sarah'} $var2"
                                           )
 
     def make_form_dict_list(self, *args, node_detail_form=None):
@@ -276,23 +278,51 @@ class IfConditionHandler(AbstractFunctionHandler):
     #     print(args)
 
     def direct_execute(self, value_p, operator, value_q, **kwargs):
-        # def __new__(cls, value_p, operator, value_q, *args, **kwargs):
-        try:
-            if isinstance(value_p, list) and operator == 'isempty':
-                if value_p:
-                    result = False
-                else:
-                    result = True
+        # Convert string values to appropriate types (int, float, bool, list, dict, etc.)
+        # This handles cases where user types "1" in form which gets stored as string "1"
+        if isinstance(value_p, str) and value_p:
+            value_p = ast.literal_eval(value_p)
+        
+        if isinstance(value_q, str) and value_q:
+            value_q = ast.literal_eval(value_q)
+
+        
+        # Handle isempty operator for any type
+        if operator == 'isempty':
+            if value_p is None:
+                return True
+            elif isinstance(value_p, (list, dict, str)):
+                return len(value_p) == 0
             else:
-                result = self.operators[operator](str(value_p), str(value_q))
-            # result = self.operators[operator](ast.literal_eval(value_p), ast.literal_eval(value_q)) <- BEFORE (Doesn't work!!!)
-
+                return not bool(value_p)
+        
+        # Use Python's native comparison behavior - let Python handle type checking
+        try:
+            result = self.operators[operator](value_p, value_q)
+            
+            # Ensure result is a boolean (Python allows some comparisons to return non-bool)
+            # e.g., DataFrame == DataFrame returns DataFrame, not bool
+            if not isinstance(result, bool):
+                raise SoftPipelineError(
+                    f"Comparison '{value_p} {operator} {value_q}' returned {type(result).__name__}, "
+                    f"but a boolean value is required. This may occur with complex types like DataFrames."
+                )
+            
+        except TypeError as e:
+            # Python's TypeError for unsupported operations - re-raise with clearer message
+            raise SoftPipelineError(
+                f"Type mismatch in condition '{value_p} {operator} {value_q}': {str(e)}"
+            ) from e
         except Exception as e:
-            flog.error(f'Error while running operation {value_p} {operator} {value_q}'+str(e),self)
-
-            result = False
-            flog.error('Error in if_condition:', e)
-        return (result)
+            # Catch any other unexpected errors
+            flog.error(f'Unexpected error while running operation {value_p} {operator} {value_q}: {str(e)}', self)
+            raise SoftPipelineError(
+                f"Error evaluating condition '{value_p} {operator} {value_q}': {str(e)}"
+            ) from e
+        
+        return result
+        
+        return result
 
 
 class WhileLoopHandler(AbstractFunctionHandler):
