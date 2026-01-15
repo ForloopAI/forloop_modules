@@ -102,40 +102,49 @@ class NewDataFrameHandler(AbstractFunctionHandler):
         ncrb.update_last_active_dataframe_node_uid(node_detail_form.node_uid)
 
     def execute_with_params(self, params):
-        columns = params["columns"]
         data = params["data"]
+        columns = params["columns"]
         new_var_name = params["new_var_name"]
 
-        self.direct_execute(columns, data, new_var_name)
+        self.direct_execute(data, columns, new_var_name)
 
     def direct_execute(self, data, columns, new_var_name):
-        if isinstance(data, list) and not all(type(row) == list for row in data):
-            raise CriticalPipelineError(
-                "When Data is provided as a list, it must contain lists of values for each row"
-            )
-        elif isinstance(data, dict) and \
-             not all(isinstance(key, str) and isinstance(value, list) for key, value in data.items()):
-            raise CriticalPipelineError(
-                "When Data is provided as a dict, keys must be strings and values must be lists"
-            )
-        elif data != "" and isinstance(data, str):
-            raise CriticalPipelineError("Data cannot be provided as a string")
+        # Step 1: Parse string inputs if they are strings (plain field input)
+        # Variables from get_chosen_value_by_name are already parsed, so we only need to handle strings
+        if isinstance(data, str):
+            if data == "":
+                data = None
+            else:
+                try:
+                    data = ast.literal_eval(data)
+                except (ValueError, SyntaxError) as e:
+                    raise CriticalPipelineError(
+                        f"Data must be a valid Python literal. Error: {e}"
+                    )
+        
+        if isinstance(columns, str):
+            if columns == "":
+                columns = None
+            else:
+                try:
+                    columns = ast.literal_eval(columns)
+                except (ValueError, SyntaxError) as e:
+                    raise CriticalPipelineError(
+                        f"Columns must be a valid Python literal. Error: {e}"
+                    )
 
-        if (isinstance(columns, list) and not all(type(column) == str for column in columns)) or \
-           columns != "" and isinstance(columns, str):
-            raise CriticalPipelineError("Columns must be provided as a list of strings")
-
-        if columns != "" and len(columns) != len(data[0]):
-            raise CriticalPipelineError("Provided Data rows must be of the same length as Columns")
-
-        data = None if data == "" else data
-        columns = None if columns == "" else columns
-
+        # Step 2: Let pandas handle validation and DataFrame creation
         inp = Input()
         inp.assign("data", data)
         inp.assign("columns", columns)
-        new_df = self.input_execute(inp)
+        
+        try:
+            new_df = self.input_execute(inp)
+        except Exception as e:
+            # Let pandas errors bubble up, but wrap in our error type for consistency
+            raise CriticalPipelineError(f"Failed to create DataFrame: {e}")
 
+        # Step 3: Store variable
         if new_var_name in variable_handler.variables.keys():
             variable_handler.update_variable(new_var_name, new_df)
         else:
