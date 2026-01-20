@@ -69,7 +69,8 @@ def serialize_dataframe_to_api(variable_value_df: pd.DataFrame) -> dict:
         "columns": list(df.columns), 
         "values": df.values.tolist(),
         "attrs": df.attrs,
-        "column_metadata": column_metadata
+        "column_metadata": column_metadata,
+        "logical_types": logical_types
     }
     return result
 
