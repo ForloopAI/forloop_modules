@@ -628,6 +628,35 @@ class APIUserFlowStep(BaseModel):
     step_data: str
     timestamp_utc: datetime.datetime
 
+
+class APIWebExtractorStepEvent(BaseModel):
+    flow: str
+    event_type: Literal["step_entered", "step_left", "step_abandoned"]
+    step_index: int
+    step_name: str
+    previous_step_index: Optional[int] = None
+    previous_step_name: Optional[str] = None
+    next_step_index: Optional[int] = None
+    next_step_name: Optional[str] = None
+    duration_ms: Optional[int] = None
+    project_uid: Optional[str] = None
+    pipeline_uid: Optional[str] = None
+    url_domain: Optional[str] = None
+    extraction_mode: Optional[str] = None
+    pagination_mode: Optional[str] = None
+    data_destination: Optional[str] = None
+    is_tutorial_mode: bool = False
+    is_details_page_pipeline: bool = False
+    metadata: Optional[dict[str, Any]] = None
+    client_timestamp_utc: Optional[datetime.datetime] = None
+
+    @field_validator("duration_ms")
+    @classmethod
+    def duration_ms_must_be_non_negative(cls, duration_ms: Optional[int]) -> Optional[int]:
+        if duration_ms is not None and duration_ms < 0:
+            raise ValueError("duration_ms must be non-negative")
+        return duration_ms
+
     
 
 
