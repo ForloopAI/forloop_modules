@@ -628,10 +628,21 @@ class APIUserFlowStep(BaseModel):
     step_data: str
     timestamp_utc: datetime.datetime
 
+WebExtractorStepEventTypeApi = Literal[
+    "step_entered",
+    "step_left",
+    "step_abandoned",
+    "extract_initiated",
+    "preview_scan_completed",
+    "preview_scan_failed",
+    "preview_decode_failed",
+    "funnel_abandoned",
+]
+
 
 class APIWebExtractorStepEvent(BaseModel):
     flow: str
-    event_type: Literal["step_entered", "step_left", "step_abandoned"]
+    event_type: WebExtractorStepEventTypeApi
     step_index: int
     step_name: str
     previous_step_index: Optional[int] = None
@@ -642,6 +653,10 @@ class APIWebExtractorStepEvent(BaseModel):
     project_uid: Optional[str] = None
     pipeline_uid: Optional[str] = None
     url_domain: Optional[str] = None
+    # Phase 1 funnel columns (persisted as first-class DB fields, not only inside metadata_json).
+    session_id: Optional[str] = None
+    full_url: Optional[str] = None
+    error_code: Optional[str] = None
     extraction_mode: Optional[str] = None
     pagination_mode: Optional[str] = None
     data_destination: Optional[str] = None
