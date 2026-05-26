@@ -636,6 +636,7 @@ WebExtractorStepEventTypeApi = Literal[
     "preview_scan_completed",
     "preview_scan_failed",
     "preview_decode_failed",
+    "preview_refresh_clicked",
     "funnel_abandoned",
 ]
 
