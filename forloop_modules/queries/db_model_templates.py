@@ -390,12 +390,6 @@ class APIFilterWebpageElements(BaseModel):
     objective: str
 
 
-class APIWebExtractorSearch(BaseModel):
-    project_uid: str
-    query: str
-    num_results: int = Field(default=10, ge=1)
-
-
 # class APIPaginationMode(BaseModel):
 #     urls: List[str]
 #     dataset_file_path: Optional[str]
