@@ -1154,18 +1154,12 @@ class DBUpdateHandler(AbstractFunctionHandler):
                                set_column_name, where_value, where_column_name, 
                                where_operator):
     
-        quote = db_instance.identifier_quote  # Gets the correct quote (` or ")
-
-        # This function correctly adds single quotes for strings but not numbers.
         set_value_sql = _parse_float_sql(set_value)
         where_value_sql = _parse_float_sql(where_value)
 
-        # Correctly build the SET statement, quoting ONLY the column name.
-        set_statement = f"{quote}{set_column_name}{quote} = {set_value_sql}"
+        set_statement = f"{set_column_name} = {set_value_sql}"
 
-        # Correctly build the WHERE statement, quoting ONLY the column name.
-        # DEPENDENCY in dbhydra update
-        where_statement = f"{quote}{where_column_name}{quote} {where_operator} {where_value_sql}"
+        where_statement = f"{where_column_name} {where_operator} {where_value_sql}"
 
         return set_statement, where_statement
     
