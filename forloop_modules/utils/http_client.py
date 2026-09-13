@@ -48,6 +48,9 @@ class HttpClient(httpx.Client):
     def put(self, url: str, **kwargs) -> httpx.Response:
         return self._request(url, "PUT", **kwargs)
 
+    def patch(self, url: str, **kwargs) -> httpx.Response:
+        return self._request(url, "PATCH", **kwargs)
+
     def delete(self, url: str, **kwargs) -> httpx.Response:
         return self._request(url, "DELETE", **kwargs)
 

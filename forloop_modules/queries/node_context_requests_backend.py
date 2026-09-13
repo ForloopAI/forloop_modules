@@ -24,6 +24,7 @@ from forloop_modules.queries.db_model_templates import (
     APIScript,
     APITrigger,
     APIVariable,
+    JobStatusEnum,
 )
 from forloop_modules.utils.http_client import HttpClient
 import httpx
@@ -625,6 +626,25 @@ def get_job_variables() -> Response:
     job_uid = aet.active_pipeline_job_uid
     url = f'{BASE_API}/jobs/{job_uid}/variables'
     response = http_client.get(url)
+    response.raise_for_status()
+    return response
+
+
+def get_pipeline_job(job_uid: str) -> Optional[dict]:
+    url = f"{BASE_API}/jobs/{job_uid}"
+    response = http_client.get(url)
+    try:
+        response.raise_for_status()
+    except Exception:
+        if response.status_code == 404:
+            return None
+        raise
+    return response.json()
+
+
+def update_pipeline_job_status(job_uid: str, status: JobStatusEnum) -> Response:
+    url = f"{BASE_API}/jobs/{job_uid}/status"
+    response = http_client.patch(url, json={"status": status})
     response.raise_for_status()
     return response
 

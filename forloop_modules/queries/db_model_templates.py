@@ -622,6 +622,54 @@ class APIProject(BaseModel):
     project_key: str
     last_active_pipeline_uid: Optional[str] = None
 
+
+class APIProjectRepo(BaseModel):
+    repo_url: str
+    repo_branch: str = "main"
+    name: str = ""
+    project_uid: str
+
+
+class APIProjectRepoUpdate(BaseModel):
+    repo_url: Optional[str] = None
+    repo_branch: Optional[str] = None
+    name: Optional[str] = None
+
+
+class APIFeature(BaseModel):
+    name: str
+    description: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    repo_uid: Optional[str] = None
+    project_uid: str
+
+
+class APIBoardTask(BaseModel):
+    title: str
+    description: str = ""
+    status: Literal["todo", "in_progress", "done"] = "todo"
+    feature_uid: Optional[str] = None
+    assignee_user_uid: Optional[str] = None
+    position: int = 0
+    pipeline_job_uid: Optional[str] = None
+    project_uid: str
+
+
+class APIBoardTaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[Literal["todo", "in_progress", "done"]] = None
+    feature_uid: Optional[str] = None
+    assignee_user_uid: Optional[str] = None
+    position: Optional[int] = None
+
+
+class APIFeatureUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    metadata: Optional[dict[str, Any]] = None
+    repo_uid: Optional[str] = None
+
 class APIUserFlowStep(BaseModel):
     user_uid: str
     step_identifier: str
