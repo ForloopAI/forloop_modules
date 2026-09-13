@@ -1,0 +1,6 @@
+# The following requirements are not required for package and can be installed separately
+# TODO: ideally this should be transformed into pyproject.toml optional dependencies
+pyautogui==0.9.54
+doclick==0.1.7
+pywinauto==0.6.6
+openpyxl==3.1.2
