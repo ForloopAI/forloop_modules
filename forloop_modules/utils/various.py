@@ -54,22 +54,25 @@ def serialize_dataframe_to_api(variable_value_df: pd.DataFrame) -> dict:
     df = df.replace(np.nan, None)
 
     # Extract logical_types from attrs if available
-    logical_types = getattr(df, "attrs", {}).get("logical_types", {})
+    logical_types = getattr(df, "attrs", {}).get("logical_types", [])
     
     # Create column_metadata array with separate name and dtype
-    column_metadata = [
-        {
-            "name": col,
-            "dtype": logical_types.get(col, str(dtype))
-        }
-        for col, dtype in zip(df.columns, df.dtypes)
-    ]
+    column_metadata = []
+    for i, (col, dtype) in enumerate(zip(df.columns, df.dtypes)):
+        dtype_str = logical_types[i] if i < len(logical_types) else str(dtype)
+        column_metadata.append(
+            {
+                "name": col,
+                "dtype": dtype_str
+            }
+        )
 
     result = {
         "columns": list(df.columns), 
         "values": df.values.tolist(),
         "attrs": df.attrs,
-        "column_metadata": column_metadata
+        "column_metadata": column_metadata,
+        "logical_types": logical_types
     }
     return result
 
