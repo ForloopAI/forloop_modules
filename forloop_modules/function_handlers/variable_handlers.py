@@ -1202,7 +1202,7 @@ class PrintVariableHandler(AbstractFunctionHandler):
     def input_execute(self, inp):
         var_name = inp("variable_name")
         var_obj = variable_handler.variables.get(var_name)
-
+        
         if var_obj is not None:
             #message = f'PrintVariable: {var_name} = {var_obj.value}' ##Optional Variable printing format
             message = f'{var_obj.value}'
@@ -1210,7 +1210,6 @@ class PrintVariableHandler(AbstractFunctionHandler):
             # fallback to printing the string itself
             # message = f'PrintVariable: {var_name}' ##Optional Variable printing format
             message = f'{var_name}'
-
 
         # Send to FastAPI backend
         try:
@@ -1228,16 +1227,36 @@ class PrintVariableHandler(AbstractFunctionHandler):
 
         self.direct_execute(variable_name)
 
-    def export_code(self, *args):
-        """TODO"""
-        code = """  """
-
+    def export_code(self, node_detail_form):
+        """
+        Export Python code for print statement.
+        """
+        variable_name = node_detail_form.get_chosen_value_by_name("variable_name", variable_handler)
+        code = f"print({variable_name})"
         return code
 
-    def export_imports(self, *args):
-        """TODO"""
-        imports = []
+    def make_flpl_node_dict(self, line_dict: dict) -> dict:
+        """
+        Custom method to properly handle print statements.
+        Maps the first argument to variable_name parameter.
+        """
+        node_dict = {"type": self.icon_type, "params": {}}
+        
+        # Get the first argument (what to print)
+        arguments = line_dict.get("arguments", [])
+        first_arg = arguments[0] if arguments else ""
+        
+        # Set the variable_name parameter
+        node_dict["params"]["variable_name"] = {"variable": None, "value": first_arg}
+        
+        return node_dict
 
+    def export_imports(self, *args):
+        """
+        Export imports needed for print functionality.
+        Print is a built-in Python function, so no imports are needed.
+        """
+        imports = []
         return imports
 
 
